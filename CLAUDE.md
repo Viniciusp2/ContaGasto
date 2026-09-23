@@ -92,11 +92,23 @@ Campos: data, descrição, valor, categoria, forma de pagamento, observação, `
 
 Fixos (fixa, fixa variável) e temporárias devem poder ser pausados/encerrados sem apagar o histórico.
 
+**Quando uma recorrência vira lançamento:** só quando a data chega (a data em que o dinheiro sai, ver 4.4 pro crédito). Antes disso ela é um **compromisso** (aparece em "próximos dias" e no disponível para gastar), mas não mexe no saldo real. Ex.: aluguel dia 10, hoje é dia 5: é compromisso; no dia 10 vira lançamento.
+
+- **Dia que não existe no mês** (31 em fevereiro, 30 em fevereiro...): cai no **último dia do mês**.
+- **Parcelado:** o usuário digita o **valor de cada parcela** e o número de parcelas. A parcela 1 é a da compra (no crédito, segue a fatura, ver 4.4).
+- **Apagou um lançamento gerado?** Ele não volta. A recorrência guarda até que mês já gerou (`gerada_ate`).
+
 ### 4.4 Cartão de crédito
 
-- Gasto conta **no dia da compra** (decisão v1, mais simples).
-- Parcelado usa a recorrência "por N meses" (4.3).
-- *Futuro (não v1):* modo "fatura". Cartão, limite, dia de fechamento, vencimento, fatura, compra, parcela e pagamento da fatura. É a parte que mais tende a exigir mudança estrutural, então **não cavar atalhos** que travem isso: a forma de pagamento "crédito" já existe e o lançamento guarda a data da compra, o que basta pra ligar a uma fatura depois.
+Decisão revista em 23/09/2026: **toda compra no crédito segue a fatura**, à vista ou parcelada.
+
+- Cada cartão (forma de pagamento tipo crédito) tem **dia de fechamento** e **dia de vencimento**, configurados pelo usuário.
+- **Fechamento:** compra **até** o dia de fechamento entra na fatura que fecha naquele mês. Compra **depois** dele vai pra fatura do mês seguinte. Ex.: fecha dia 20, compra dia 20 entra; dia 21 já é a próxima.
+- **Vencimento:** se o dia de vencimento é maior que o de fechamento, vence no mesmo mês do fechamento; senão, no mês seguinte. Ex.: fecha 20 e vence 27: fatura de setembro vence 27/09. Fecha 25 e vence 5: vence 05/10.
+- **O gasto entra no mês na data do vencimento**, que é quando o dinheiro sai. O lançamento guarda as duas datas: `data_compra` (o que o usuário digitou) e `data` (o vencimento, usada em todos os cálculos).
+- **Parcela N** cai no vencimento da fatura N−1 meses depois da fatura da parcela 1.
+- **Cartão sem dias configurados:** conta no dia da compra, como antes.
+- *Futuro (não v1):* limite do cartão, tela da fatura e pagamento da fatura como movimentação própria.
 
 ### 4.5 Metas por categoria
 
@@ -189,9 +201,9 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 
 - **usuarios** — id, nome, email (auth na Fase 5).
 - **categorias** — nome, emoji, icone (nome do ícone lucide), cor, tipo (gasto|entrada), ativa.
-- **formas_pagamento** — nome, tipo (pix|debito|credito|dinheiro|boleto).
-- **lancamentos** — data, descricao, valor, categoria_id, forma_pagamento_id, tipo (gasto|entrada), subtipo_entrada, recorrencia_id (nullable), parcela (nullable, o X de "parcela X/N"), status (estimado|confirmado, default confirmado), obs.
-- **recorrencias** — tipo (fixa|fixa_variavel|temporaria), descricao, valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa, dia_vencimento, valor_estimado, meses_media (default 3).
+- **formas_pagamento** — nome, tipo (pix|debito|credito|dinheiro|boleto), dia_fechamento e dia_vencimento (só crédito, nullable).
+- **lancamentos** — data (quando o dinheiro sai), data_compra, competencia (`YYYY-MM`, só em lançamento gerado por recorrência), descricao, valor, categoria_id, forma_pagamento_id, tipo (gasto|entrada), subtipo_entrada, recorrencia_id (nullable), parcela (nullable, o X de "parcela X/N"), status (estimado|confirmado, default confirmado), obs.
+- **recorrencias** — tipo (fixa|fixa_variavel|temporaria), descricao, valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa, dia_vencimento, valor_estimado, meses_media (default 3), gerada_ate (`YYYY-MM`).
 - **metas** — categoria_id, limite_mensal.
 - **objetivos** — nome, emoji, valor_alvo, data_alvo. **Sem `valor_guardado`**: o saldo do objetivo é a soma dos movimentos, num lugar só (ver abaixo).
 - **movimentos_objetivo** — objetivo_id, data, valor (positivo = guardar, negativo = resgatar). É a fonte da verdade do saldo do objetivo.
@@ -203,7 +215,7 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 
 > Regra: **geração de recorrência é idempotente.** Cada lançamento gerado por uma recorrência tem uma competência (`ano-mês`) e o banco impede dois lançamentos com a mesma `recorrencia_id + competência`. Assim, abrir o app no dia 11 ou dez vezes no mês nunca duplica a "Internet R$ 100 todo dia 10". Pra parcelas, o número da parcela também entra na chave.
 
-> Preparado pro futuro (não criar agora): `contas`, `transferencias`, `cartoes`, `faturas` e `historico_alteracoes` (seções 4.4, 4.11 e 4.12). Nada do schema atual deve travar isso.
+> Preparado pro futuro (não criar agora): `contas`, `transferencias`, `faturas` (tela e pagamento) e `historico_alteracoes` (seções 4.4, 4.11 e 4.12). Os dias do cartão já moram em `formas_pagamento`. Nada do schema atual deve travar isso.
 
 ---
 
@@ -247,7 +259,7 @@ Cada cálculo com teste unitário. Nunca calcular direto no componente.
 Lançar gasto/entrada rápido · recorrência fixa e temporária (parcelas) · metas · objetivos · empréstimos · saldo real vs caixa · comprometido no próximo mês · disponível para gastar · linha do tempo financeira · posso gastar por dia · previsão fim do mês · contas a vencer · resumo mês/trimestre/semestre/ano · gráficos (fluxo do mês, maiores vilões, por forma de pagamento, mapa de calor, por dia da semana) · assinaturas ativas · categorias com cor/ícone · modo escuro · instalar como app (PWA) · exportar Excel/PDF · backup.
 
 **Depois (v2, ideias 23–25 + extras que dependem de backend/notificação):**
-Notificações (alertas de categoria, lembrete de lançar, relatório mensal) · foto do comprovante · múltiplas contas/carteiras e transferências entre contas (primeiro da fila, ver 4.11) · modo fatura do cartão (4.4) · histórico de alterações (4.12) · contas compartilhadas · importar extrato CSV/OFX.
+Notificações (alertas de categoria, lembrete de lançar, relatório mensal) · foto do comprovante · múltiplas contas/carteiras e transferências entre contas (primeiro da fila, ver 4.11) · limite e tela da fatura do cartão (4.4) · histórico de alterações (4.12) · contas compartilhadas · importar extrato CSV/OFX.
 
 ---
 
@@ -308,8 +320,10 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 
 | Tema              | Decisão                                    |
 | ----------------- | ------------------------------------------- |
-| Crédito à vista | conta no dia da compra                      |
-| Parcelado         | recorrência temporária, parcela X/N       |
+| Crédito           | segue a fatura: entra no vencimento (revisto em 23/09/2026) |
+| Parcelado         | recorrência temporária, parcela X/N, digita o valor da parcela |
+| Geração de fixos  | só quando a data chega; antes é compromisso |
+| Dia 31 em mês curto | cai no último dia do mês                  |
 | Fixos             | opção "fixo" ou "por N meses"             |
 | Empréstimo       | fora da renda, saldo real vs saldo em caixa |
 | Banco             | Postgres (Neon), Drizzle ORM                |

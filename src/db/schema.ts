@@ -12,6 +12,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -95,9 +96,15 @@ export const formasPagamento = pgTable(
     userId: donoId(),
     nome: text("nome").notNull(),
     tipo: tipoFormaPagamento("tipo").notNull(),
+    // Só crédito (4.4). Sem os dois, a compra conta no dia.
+    diaFechamento: integer("dia_fechamento"),
+    diaVencimento: integer("dia_vencimento"),
     ...datas(),
   },
-  (t) => [unique().on(t.userId, t.nome)],
+  (t) => [
+    unique().on(t.userId, t.nome),
+    check("formas_dias_validos", sql`(${t.diaFechamento} between 1 and 31) and (${t.diaVencimento} between 1 and 31)`),
+  ],
 );
 
 export const recorrencias = pgTable(
@@ -124,6 +131,8 @@ export const recorrencias = pgTable(
     diaVencimento: integer("dia_vencimento"),
     valorEstimado: integer("valor_estimado"),
     mesesMedia: integer("meses_media").notNull().default(3),
+    // "YYYY-MM" da última ocorrência já gerada. Assim, lançamento apagado não volta.
+    geradaAte: text("gerada_ate"),
     ...datas(),
   },
   (t) => [
@@ -157,11 +166,19 @@ export const lancamentos = pgTable(
     // Número desta parcela, pra mostrar "parcela X/N"
     parcela: integer("parcela"),
     status: statusLancamento("status").notNull().default("confirmado"),
+    // "data" é quando o dinheiro sai. No crédito é o vencimento da fatura, e a compra fica aqui.
+    dataCompra: date("data_compra"),
+    // "YYYY-MM" da ocorrência, só em lançamento gerado por recorrência
+    competencia: text("competencia"),
     obs: text("obs"),
     ...datas(),
   },
   (t) => [
     index("lancamentos_usuario_data_idx").on(t.userId, t.data),
+    // Uma recorrência gera no máximo um lançamento por mês, mesmo com o app aberto em duas abas
+    uniqueIndex("lancamentos_recorrencia_competencia_uq")
+      .on(t.recorrenciaId, t.competencia)
+      .where(sql`${t.recorrenciaId} is not null`),
     check("lancamentos_valor_positivo", sql`${t.valor} > 0`),
     check(
       "lancamentos_subtipo_so_em_entrada",

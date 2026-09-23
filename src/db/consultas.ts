@@ -2,7 +2,7 @@
 import { and, asc, between, desc, eq } from "drizzle-orm";
 import { intervaloDoMes, type Mes } from "@/lib/datas";
 import { db } from ".";
-import { categorias, emprestimos, formasPagamento, lancamentos } from "./schema";
+import { categorias, emprestimos, formasPagamento, lancamentos, recorrencias } from "./schema";
 import { USUARIO_PADRAO } from "./usuario-padrao";
 
 const userId = USUARIO_PADRAO.id;
@@ -20,6 +20,8 @@ export function listarLancamentosDoMes(mes: Mes) {
       tipo: lancamentos.tipo,
       status: lancamentos.status,
       parcela: lancamentos.parcela,
+      totalParcelas: recorrencias.totalParcelas,
+      dataCompra: lancamentos.dataCompra,
       categoriaNome: categorias.nome,
       categoriaEmoji: categorias.emoji,
       categoriaCor: categorias.cor,
@@ -28,6 +30,7 @@ export function listarLancamentosDoMes(mes: Mes) {
     .from(lancamentos)
     .innerJoin(categorias, eq(lancamentos.categoriaId, categorias.id))
     .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
+    .leftJoin(recorrencias, eq(lancamentos.recorrenciaId, recorrencias.id))
     .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, inicio, fim)))
     .orderBy(desc(lancamentos.data), desc(lancamentos.createdAt));
 }
@@ -78,7 +81,13 @@ export function listarCategoriasAtivas() {
 
 export function listarFormasPagamento() {
   return db
-    .select({ id: formasPagamento.id, nome: formasPagamento.nome })
+    .select({
+      id: formasPagamento.id,
+      nome: formasPagamento.nome,
+      tipo: formasPagamento.tipo,
+      diaFechamento: formasPagamento.diaFechamento,
+      diaVencimento: formasPagamento.diaVencimento,
+    })
     .from(formasPagamento)
     .where(eq(formasPagamento.userId, userId))
     .orderBy(asc(formasPagamento.createdAt));
@@ -92,10 +101,30 @@ export async function buscarCategoria(id: string) {
   return linha ?? null;
 }
 
-export async function formaPagamentoExiste(id: string) {
+export async function buscarFormaPagamento(id: string) {
   const [linha] = await db
-    .select({ id: formasPagamento.id })
+    .select()
     .from(formasPagamento)
     .where(and(eq(formasPagamento.id, id), eq(formasPagamento.userId, userId)));
-  return Boolean(linha);
+  return linha ?? null;
+}
+
+export function listarRecorrencias() {
+  return db
+    .select({
+      rec: recorrencias,
+      categoriaNome: categorias.nome,
+      categoriaEmoji: categorias.emoji,
+      categoriaCor: categorias.cor,
+      categoriaTipo: categorias.tipo,
+      formaNome: formasPagamento.nome,
+      formaTipo: formasPagamento.tipo,
+      diaFechamento: formasPagamento.diaFechamento,
+      diaVencimento: formasPagamento.diaVencimento,
+    })
+    .from(recorrencias)
+    .innerJoin(categorias, eq(recorrencias.categoriaId, categorias.id))
+    .leftJoin(formasPagamento, eq(recorrencias.formaPagamentoId, formasPagamento.id))
+    .where(eq(recorrencias.userId, userId))
+    .orderBy(asc(recorrencias.diaDoMes), asc(recorrencias.createdAt));
 }

@@ -3,10 +3,26 @@
 import { useActionState, useState } from "react";
 import { Check, LoaderCircle } from "lucide-react";
 import { salvarLancamento, type EstadoForm } from "@/app/lancamentos/actions";
+import { diaCurto } from "@/lib/datas";
 import { centavosDeDigitos, formatarCentavos } from "@/lib/dinheiro";
+import { dataEfetiva } from "@/lib/recorrencias";
+import { MAX_PARCELAS, type Repetir } from "@/lib/validar-lancamento";
 
 type Categoria = { id: string; nome: string; emoji: string; cor: string; tipo: "gasto" | "entrada" };
-type Forma = { id: string; nome: string };
+type Forma = {
+  id: string;
+  nome: string;
+  tipo: string;
+  diaFechamento: number | null;
+  diaVencimento: number | null;
+};
+
+const opcoesRepetir: { valor: Repetir; rotulo: string; soGasto?: boolean }[] = [
+  { valor: "unico", rotulo: "Só dessa vez" },
+  { valor: "fixa", rotulo: "Todo mês" },
+  { valor: "fixa_variavel", rotulo: "Todo mês, valor muda", soGasto: true },
+  { valor: "temporaria", rotulo: "Parcelado", soGasto: true },
+];
 
 export type LancamentoInicial = {
   id: string;
@@ -17,6 +33,7 @@ export type LancamentoInicial = {
   categoriaId: string;
   formaPagamentoId: string | null;
   obs: string | null;
+  estimado: boolean;
 };
 
 const inicialVazio = { erro: undefined } satisfies EstadoForm;
@@ -41,14 +58,24 @@ export function FormLancamento({
   const [data, setData] = useState(inicial?.data ?? hoje);
   const [descricao, setDescricao] = useState(inicial?.descricao ?? "");
   const [obs, setObs] = useState(inicial?.obs ?? "");
+  const [repetir, setRepetir] = useState<Repetir>("unico");
+  const [parcelas, setParcelas] = useState("2");
 
   const daCategoria = categorias.filter((c) => c.tipo === tipo);
-  const podeSalvar = centavos > 0 && categoriaId !== "" && !salvando;
+  const parcelado = repetir === "temporaria";
+  const parcelasOk = !parcelado || (Number(parcelas) >= 2 && Number(parcelas) <= MAX_PARCELAS);
+  const podeSalvar = centavos > 0 && categoriaId !== "" && parcelasOk && !salvando;
+
+  // Aviso de fatura: no crédito com dias configurados, o gasto sai no vencimento
+  const forma = formas.find((f) => f.id === formaId);
+  const cartao = tipo === "gasto" && forma?.tipo === "credito" ? forma : null;
+  const vencimento = cartao && data ? dataEfetiva(data, cartao) : null;
 
   function trocarTipo(novo: "gasto" | "entrada") {
     if (novo === tipo) return;
     setTipo(novo);
     setCategoriaId(""); // categoria de gasto não serve pra entrada
+    if (novo === "entrada" && (repetir === "fixa_variavel" || repetir === "temporaria")) setRepetir("unico");
   }
 
   return (
@@ -58,6 +85,7 @@ export function FormLancamento({
       <input type="hidden" name="valor" value={centavos} />
       <input type="hidden" name="categoriaId" value={categoriaId} />
       <input type="hidden" name="formaPagamentoId" value={formaId} />
+      <input type="hidden" name="repetir" value={repetir} />
 
       <div role="radiogroup" aria-label="Tipo" className="grid grid-cols-2 gap-2 rounded-card bg-lavanda p-1.5">
         {(["gasto", "entrada"] as const).map((t) => (
@@ -77,8 +105,11 @@ export function FormLancamento({
       </div>
 
       <div>
-        <label htmlFor="valor-visivel" className="sr-only">
-          Valor
+        <label
+          htmlFor="valor-visivel"
+          className={parcelado ? "mb-2 block text-center text-sm font-semibold" : "sr-only"}
+        >
+          {parcelado ? "Valor de cada parcela" : "Valor"}
         </label>
         <input
           id="valor-visivel"
@@ -141,9 +172,60 @@ export function FormLancamento({
         </div>
       </fieldset>
 
+      {!inicial && (
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold">Repete?</legend>
+          <div className="flex flex-wrap gap-2">
+            {opcoesRepetir
+              .filter((o) => tipo === "gasto" || !o.soGasto)
+              .map((o) => (
+                <button
+                  key={o.valor}
+                  type="button"
+                  aria-pressed={repetir === o.valor}
+                  onClick={() => setRepetir(o.valor)}
+                  className={`min-h-11 rounded-full border-2 px-4 text-sm transition-colors ${
+                    repetir === o.valor ? "border-tinta bg-lavanda font-semibold" : "border-transparent bg-cartao"
+                  }`}
+                >
+                  {o.rotulo}
+                </button>
+              ))}
+          </div>
+          {parcelado && (
+            <div className="mt-3 flex items-center gap-3">
+              <label htmlFor="parcelas" className="text-sm font-semibold">
+                Quantas vezes?
+              </label>
+              <input
+                id="parcelas"
+                name="parcelas"
+                type="number"
+                inputMode="numeric"
+                min={2}
+                max={MAX_PARCELAS}
+                value={parcelas}
+                onChange={(e) => setParcelas(e.target.value)}
+                className="min-h-11 w-20 rounded-2xl bg-cartao px-3 text-center font-bold outline-none focus:ring-2 focus:ring-lavanda"
+              />
+              {parcelasOk && centavos > 0 && (
+                <span className="text-sm text-tinta-suave">
+                  Total {formatarCentavos(centavos * Number(parcelas))}
+                </span>
+              )}
+            </div>
+          )}
+          {repetir === "fixa_variavel" && (
+            <p className="mt-2 text-sm text-tinta-suave">
+              Tipo luz e água: cada mês entra estimado pela média e você confirma quando chegar a conta.
+            </p>
+          )}
+        </fieldset>
+      )}
+
       <div>
         <label htmlFor="data" className="mb-2 block text-sm font-semibold">
-          Data
+          {cartao ? "Data da compra" : repetir === "unico" ? "Data" : "Primeira vez"}
         </label>
         <input
           id="data"
@@ -154,6 +236,17 @@ export function FormLancamento({
           onChange={(e) => setData(e.target.value)}
           className="min-h-11 w-full rounded-2xl bg-cartao px-4 outline-none focus:ring-2 focus:ring-lavanda"
         />
+        {cartao && vencimento && vencimento !== data && (
+          <p className="mt-2 rounded-2xl bg-limao px-4 py-2 text-sm">
+            Entra na fatura que vence <strong>{diaCurto(vencimento)}</strong>
+            {parcelado ? " (parcela 1)" : ""}.
+          </p>
+        )}
+        {cartao && !cartao.diaFechamento && (
+          <p className="mt-2 text-sm text-tinta-suave">
+            Configure o fechamento do cartão em Mais, Cartões, pra ele seguir a fatura.
+          </p>
+        )}
       </div>
 
       <details className="rounded-2xl bg-cartao px-4 py-1" open={Boolean(inicial)}>
@@ -193,7 +286,15 @@ export function FormLancamento({
         className="flex min-h-14 items-center justify-center gap-2 rounded-card bg-coral text-lg font-bold shadow-suave transition-transform active:scale-[0.98] disabled:opacity-50"
       >
         {salvando ? <LoaderCircle className="animate-spin" aria-hidden /> : <Check aria-hidden />}
-        {inicial ? "Salvar alterações" : tipo === "gasto" ? "Salvar gasto" : "Salvar entrada"}
+        {inicial
+          ? inicial.estimado
+            ? "Confirmar valor"
+            : "Salvar alterações"
+          : repetir !== "unico"
+            ? "Salvar e repetir"
+            : tipo === "gasto"
+              ? "Salvar gasto"
+              : "Salvar entrada"}
       </button>
     </form>
   );

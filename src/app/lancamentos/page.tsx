@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, Receipt } from "lucide-react";
 import { listarLancamentosDoMes } from "@/db/consultas";
+import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { ItemLancamentoLinha } from "@/components/item-lancamento";
 import { SeletorMes } from "@/components/seletor-mes";
 import { diaCurto, lerMes, mesParaTexto } from "@/lib/datas";
@@ -15,6 +16,7 @@ const filtros = [
 ] as const;
 
 export default async function Lancamentos({ searchParams }: PageProps<"/lancamentos">) {
+  await gerarRecorrencias(); // fixos e parcelas que chegaram viram lançamento
   const params = await searchParams;
   const mes = lerMes(typeof params.mes === "string" ? params.mes : undefined);
   const textoMes = mesParaTexto(mes);

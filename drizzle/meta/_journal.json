@@ -8,6 +8,13 @@
       "when": 1790171052976,
       "tag": "0000_inicial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790189968149,
+      "tag": "0001_fatura_e_recorrencias",
+      "breakpoints": true
     }
   ]
 }

@@ -125,8 +125,18 @@ describe("validarLancamento", () => {
         formaPagamentoId: null,
         descricao: "",
         obs: null,
+        repetir: "unico",
+        parcelas: null,
       },
     });
+  });
+
+  it("aceita repetições", () => {
+    expect(validarLancamento(form({ repetir: "fixa" })).ok).toBe(true);
+    expect(validarLancamento(form({ repetir: "fixa_variavel" })).ok).toBe(true);
+    expect(validarLancamento(form({ tipo: "entrada", repetir: "fixa" })).ok).toBe(true);
+    const r = validarLancamento(form({ repetir: "temporaria", parcelas: "10" }));
+    expect(r.ok && r.dados.parcelas).toBe(10);
   });
 
   it("guarda descrição, forma e observação aparadas", () => {
@@ -147,6 +157,12 @@ describe("validarLancamento", () => {
     ["data inexistente", { data: "2026-02-30" }],
     ["descrição longa demais", { descricao: "x".repeat(81) }],
     ["observação longa demais", { obs: "x".repeat(501) }],
+    ["repetir inválido", { repetir: "semanal" }],
+    ["parcelado sem parcelas", { repetir: "temporaria" }],
+    ["parcelado em 1x", { repetir: "temporaria", parcelas: "1" }],
+    ["parcelado em 73x", { repetir: "temporaria", parcelas: "73" }],
+    ["entrada parcelada", { tipo: "entrada", repetir: "temporaria", parcelas: "3" }],
+    ["entrada com valor variável", { tipo: "entrada", repetir: "fixa_variavel" }],
   ])("recusa: %s", (_nome, campos) => {
     expect(validarLancamento(form(campos)).ok).toBe(false);
   });

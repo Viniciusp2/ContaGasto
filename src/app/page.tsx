@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Landmark, Wallet } from "lucide-react";
 import { SeletorMes } from "@/components/seletor-mes";
 import { lancamentosParaCalculo, listarEmprestimosParaCalculo } from "@/db/consultas";
+import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { resumoDoMes } from "@/lib/calculos";
 import { lerMes, mesParaTexto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
@@ -9,6 +10,7 @@ import { formatarCentavos } from "@/lib/dinheiro";
 export const dynamic = "force-dynamic";
 
 export default async function Inicio({ searchParams }: PageProps<"/">) {
+  await gerarRecorrencias(); // fixos e parcelas que chegaram viram lançamento
   const params = await searchParams;
   const mes = lerMes(typeof params.mes === "string" ? params.mes : undefined);
   const [lancamentos, emprestimos] = await Promise.all([

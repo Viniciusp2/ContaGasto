@@ -9,7 +9,14 @@ export type DadosLancamento = {
   formaPagamentoId: string | null;
   descricao: string; // vazio = usar o nome da categoria
   obs: string | null;
+  repetir: Repetir;
+  parcelas: number | null; // só no parcelado
 };
+
+export type Repetir = "unico" | "fixa" | "fixa_variavel" | "temporaria";
+
+const REPETIR: Repetir[] = ["unico", "fixa", "fixa_variavel", "temporaria"];
+export const MAX_PARCELAS = 72;
 
 export type Resultado = { ok: true; dados: DadosLancamento } | { ok: false; erro: string };
 
@@ -43,8 +50,32 @@ export function validarLancamento(formData: FormData): Resultado {
   const obs = texto(formData, "obs");
   if (obs.length > 500) return { ok: false, erro: "A observação pode ter até 500 letras." };
 
+  const repetir = (texto(formData, "repetir") || "unico") as Repetir;
+  if (!REPETIR.includes(repetir)) return { ok: false, erro: "Escolha como repete." };
+  if (tipo === "entrada" && (repetir === "fixa_variavel" || repetir === "temporaria")) {
+    return { ok: false, erro: "Entrada só pode ser única ou todo mês." };
+  }
+
+  let parcelas: number | null = null;
+  if (repetir === "temporaria") {
+    parcelas = Number(texto(formData, "parcelas"));
+    if (!Number.isInteger(parcelas) || parcelas < 2 || parcelas > MAX_PARCELAS) {
+      return { ok: false, erro: `Parcelado vai de 2 a ${MAX_PARCELAS} vezes.` };
+    }
+  }
+
   return {
     ok: true,
-    dados: { tipo, valor, data, categoriaId, formaPagamentoId: formaPagamentoId || null, descricao, obs: obs || null },
+    dados: {
+      tipo,
+      valor,
+      data,
+      categoriaId,
+      formaPagamentoId: formaPagamentoId || null,
+      descricao,
+      obs: obs || null,
+      repetir,
+      parcelas,
+    },
   };
 }

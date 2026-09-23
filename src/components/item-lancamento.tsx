@@ -1,10 +1,19 @@
 import Link from "next/link";
 import type { ItemLancamento } from "@/db/consultas";
+import { diaCurto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
 export function ItemLancamentoLinha({ item }: { item: ItemLancamento }) {
   const estimado = item.status === "estimado";
   const entrada = item.tipo === "entrada";
+
+  const detalhes = [
+    item.categoriaNome,
+    item.formaNome,
+    item.parcela && item.totalParcelas ? `parcela ${item.parcela}/${item.totalParcelas}` : null,
+    // No crédito, a data da lista é o vencimento: mostra quando foi a compra
+    item.dataCompra && item.dataCompra !== item.data ? `compra ${diaCurto(item.dataCompra)}` : null,
+  ].filter(Boolean);
 
   return (
     <li>
@@ -22,12 +31,13 @@ export function ItemLancamentoLinha({ item }: { item: ItemLancamento }) {
           {item.categoriaEmoji}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold">{item.descricao}</span>
-          <span className="block truncate text-sm text-tinta-suave">
-            {item.categoriaNome}
-            {item.formaNome ? ` · ${item.formaNome}` : ""}
-            {estimado ? " · estimado" : ""}
+          <span className="flex items-center gap-2">
+            <span className="truncate font-semibold">{item.descricao}</span>
+            {estimado && (
+              <span className="shrink-0 rounded-full bg-limao px-2 text-xs font-semibold">estimado</span>
+            )}
           </span>
+          <span className="block truncate text-sm text-tinta-suave">{detalhes.join(" · ")}</span>
         </span>
         <span
           className={`shrink-0 font-bold tabular-nums ${entrada ? "rounded-full bg-menta px-2.5 py-0.5" : ""}`}

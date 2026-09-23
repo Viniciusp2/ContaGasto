@@ -30,6 +30,12 @@ export default async function EditarLancamento({ params }: PageProps<"/lancament
         </Link>
         <h1 className="text-2xl font-bold">Editar lançamento</h1>
       </div>
+      {lancamento.status === "estimado" && (
+        <p className="rounded-card bg-limao px-4 py-3 text-sm">
+          Esse valor é uma <strong>estimativa</strong> pela média dos últimos meses. Quando chegar a conta, ajuste o
+          valor e confirme: aí ele entra no saldo.
+        </p>
+      )}
       <FormLancamento
         categorias={categorias}
         formas={formas}
@@ -38,11 +44,12 @@ export default async function EditarLancamento({ params }: PageProps<"/lancament
           id: lancamento.id,
           tipo: lancamento.tipo,
           valor: lancamento.valor,
-          data: lancamento.data,
+          data: lancamento.dataCompra ?? lancamento.data,
           descricao: lancamento.descricao,
           categoriaId: lancamento.categoriaId,
           formaPagamentoId: lancamento.formaPagamentoId,
           obs: lancamento.obs,
+          estimado: lancamento.status === "estimado",
         }}
       />
       <BotaoApagar id={lancamento.id} mes={mes} />
