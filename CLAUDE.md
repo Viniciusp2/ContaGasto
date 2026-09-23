@@ -254,6 +254,10 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Valores           | inteiros em centavos                        |
 | Deploy            | Vercel + Neon, só na Fase 5                |
 | Usuário          | individual na v1, modelo já por usuário   |
+| Banco local       | PGlite (Postgres embutido) até a Fase 5     |
+| Componentes de UI | sem biblioteca, Tailwind puro (shadcn/ui e Vaul testados e descartados) |
+| Gráficos          | Recharts                                    |
+| Animações         | Framer Motion (pacote `motion`)             |
 
 ### A confirmar
 
