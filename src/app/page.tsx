@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, Landmark, Utensils, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, Landmark, Target, Utensils, Wallet } from "lucide-react";
 import { SeletorMes } from "@/components/seletor-mes";
 import { lancamentosParaCalculo, lancamentosVAAte, listarEmprestimosParaCalculo } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
+import { metasDoMes } from "@/db/metas-do-mes";
+import { BarraProgresso } from "@/components/barra-progresso";
 import { resumoDoMes, saldoVA } from "@/lib/calculos";
 import { hojeISO, intervaloDoMes, lerMes, mesParaTexto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
@@ -24,6 +26,8 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   const dataRef = mesParaTexto(mes) === hoje.slice(0, 7) ? hoje : fim;
   const resumo = resumoDoMes(lancamentos, emprestimos, dataRef);
   const va = saldoVA(movimentosVA);
+  // Só as metas que pedem atenção (80% ou mais)
+  const metasAlerta = (await metasDoMes(mes)).filter((m) => m.estado !== "ok").sort((a, b) => b.fracao - a.fracao);
 
   const cards = [
     {
@@ -80,6 +84,25 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
             </span>
           </span>
           <ChevronRight size={20} aria-hidden />
+        </Link>
+      )}
+
+      {metasAlerta.length > 0 && (
+        <Link href={`/metas?mes=${mesParaTexto(mes)}`} className="flex flex-col gap-3 rounded-card bg-cartao p-4 shadow-suave">
+          <span className="flex items-center gap-2 font-semibold">
+            <Target size={18} aria-hidden /> Metas pedindo atenção
+          </span>
+          {metasAlerta.map((m) => (
+            <span key={m.id} className="flex flex-col gap-1 text-sm">
+              <span className="flex justify-between">
+                <span>{m.categoriaNome}</span>
+                <span className="tabular-nums">
+                  {m.estado === "estourou" ? `passou ${formatarCentavos(m.passou)}` : `${Math.round(m.fracao * 100)}%`}
+                </span>
+              </span>
+              <BarraProgresso fracao={m.fracao} estado={m.estado} rotulo={`${m.categoriaNome}: ${Math.round(m.fracao * 100)}%`} />
+            </span>
+          ))}
         </Link>
       )}
 

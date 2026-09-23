@@ -119,6 +119,11 @@ Decisão revista em 23/09/2026: **toda compra no crédito segue a fatura**, à v
 
 Limite mensal por categoria (ex. Lazer <= R$ 200). Barra de progresso: verde/menta, laranja/coral em 80%, vermelho ao estourar.
 
+- **O que conta:** gasto confirmado da categoria no mês, pela data em que o dinheiro sai. Estimado e pago com VA não contam (mesma regra do total gasto).
+- **Estados:** até 79,9% tranquilo (menta); de 80% até bater o limite, atenção (coral); **passou** do limite, estourou (vermelho). Bater exatamente o limite ainda é atenção.
+- **Uma meta por categoria**, só categoria de gasto. O limite vale pra todo mês.
+- **Alerta:** o Início mostra as metas em atenção ou estouradas. Notificação fica pra v2.
+
 ### 4.6 Empréstimos (o ponto delicado)
 
 Empréstimo **não é renda**. Separar em dois saldos:
@@ -367,6 +372,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Contas/transfer.  | v2, primeiro da fila                        |
 | Linha do tempo    | v1, Sprint 3.4                              |
 | Emoji             | nunca na interface, só ícone lucide         |
+| Meta              | gasto confirmado sem VA; estoura só ao passar do limite |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |

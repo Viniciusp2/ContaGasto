@@ -87,3 +87,25 @@ export function resumoDoMes(
     ...totaisEmprestimos(emprestimos, dataRef),
   };
 }
+
+// ---------- Metas (4.5) ----------
+
+export type EstadoMeta = "ok" | "atencao" | "estourou";
+
+// Gasto que conta pra meta: confirmado e fora do VA, igual ao total gasto
+export function gastoPorCategoria(lancamentos: (LancamentoCalculo & { categoriaId: string })[]) {
+  const porCategoria = new Map<string, number>();
+  for (const l of confirmados(lancamentos)) {
+    if (l.tipo !== "gasto" || pagoComVA(l)) continue;
+    const c = l as LancamentoCalculo & { categoriaId: string };
+    porCategoria.set(c.categoriaId, (porCategoria.get(c.categoriaId) ?? 0) + l.valor);
+  }
+  return porCategoria;
+}
+
+// Menta até 80%, coral de 80% até o limite, vermelho quando passa do limite
+export function progressoMeta(gasto: number, limite: number) {
+  const fracao = limite > 0 ? gasto / limite : 0;
+  const estado: EstadoMeta = gasto > limite ? "estourou" : fracao >= 0.8 ? "atencao" : "ok";
+  return { fracao, estado, falta: Math.max(0, limite - gasto), passou: Math.max(0, gasto - limite) };
+}

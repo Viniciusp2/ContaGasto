@@ -2,7 +2,7 @@
 import { and, asc, between, desc, eq, lte, or } from "drizzle-orm";
 import { intervaloDoMes, type Mes } from "@/lib/datas";
 import { db } from ".";
-import { categorias, emprestimos, formasPagamento, lancamentos, recorrencias } from "./schema";
+import { categorias, emprestimos, formasPagamento, lancamentos, metas, recorrencias } from "./schema";
 import { USUARIO_PADRAO } from "./usuario-padrao";
 
 const userId = USUARIO_PADRAO.id;
@@ -45,6 +45,7 @@ export function lancamentosParaCalculo(mes: Mes) {
       subtipoEntrada: lancamentos.subtipoEntrada,
       status: lancamentos.status,
       formaTipo: formasPagamento.tipo,
+      categoriaId: lancamentos.categoriaId,
     })
     .from(lancamentos)
     .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
@@ -181,4 +182,20 @@ export function listarRecorrencias() {
     .leftJoin(formasPagamento, eq(recorrencias.formaPagamentoId, formasPagamento.id))
     .where(eq(recorrencias.userId, userId))
     .orderBy(asc(recorrencias.diaDoMes), asc(recorrencias.createdAt));
+}
+
+export function listarMetas() {
+  return db
+    .select({
+      id: metas.id,
+      categoriaId: metas.categoriaId,
+      limiteMensal: metas.limiteMensal,
+      categoriaNome: categorias.nome,
+      categoriaIcone: categorias.icone,
+      categoriaCor: categorias.cor,
+    })
+    .from(metas)
+    .innerJoin(categorias, eq(metas.categoriaId, categorias.id))
+    .where(eq(metas.userId, userId))
+    .orderBy(asc(categorias.nome));
 }
