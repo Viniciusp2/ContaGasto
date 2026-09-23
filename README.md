@@ -21,3 +21,6 @@ O banco local é um Postgres embutido (PGlite), salvo em `.data/pglite`. Não pr
 | `npm run db:setup` | migrate + seed |
 | `npm run db:studio` | abre o Drizzle Studio |
 | `npm run build` | build de produção |
+| `npm test` | testes unitários (vitest) |
+
+> O banco local aceita um processo por vez. Com o `npm run dev` aberto, pare o servidor antes de rodar `db:seed`, `db:migrate` ou `db:ping`.

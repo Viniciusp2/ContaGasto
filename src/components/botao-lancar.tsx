@@ -1,8 +1,15 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Plus } from "lucide-react";
 
-// Botão flutuante "+": sempre visível, no alcance do polegar
+// Botão flutuante "+": sempre visível, no alcance do polegar.
+// Some nas telas de formulário, onde cobriria o botão de salvar.
 export function BotaoLancar() {
+  const caminho = usePathname();
+  if (caminho === "/lancamentos/novo" || caminho.endsWith("/editar")) return null;
+
   return (
     <Link
       href="/lancamentos/novo"

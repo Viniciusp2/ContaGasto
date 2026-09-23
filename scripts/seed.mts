@@ -1,7 +1,7 @@
 // Dados iniciais: usuário padrão, categorias e formas de pagamento.
 // Pode rodar quantas vezes quiser: o que já existe é ignorado.
 import { count } from "drizzle-orm";
-import { cliente, db } from "../src/db";
+import { db, fecharBanco } from "../src/db";
 import { categorias, formasPagamento, usuarios } from "../src/db/schema";
 import { USUARIO_PADRAO } from "../src/db/usuario-padrao";
 
@@ -73,4 +73,4 @@ const [f] = await db.select({ n: count() }).from(formasPagamento);
 console.log(`Seed ok: ${u.n} usuário, ${c.n} categorias, ${f.n} formas de pagamento`);
 
 // Fecha a conexão, senão o PGlite segura o processo aberto
-await cliente.close();
+await fecharBanco();
