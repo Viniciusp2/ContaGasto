@@ -96,7 +96,7 @@ Fixos (fixa, fixa variável) e temporárias devem poder ser pausados/encerrados 
 
 - Gasto conta **no dia da compra** (decisão v1, mais simples).
 - Parcelado usa a recorrência "por N meses" (4.3).
-- *Futuro (não v1):* modo "fatura" com dia de fechamento.
+- *Futuro (não v1):* modo "fatura". Cartão, limite, dia de fechamento, vencimento, fatura, compra, parcela e pagamento da fatura. É a parte que mais tende a exigir mudança estrutural, então **não cavar atalhos** que travem isso: a forma de pagamento "crédito" já existe e o lançamento guarda a data da compra, o que basta pra ligar a uma fatura depois.
 
 ### 4.5 Metas por categoria
 
@@ -131,6 +131,56 @@ Conta que cai todo mês mas com valor diferente (luz, água, gás, telefone). Re
 Campos extra em `recorrencias` pra esse tipo: `dia_vencimento`, `valor_estimado`, `meses_media` (default 3).
 Campo extra em `lancamentos`: `status` (estimado|confirmado).
 
+### 4.9 Disponível para gastar
+
+Saldo real não é o mesmo que dinheiro livre. Ter R$ 2.000 de saldo com R$ 1.500 já destinados a aluguel, parcela e objetivo não é ter R$ 2.000 pra gastar.
+
+**Disponível para gastar = saldo real − reservado em objetivos − compromissos que ainda vão cair até o fim do mês.**
+
+- **Reservado em objetivos:** saldo de todas as caixinhas (4.7).
+- **Compromissos:** fixos, parcelas e fixas variáveis (pelo valor estimado) que ainda vão cair no mês. Sem filtro por valor: tudo que vai cair conta.
+- O saldo real **não muda** ao guardar em objetivo. Só o disponível cai.
+- Se der negativo, mostrar como negativo e avisar. Nunca esconder.
+
+**Posso gastar por dia = disponível para gastar ÷ dias restantes no mês** (contando hoje). Se o disponível for zero ou negativo, mostrar "sem folga" em vez de um valor por dia.
+
+### 4.10 Linha do tempo financeira
+
+Diferencial do app: em vez de só dizer "você tem R$ X", mostrar **o que vai acontecer com esse dinheiro**.
+
+```
+HOJE
+├── R$ 2.500 salário
+├── R$ 120 mercado
+└── R$ 80 combustível
+
+PRÓXIMOS DIAS
+├── R$ 1.250 aluguel (dia 10)
+├── R$ 120 internet (dia 12)
+└── R$ 150 parcela 4/10 (dia 15)
+
+FIM DO MÊS
+└── Previsão: R$ 780 disponíveis
+```
+
+- Passado e hoje: lançamentos confirmados.
+- Próximos dias: fixos, parcelas e fixas variáveis (com tag "estimado") que ainda vão cair, em ordem de data.
+- Fim do mês: o disponível para gastar (4.9) depois de tudo cair.
+- Vive no Início. Reaproveita os mesmos cálculos do disponível, sem lógica própria.
+
+### 4.11 Contas e transferências (v2)
+
+Hoje o app diz **quanto** dinheiro existe, não **onde** ele está. Na v2:
+
+- **Contas/carteiras:** Banco A, Banco B, dinheiro, carteira digital. Cada lançamento pertence a uma conta.
+- **Transferência entre contas** é um tipo próprio de movimentação, **nunca** gasto + entrada. Sai de uma conta e entra na outra sem mexer em saldo real, gasto ou entrada do mês.
+- Melhora empréstimos e objetivos, que passam a apontar pra uma conta.
+- Vem **antes** das notificações na fila da v2.
+
+### 4.12 Histórico de alterações (v2)
+
+Dinheiro é dado sensível. Registrar quem mudou o quê e quando ("Gasto de R$ 80 alterado para R$ 95"), sem apagar o valor antigo. Fica pra depois da v1, mas a regra já vale: **lançamento apagado ou editado não some sem rastro** quando esse recurso chegar.
+
 ---
 
 ## 5. Modelo de dados (Postgres / Drizzle)
@@ -143,11 +193,17 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 - **lancamentos** — data, descricao, valor, categoria_id, forma_pagamento_id, tipo (gasto|entrada), subtipo_entrada, recorrencia_id (nullable), parcela (nullable, o X de "parcela X/N"), status (estimado|confirmado, default confirmado), obs.
 - **recorrencias** — tipo (fixa|fixa_variavel|temporaria), descricao, valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa, dia_vencimento, valor_estimado, meses_media (default 3).
 - **metas** — categoria_id, limite_mensal.
-- **objetivos** — nome, emoji, valor_alvo, data_alvo, valor_guardado.
-- **movimentos_objetivo** — objetivo_id, data, valor (guardar ou resgatar).
+- **objetivos** — nome, emoji, valor_alvo, data_alvo. **Sem `valor_guardado`**: o saldo do objetivo é a soma dos movimentos, num lugar só (ver abaixo).
+- **movimentos_objetivo** — objetivo_id, data, valor (positivo = guardar, negativo = resgatar). É a fonte da verdade do saldo do objetivo.
 - **emprestimos** — descricao, pessoa, valor, direcao (a_receber|a_pagar), data, quitado (bool), data_quitacao.
 
 > Regra: valores monetários em **inteiros de centavos** (evita erro de float). Formatar só na UI.
+
+> Regra: **saldo de objetivo nunca é gravado, sempre calculado** pela soma dos `movimentos_objetivo`. Ex.: +300, +200, −50 = R$ 450. Evita dois lugares dizendo coisas diferentes.
+
+> Regra: **geração de recorrência é idempotente.** Cada lançamento gerado por uma recorrência tem uma competência (`ano-mês`) e o banco impede dois lançamentos com a mesma `recorrencia_id + competência`. Assim, abrir o app no dia 11 ou dez vezes no mês nunca duplica a "Internet R$ 100 todo dia 10". Pra parcelas, o número da parcela também entra na chave.
+
+> Preparado pro futuro (não criar agora): `contas`, `transferencias`, `cartoes`, `faturas` e `historico_alteracoes` (seções 4.4, 4.11 e 4.12). Nada do schema atual deve travar isso.
 
 ---
 
@@ -158,10 +214,15 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 - **Saldo real** = entradas − gastos.
 - **Saldo em caixa** = saldo real + emprestimos.a_receber_em_aberto − emprestimos.a_pagar_em_aberto.
 - **Comprometido no próximo mês** = soma dos fixos ativos + parcelas que ainda vão cair.
-- **Posso gastar por dia** = saldo real / dias restantes no mês.
+- **Reservado em objetivos** = soma de todos os `movimentos_objetivo`.
+- **Compromissos até o fim do mês** = fixos + parcelas + fixas variáveis (valor estimado) que ainda vão cair no mês.
+- **Disponível para gastar** = saldo real − reservado em objetivos − compromissos até o fim do mês (ver 4.9).
+- **Posso gastar por dia** = disponível para gastar / dias restantes no mês (contando hoje). Zero ou negativo vira "sem folga".
 - **Previsão fim do mês** = (gasto até hoje / dias passados) × dias do mês.
 - **Progresso da meta** = gasto na categoria no mês / limite.
-- **Guardar por mês (objetivo)** = (valor_alvo − guardado) / meses até data_alvo.
+- **Saldo do objetivo** = soma dos movimentos desse objetivo.
+- **Guardar por mês (objetivo)** = (valor_alvo − saldo do objetivo) / meses até data_alvo.
+- **Linha do tempo** = lançamentos confirmados até hoje, mais o que ainda vai cair até o fim do mês, em ordem de data, fechando no disponível (ver 4.10).
 
 Cada cálculo com teste unitário. Nunca calcular direto no componente.
 
@@ -169,7 +230,7 @@ Cada cálculo com teste unitário. Nunca calcular direto no componente.
 
 ## 7. Telas
 
-1. **Início (painel do mês):** cards de saldo real, saldo em caixa, recebido, gasto; "posso gastar por dia"; previsão; metas estourando; contas a vencer.
+1. **Início (painel do mês):** cards de saldo real, saldo em caixa, recebido, gasto; disponível para gastar; "posso gastar por dia"; previsão; metas estourando; contas a vencer; linha do tempo financeira.
 2. **Lançamentos:** lista do mês, filtro, busca. Botão + pra novo.
 3. **Fixos & Parcelas:** o que repete, com parcela X/N e botão encerrar.
 4. **Metas:** limites por categoria com barras.
@@ -183,10 +244,10 @@ Cada cálculo com teste unitário. Nunca calcular direto no componente.
 ## 8. Funcionalidades por prioridade
 
 **v1 (essencial, ideias 1–22 aprovadas):**
-Lançar gasto/entrada rápido · recorrência fixa e temporária (parcelas) · metas · objetivos · empréstimos · saldo real vs caixa · comprometido no próximo mês · posso gastar por dia · previsão fim do mês · contas a vencer · resumo mês/trimestre/semestre/ano · gráficos (fluxo do mês, maiores vilões, por forma de pagamento, mapa de calor, por dia da semana) · assinaturas ativas · categorias com cor/ícone · modo escuro · instalar como app (PWA) · exportar Excel/PDF · backup.
+Lançar gasto/entrada rápido · recorrência fixa e temporária (parcelas) · metas · objetivos · empréstimos · saldo real vs caixa · comprometido no próximo mês · disponível para gastar · linha do tempo financeira · posso gastar por dia · previsão fim do mês · contas a vencer · resumo mês/trimestre/semestre/ano · gráficos (fluxo do mês, maiores vilões, por forma de pagamento, mapa de calor, por dia da semana) · assinaturas ativas · categorias com cor/ícone · modo escuro · instalar como app (PWA) · exportar Excel/PDF · backup.
 
 **Depois (v2, ideias 23–25 + extras que dependem de backend/notificação):**
-Notificações (alertas de categoria, lembrete de lançar, relatório mensal) · foto do comprovante · múltiplas contas/carteiras · contas compartilhadas · importar extrato CSV/OFX.
+Notificações (alertas de categoria, lembrete de lançar, relatório mensal) · foto do comprovante · múltiplas contas/carteiras e transferências entre contas (primeiro da fila, ver 4.11) · modo fatura do cartão (4.4) · histórico de alterações (4.12) · contas compartilhadas · importar extrato CSV/OFX.
 
 ---
 
@@ -203,16 +264,17 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 
 ### 🟠 Fase 2 — O coração financeiro
 
-- **Sprint 2.1** Recorrências fixas e temporárias (parcelas X/N), geração automática no mês.
+- **Sprint 2.1** Recorrências fixas e temporárias (parcelas X/N), geração automática no mês. **Idempotente**: adicionar competência (`ano-mês`) em `lancamentos` e índice único `recorrencia_id + competência` (+ parcela), com teste de gerar duas vezes sem duplicar.
 - **Sprint 2.2** Empréstimos + saldo em caixa.
 - **Sprint 2.3** Metas por categoria com barras e alertas.
-- **Sprint 2.4** Objetivos (caixinhas) com "guardar por mês".
+- **Sprint 2.4** Objetivos (caixinhas) com "guardar por mês". Migration remove `objetivos.valor_guardado`; o saldo vem da soma dos movimentos.
 
 ### 🟡 Fase 3 — Enxergar o dinheiro
 
 - **Sprint 3.1** Resumo do ano: mês/trimestre/semestre/ano.
 - **Sprint 3.2** Gráficos (fluxo do mês, maiores vilões, por forma de pagamento, por dia).
-- **Sprint 3.3** Painel do Início completo: posso gastar/dia, previsão, comprometido, contas a vencer, assinaturas ativas, mapa de calor.
+- **Sprint 3.3** Painel do Início completo: disponível para gastar, posso gastar/dia, previsão, comprometido, contas a vencer, assinaturas ativas, mapa de calor.
+- **Sprint 3.4** Linha do tempo financeira no Início (hoje, próximos dias, fim do mês), usando os mesmos cálculos do disponível.
 
 ### 🟢 Fase 4 — Acabamento
 
@@ -258,11 +320,18 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Componentes de UI | sem biblioteca, Tailwind puro (shadcn/ui e Vaul testados e descartados) |
 | Gráficos          | Recharts                                    |
 | Animações         | Framer Motion (pacote `motion`)             |
+| Disponível        | saldo real − objetivos − compromissos do mês |
+| Posso gastar/dia  | disponível ÷ dias restantes (não mais saldo real) |
+| Saldo de objetivo | calculado pelos movimentos, nunca gravado   |
+| Recorrência       | geração idempotente por competência         |
+| Contas/transfer.  | v2, primeiro da fila                        |
+| Linha do tempo    | v1, Sprint 3.4                              |
 
 ### A confirmar
 
 - 1ª cor da paleta (`#FCEFF` tem 5 dígitos, assumido `#FCEFFE`).
 - Nome oficial do app (working name: **Bolso**).
+- "Compromissos relevantes" do disponível: assumi **todos** os que ainda vão cair no mês, sem filtro por valor. Empréstimo a pagar ficou de fora porque não tem data de vencimento no modelo. Confirmar se quer incluir.
 
 ---
 
