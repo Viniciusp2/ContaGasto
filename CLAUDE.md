@@ -138,10 +138,10 @@ Campo extra em `lancamentos`: `status` (estimado|confirmado).
 Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuário quando for pro Neon.
 
 - **usuarios** — id, nome, email (auth na Fase 5).
-- **categorias** — nome, emoji, cor, tipo (gasto|entrada), ativa.
+- **categorias** — nome, emoji, icone (nome do ícone lucide), cor, tipo (gasto|entrada), ativa.
 - **formas_pagamento** — nome, tipo (pix|debito|credito|dinheiro|boleto).
-- **lancamentos** — data, descricao, valor, categoria_id, forma_pagamento_id, tipo (gasto|entrada), subtipo_entrada, recorrencia_id (nullable), obs.
-- **recorrencias** — tipo (fixa|temporaria), valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa.
+- **lancamentos** — data, descricao, valor, categoria_id, forma_pagamento_id, tipo (gasto|entrada), subtipo_entrada, recorrencia_id (nullable), parcela (nullable, o X de "parcela X/N"), status (estimado|confirmado, default confirmado), obs.
+- **recorrencias** — tipo (fixa|fixa_variavel|temporaria), descricao, valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa, dia_vencimento, valor_estimado, meses_media (default 3).
 - **metas** — categoria_id, limite_mensal.
 - **objetivos** — nome, emoji, valor_alvo, data_alvo, valor_guardado.
 - **movimentos_objetivo** — objetivo_id, data, valor (guardar ou resgatar).

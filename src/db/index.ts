@@ -9,7 +9,7 @@ mkdirSync(PASTA_BANCO, { recursive: true });
 
 // Reaproveita a conexão entre hot reloads do next dev
 const global = globalThis as unknown as { pglite?: PGlite };
-const cliente = global.pglite ?? new PGlite(PASTA_BANCO);
+export const cliente = global.pglite ?? new PGlite(PASTA_BANCO);
 if (process.env.NODE_ENV !== "production") global.pglite = cliente;
 
 export const db = drizzle(cliente, { schema });
