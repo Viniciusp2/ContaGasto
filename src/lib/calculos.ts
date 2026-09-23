@@ -109,3 +109,51 @@ export function progressoMeta(gasto: number, limite: number) {
   const estado: EstadoMeta = gasto > limite ? "estourou" : fracao >= 0.8 ? "atencao" : "ok";
   return { fracao, estado, falta: Math.max(0, limite - gasto), passou: Math.max(0, gasto - limite) };
 }
+
+// ---------- Resumo do ano (Sprint 3.1) ----------
+
+export type Periodo = "mes" | "tri" | "sem" | "ano";
+
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+// Quantos meses cabem em cada período e como chamar cada um
+const TAMANHO: Record<Periodo, number> = { mes: 1, tri: 3, sem: 6, ano: 12 };
+
+function rotuloDoPeriodo(periodo: Periodo, indice: number, ano: number): string {
+  if (periodo === "mes") return `${MESES[indice]} ${ano}`;
+  if (periodo === "tri") return `${indice + 1}º trimestre`;
+  if (periodo === "sem") return `${indice + 1}º semestre`;
+  return String(ano);
+}
+
+// Soma o ano por período com as mesmas regras do mês (sem estimado, sem empréstimo, sem VA).
+// "mesAtual" (só no ano corrente) corta o que ainda não começou e marca o período que contém o mês atual,
+// porque ele ainda não acabou.
+export function resumoPorPeriodo(
+  lancamentos: (LancamentoCalculo & { data: string })[],
+  ano: number,
+  periodo: Periodo,
+  mesAtual?: number,
+) {
+  const ateMes = mesAtual ?? 12;
+  const tamanho = TAMANHO[periodo];
+  const quantos = Math.ceil(ateMes / tamanho);
+  const grupos = Array.from({ length: quantos }, () => [] as LancamentoCalculo[]);
+  for (const l of lancamentos) {
+    if (Number(l.data.slice(0, 4)) !== ano) continue;
+    const mes = Number(l.data.slice(5, 7));
+    if (mes > ateMes) continue;
+    grupos[Math.floor((mes - 1) / tamanho)].push(l);
+  }
+  return grupos.map((grupo, i) => {
+    const entradas = totalEntradas(grupo);
+    const gasto = totalGasto(grupo);
+    return {
+      rotulo: rotuloDoPeriodo(periodo, i, ano),
+      entradas,
+      gasto,
+      saldo: entradas - gasto,
+      emAndamento: mesAtual !== undefined && i === quantos - 1,
+    };
+  });
+}

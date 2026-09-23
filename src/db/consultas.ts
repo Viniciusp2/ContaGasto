@@ -242,3 +242,27 @@ export async function buscarObjetivo(id: string) {
     .where(and(eq(objetivos.id, id), eq(objetivos.userId, userId)));
   return linha ?? null;
 }
+
+// Tudo do ano, no formato do calculos.ts (resumo do ano)
+export function lancamentosDoAno(ano: number) {
+  return db
+    .select({
+      data: lancamentos.data,
+      tipo: lancamentos.tipo,
+      valor: lancamentos.valor,
+      subtipoEntrada: lancamentos.subtipoEntrada,
+      status: lancamentos.status,
+      formaTipo: formasPagamento.tipo,
+      categoriaId: lancamentos.categoriaId,
+    })
+    .from(lancamentos)
+    .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
+    .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, `${ano}-01-01`, `${ano}-12-31`)));
+}
+
+export function listarTodasCategorias() {
+  return db
+    .select({ id: categorias.id, nome: categorias.nome, icone: categorias.icone, cor: categorias.cor })
+    .from(categorias)
+    .where(eq(categorias.userId, userId));
+}

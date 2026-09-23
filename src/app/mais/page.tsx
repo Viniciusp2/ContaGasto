@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat } from "lucide-react";
+import { CalendarRange, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat } from "lucide-react";
 
 const itens = [
   { href: "/fixos", rotulo: "Fixos e parcelas", texto: "O que repete todo mês", Icone: Repeat, cor: "bg-lavanda" },
   { href: "/cartoes", rotulo: "Cartões", texto: "Fechamento e vencimento da fatura", Icone: CreditCard, cor: "bg-coral" },
   { href: "/objetivos", rotulo: "Objetivos", texto: "Caixinhas pra juntar dinheiro", Icone: PiggyBank, cor: "bg-limao" },
+  { href: "/resumo", rotulo: "Resumo do ano", texto: "Mês, trimestre, semestre e ano", Icone: CalendarRange, cor: "bg-lavanda" },
   { href: "/emprestimos", rotulo: "Empréstimos", texto: "Quem te deve e a quem você deve", Icone: HandCoins, cor: "bg-menta" },
 ];
 
@@ -29,7 +30,7 @@ export default function Mais() {
         </Link>
       ))}
       <p className="mt-2 text-center text-sm text-tinta-suave">
-        Resumo do ano e configurações chegam nas próximas sprints.
+        Gráficos e configurações chegam nas próximas sprints.
       </p>
     </section>
   );

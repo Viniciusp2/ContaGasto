@@ -282,7 +282,7 @@ Cada cálculo com teste unitário. Nunca calcular direto no componente.
 4. **Metas:** limites por categoria com barras.
 5. **Objetivos:** as caixinhas de poupança.
 6. **Empréstimos:** a receber e a pagar.
-7. **Resumo do ano:** por mês, trimestre, semestre, ano; gráficos.
+7. **Resumo do ano:** por mês, trimestre, semestre, ano; gráficos. Mesmas regras do mês (sem estimado, empréstimo e VA). No ano corrente mostra até o mês atual e marca o período atual como "em andamento"; ano futuro não mostra nada. Inclui as 5 categorias onde mais foi dinheiro no ano.
 8. **Configurações:** categorias, formas de pagamento, tema, exportar, ano.
 
 ---
@@ -379,6 +379,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Emoji             | nunca na interface, só ícone lucide         |
 | Meta              | gasto confirmado sem VA; estoura só ao passar do limite |
 | Objetivo          | saldo = soma dos movimentos; não mexe no saldo real nem no caixa |
+| Resumo do ano     | até o mês atual, período atual "em andamento" |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |

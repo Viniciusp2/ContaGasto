@@ -90,3 +90,60 @@ describe("objetivos", () => {
     expect(validarMovimento(fd({ tipo: "doar", valor: "100", data: "2026-09-23" }), 5000).ok).toBe(false);
   });
 });
+
+import { resumoPorPeriodo } from "./calculos";
+
+describe("resumo do ano", () => {
+  const l = (data: string, tipo: "gasto" | "entrada", valor: number, extra = {}) => ({
+    data,
+    tipo,
+    valor,
+    subtipoEntrada: tipo === "entrada" ? "salario" : null,
+    status: "confirmado" as const,
+    formaTipo: null,
+    ...extra,
+  });
+  const ano = [
+    l("2026-01-05", "entrada", 500000),
+    l("2026-01-10", "gasto", 150000),
+    l("2026-02-10", "gasto", 150000),
+    l("2026-04-05", "entrada", 500000),
+    l("2026-07-10", "gasto", 30000),
+    l("2026-12-20", "gasto", 10000),
+    l("2026-03-01", "entrada", 100000, { subtipoEntrada: "emprestimo" }), // fora
+    l("2026-03-02", "gasto", 99999, { status: "estimado" }), // fora
+    l("2025-12-31", "gasto", 70000), // outro ano, fora
+  ];
+
+  it("por mês: 12 meses com os rótulos certos", () => {
+    const r = resumoPorPeriodo(ano, 2026, "mes");
+    expect(r).toHaveLength(12);
+    expect(r[0]).toMatchObject({ rotulo: "jan 2026", entradas: 500000, gasto: 150000, saldo: 350000 });
+    expect(r[2]).toMatchObject({ entradas: 0, gasto: 0 }); // empréstimo e estimado não contam
+  });
+
+  it("por trimestre e semestre", () => {
+    expect(resumoPorPeriodo(ano, 2026, "tri").map((p) => p.saldo)).toEqual([200000, 500000, -30000, -10000]);
+    expect(resumoPorPeriodo(ano, 2026, "sem").map((p) => [p.rotulo, p.saldo])).toEqual([
+      ["1º semestre", 700000],
+      ["2º semestre", -40000],
+    ]);
+  });
+
+  it("ano inteiro", () => {
+    expect(resumoPorPeriodo(ano, 2026, "ano")).toEqual([
+      { rotulo: "2026", entradas: 1000000, gasto: 340000, saldo: 660000, emAndamento: false },
+    ]);
+  });
+
+  it("ano corrente para no mês atual e marca o período que contém ele", () => {
+    const r = resumoPorPeriodo(ano, 2026, "tri", 9); // setembro ainda não acabou
+    expect(r).toHaveLength(3);
+    expect(r.map((p) => p.emAndamento)).toEqual([false, false, true]);
+    expect(resumoPorPeriodo(ano, 2026, "mes", 9).at(-1)).toMatchObject({ rotulo: "set 2026", emAndamento: true });
+    expect(resumoPorPeriodo(ano, 2026, "tri", 10).map((p) => p.emAndamento)).toEqual([false, false, false, true]);
+    const s = resumoPorPeriodo(ano, 2026, "sem", 9);
+    expect(s.map((p) => p.emAndamento)).toEqual([false, true]);
+    expect(s[1].gasto).toBe(30000); // dezembro ainda não entrou
+  });
+});
