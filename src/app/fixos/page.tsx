@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Plus, Repeat } from "lucide-react";
 import { BotaoEncerrar } from "@/components/botao-encerrar";
+import { IconeCategoria } from "@/components/icone-categoria";
 import { listarRecorrencias } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { diaCurto, hojeISO } from "@/lib/datas";
@@ -57,11 +58,11 @@ export default async function Fixos() {
           <li key={i.rec.id} className="rounded-card bg-cartao p-4 shadow-suave">
             <div className="flex items-center gap-3">
               <span
-                className="flex size-11 shrink-0 items-center justify-center rounded-full text-xl"
+                className="flex size-11 shrink-0 items-center justify-center rounded-full"
                 style={{ backgroundColor: i.categoriaCor }}
                 aria-hidden
               >
-                {i.categoriaEmoji}
+                <IconeCategoria nome={i.categoriaIcone} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{i.rec.descricao}</p>
@@ -119,8 +120,9 @@ export default async function Fixos() {
           <ul className="flex flex-col gap-2 pb-3">
             {encerrados.map((i) => (
               <li key={i.rec.id} className="flex items-center justify-between gap-2 text-sm text-tinta-suave">
-                <span className="truncate">
-                  {i.categoriaEmoji} {i.rec.descricao}
+                <span className="flex min-w-0 items-center gap-2">
+                  <IconeCategoria nome={i.categoriaIcone} size={16} />
+                  <span className="truncate">{i.rec.descricao}</span>
                 </span>
                 <span className="shrink-0 tabular-nums">{formatarCentavos(i.rec.valor)}</span>
               </li>

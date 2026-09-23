@@ -27,11 +27,13 @@ const emprestimo = (
   valor: number,
   direcao: EmprestimoCalculo["direcao"],
   quitado = false,
-): EmprestimoCalculo => ({ valor, direcao, quitado });
+  data = "2026-09-01",
+  dataQuitacao: string | null = quitado ? "2026-09-15" : null,
+): EmprestimoCalculo => ({ valor, direcao, quitado, data, dataQuitacao });
 
 describe("mês vazio", () => {
   it("tudo zerado", () => {
-    expect(resumoDoMes([])).toEqual({ entradas: 0, gasto: 0, saldoReal: 0, saldoEmCaixa: 0 });
+    expect(resumoDoMes([])).toEqual({ entradas: 0, gasto: 0, saldoReal: 0, saldoEmCaixa: 0, teDevem: 0, voceDeve: 0 });
   });
 });
 
@@ -83,29 +85,53 @@ describe("saldoReal", () => {
 describe("saldoEmCaixa", () => {
   const lancamentos = [entrada(250000), gasto(50000)]; // saldo real 2.000,00
 
+  const hoje = "2026-09-23";
+
   it("sem empréstimos é igual ao saldo real", () => {
-    expect(saldoEmCaixa(lancamentos, [])).toBe(200000);
+    expect(saldoEmCaixa(lancamentos, [], hoje)).toBe(200000);
   });
 
-  it("soma o que te devem e tira o que você deve", () => {
-    const emprestimos = [emprestimo(30000, "a_receber"), emprestimo(10000, "a_pagar")];
-    expect(saldoEmCaixa(lancamentos, emprestimos)).toBe(220000);
+  it("pegou emprestado: o dinheiro está na conta", () => {
+    expect(saldoEmCaixa(lancamentos, [emprestimo(100000, "a_pagar")], hoje)).toBe(300000);
+  });
+
+  it("emprestou: o dinheiro saiu da conta", () => {
+    expect(saldoEmCaixa(lancamentos, [emprestimo(30000, "a_receber")], hoje)).toBe(170000);
   });
 
   it("empréstimo quitado não conta mais", () => {
     const emprestimos = [emprestimo(30000, "a_receber", true), emprestimo(10000, "a_pagar", true)];
-    expect(saldoEmCaixa(lancamentos, emprestimos)).toBe(200000);
+    expect(saldoEmCaixa(lancamentos, emprestimos, hoje)).toBe(200000);
+  });
+
+  it("empréstimo feito depois da data não conta", () => {
+    expect(saldoEmCaixa(lancamentos, [emprestimo(100000, "a_pagar", false, "2026-10-05")], hoje)).toBe(200000);
+  });
+
+  it("mês passado vê o empréstimo que só foi quitado depois", () => {
+    const quitadoEmOutubro = emprestimo(100000, "a_pagar", true, "2026-08-10", "2026-10-02");
+    expect(saldoEmCaixa(lancamentos, [quitadoEmOutubro], "2026-09-30")).toBe(300000);
+    expect(saldoEmCaixa(lancamentos, [quitadoEmOutubro], "2026-10-31")).toBe(200000);
+  });
+
+  it("devolver o valor todo como gasto derruba o saldo (decisão registrada na 4.6)", () => {
+    // tinha 2.000, pegou 1.000 e devolveu 1.000 como gasto: o app mostra 1.000
+    const devolvido = emprestimo(100000, "a_pagar", true, "2026-09-02", "2026-09-20");
+    expect(saldoEmCaixa([...lancamentos, gasto(100000)], [devolvido], hoje)).toBe(100000);
   });
 });
 
 describe("resumoDoMes", () => {
   it("junta tudo num lugar só", () => {
     const lancamentos = [entrada(250000), entrada(100000, "emprestimo"), gasto(4590), gasto(9990, "estimado")];
-    expect(resumoDoMes(lancamentos, [emprestimo(5000, "a_pagar")])).toEqual({
+    const emprestimos = [emprestimo(5000, "a_pagar"), emprestimo(2000, "a_receber")];
+    expect(resumoDoMes(lancamentos, emprestimos, "2026-09-30")).toEqual({
       entradas: 250000,
       gasto: 4590,
       saldoReal: 245410,
-      saldoEmCaixa: 240410,
+      saldoEmCaixa: 248410,
+      teDevem: 2000,
+      voceDeve: 5000,
     });
   });
 });

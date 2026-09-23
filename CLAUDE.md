@@ -44,7 +44,7 @@ Princípios:
 
 ### Regras de UI
 
-- **Ícones sempre.** Biblioteca: `lucide-react`. Cada categoria tem ícone + emoji.
+- **Ícones sempre, emoji nunca** (decidido em 23/09/2026). Biblioteca: `lucide-react`. Cada categoria tem um ícone (coluna `icone`). A coluna `emoji` continua no banco, mas não aparece na tela. Objetivos também usam ícone, não emoji.
 - **Cantos arredondados** (radius 16–20px), sombras suaves.
 - **Tipografia:** uma fonte só, limpa (ex. Inter). Números com destaque.
 - **Modo escuro:** previsto (Fase 4), com versões escuras dos tokens.
@@ -80,7 +80,7 @@ Campos: data, descrição, valor, categoria, forma de pagamento, observação, `
 - ➕ Extra / freela / hora extra
 - 🎁 Doação / presente
 - 🔁 Reembolso (te devolveram)
-- 🤝 Empréstimo recebido (**tratado à parte, ver 4.6**)
+- 🤝 Empréstimo recebido: **não é mais lançado aqui**, vai na tela de Empréstimos (ver 4.6)
 - 📦 Outros
 - 🍽️ Vale alimentação (**tratado à parte, ver 4.13**)
 
@@ -124,9 +124,18 @@ Limite mensal por categoria (ex. Lazer <= R$ 200). Barra de progresso: verde/men
 Empréstimo **não é renda**. Separar em dois saldos:
 
 - **Saldo real** = entradas (sem empréstimo) − gastos. É o que é seu de verdade.
-- **Saldo em caixa** = saldo real + empréstimos a receber − empréstimos a pagar. É o que tem na conta hoje.
+- **Saldo em caixa** = saldo real − o que você emprestou (em aberto) + o que você pegou emprestado (em aberto). É o que tem na conta hoje. *(Corrigido em 23/09/2026: a fórmula antiga tinha os sinais trocados. Pegou R$ 1.000, a conta tem +R$ 1.000.)*
 
-Card próprio "Empréstimos": quem te deve, a quem você deve, com botão **quitado**. Ao pagar de volta, vira gasto na categoria "Pagamento de empréstimo".
+Tela própria "Empréstimos": quem te deve, a quem você deve.
+
+- **Registrar:** empréstimo é cadastrado **só na tela de Empréstimos**, não como lançamento. A categoria de entrada "Empréstimo recebido" foi desativada pra não ter dois lugares dizendo a mesma coisa.
+- **Prazo pra devolver** (opcional, pedido em 23/09/2026): mostra "vence em X dias" ou "atrasado X dias". Não pode ser antes da data do empréstimo.
+- **Em aberto num mês:** feito até o fim do mês e ainda não quitado naquela data. Mês passado mostra o caixa como era.
+- **Recebi de volta** (a receber): só marca quitado. Não vira entrada.
+- **Paguei** (a pagar): marca quitado e **o valor pago inteiro vira gasto** na categoria "Pagamento de empréstimo", na data do pagamento.
+  - *Decisão do Vinícius em 23/09/2026, mantida mesmo sabendo da consequência:* como o empréstimo não entrou como renda, devolver o valor todo como gasto faz o saldo real e o caixa ficarem **menores que a conta de verdade** pelo valor emprestado. Ex.: tem 2.000, pega 1.000, devolve 1.000: a conta volta a 2.000, o app mostra 1.000. **Não "consertar" sem perguntar.**
+- **Não vai voltar** (a receber): marca como perdido e o valor vira gasto (categoria "Outros"), porque o dinheiro saiu de vez.
+- **Reabrir:** desfaz a quitação e apaga o gasto que ela tinha criado.
 
 ### 4.7 Objetivos (caixinhas de poupança)
 
@@ -221,7 +230,7 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 - **metas** — categoria_id, limite_mensal.
 - **objetivos** — nome, emoji, valor_alvo, data_alvo. **Sem `valor_guardado`**: o saldo do objetivo é a soma dos movimentos, num lugar só (ver abaixo).
 - **movimentos_objetivo** — objetivo_id, data, valor (positivo = guardar, negativo = resgatar). É a fonte da verdade do saldo do objetivo.
-- **emprestimos** — descricao, pessoa, valor, direcao (a_receber|a_pagar), data, quitado (bool), data_quitacao.
+- **emprestimos** — descricao, pessoa, valor, direcao (a_receber|a_pagar), data, quitado (bool), data_quitacao, prazo (nullable), perdido (bool), lancamento_id (o gasto criado ao quitar ou perder).
 
 > Regra: valores monetários em **inteiros de centavos** (evita erro de float). Formatar só na UI.
 
@@ -239,7 +248,7 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 - **Saldo do VA** = entradas de VA − gastos pagos com VA, acumulado até o fim do mês (ver 4.13).
 - **Total entradas do mês** = soma tipo entrada, **excluindo** empréstimo recebido e vale alimentação.
 - **Saldo real** = entradas − gastos.
-- **Saldo em caixa** = saldo real + emprestimos.a_receber_em_aberto − emprestimos.a_pagar_em_aberto.
+- **Saldo em caixa** = saldo real − emprestimos.a_receber_em_aberto + emprestimos.a_pagar_em_aberto (em aberto no fim do mês visto).
 - **Comprometido no próximo mês** = soma dos fixos ativos + parcelas que ainda vão cair.
 - **Reservado em objetivos** = soma de todos os `movimentos_objetivo`.
 - **Compromissos até o fim do mês** = fixos + parcelas + fixas variáveis (valor estimado) que ainda vão cair no mês.
@@ -341,6 +350,8 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Dia 31 em mês curto | cai no último dia do mês                  |
 | Fixos             | opção "fixo" ou "por N meses"             |
 | Empréstimo       | fora da renda, saldo real vs saldo em caixa |
+| Saldo em caixa    | real − emprestei + devo (sinais corrigidos) |
+| Devolver empréstimo | valor todo vira gasto (decisão do Vinícius, ver 4.6) |
 | Banco             | Postgres (Neon), Drizzle ORM                |
 | Valores           | inteiros em centavos                        |
 | Deploy            | Vercel + Neon, só na Fase 5                |
@@ -355,6 +366,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Recorrência       | geração idempotente por competência         |
 | Contas/transfer.  | v2, primeiro da fila                        |
 | Linha do tempo    | v1, Sprint 3.4                              |
+| Emoji             | nunca na interface, só ícone lucide         |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |
@@ -363,14 +375,14 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 
 - 1ª cor da paleta (`#FCEFF` tem 5 dígitos, assumido `#FCEFFE`).
 - Nome oficial do app (working name: **Bolso**).
-- "Compromissos relevantes" do disponível: assumi **todos** os que ainda vão cair no mês, sem filtro por valor. Empréstimo a pagar ficou de fora porque não tem data de vencimento no modelo. Confirmar se quer incluir.
+- "Compromissos relevantes" do disponível: assumi **todos** os que ainda vão cair no mês, sem filtro por valor. Empréstimo a pagar ficou de fora. Agora que ele tem prazo, decidir na Sprint 3.3 se o que vence no mês entra como compromisso.
 
 ---
 
 ## 12. Glossário rápido
 
 - **Saldo real:** o que é seu (entradas − gastos, sem empréstimo).
-- **Saldo em caixa:** o que tem na conta (saldo real ± empréstimos).
+- **Saldo em caixa:** o que tem na conta (saldo real − o que você emprestou + o que você pegou emprestado).
 - **Comprometido:** fixos + parcelas que ainda vão cair.
 - **Objetivo:** meta de poupança (caixinha).
 - **Meta:** teto de gasto por categoria.

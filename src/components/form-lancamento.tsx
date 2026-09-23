@@ -3,13 +3,14 @@
 import { useActionState, useState } from "react";
 import { Check, LoaderCircle, Plus, X } from "lucide-react";
 import { salvarLancamento, type EstadoForm } from "@/app/lancamentos/actions";
+import { IconeCategoria } from "@/components/icone-categoria";
 import { diaCurto } from "@/lib/datas";
 import { centavosDeDigitos, formatarCentavos } from "@/lib/dinheiro";
 import { liquidoDoHolerite, MAX_DESCONTOS, type Holerite } from "@/lib/holerite";
 import { dataEfetiva } from "@/lib/recorrencias";
 import { MAX_DIA_UTIL, MAX_PARCELAS, type Repetir } from "@/lib/validar-lancamento";
 
-type Categoria = { id: string; nome: string; emoji: string; cor: string; tipo: "gasto" | "entrada" };
+type Categoria = { id: string; nome: string; icone: string; cor: string; tipo: "gasto" | "entrada" };
 type Forma = {
   id: string;
   nome: string;
@@ -162,9 +163,7 @@ export function FormLancamento({
                   escolhida ? "border-tinta font-semibold" : "border-transparent bg-cartao"
                 }`}
               >
-                <span className="text-xl" aria-hidden>
-                  {c.emoji}
-                </span>
+                <IconeCategoria nome={c.icone} size={22} />
                 {c.nome}
               </button>
             );

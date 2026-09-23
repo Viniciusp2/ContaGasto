@@ -23,7 +23,7 @@ export function listarLancamentosDoMes(mes: Mes) {
       totalParcelas: recorrencias.totalParcelas,
       dataCompra: lancamentos.dataCompra,
       categoriaNome: categorias.nome,
-      categoriaEmoji: categorias.emoji,
+      categoriaIcone: categorias.icone,
       categoriaCor: categorias.cor,
       formaNome: formasPagamento.nome,
     })
@@ -76,9 +76,39 @@ export function lancamentosVAAte(mes: Mes) {
 // Empréstimos não dependem do mês: o que está em aberto conta até ser quitado
 export function listarEmprestimosParaCalculo() {
   return db
-    .select({ valor: emprestimos.valor, direcao: emprestimos.direcao, quitado: emprestimos.quitado })
+    .select({
+      valor: emprestimos.valor,
+      direcao: emprestimos.direcao,
+      quitado: emprestimos.quitado,
+      data: emprestimos.data,
+      dataQuitacao: emprestimos.dataQuitacao,
+    })
     .from(emprestimos)
     .where(eq(emprestimos.userId, userId));
+}
+
+export function listarEmprestimos() {
+  return db
+    .select()
+    .from(emprestimos)
+    .where(eq(emprestimos.userId, userId))
+    .orderBy(desc(emprestimos.data), desc(emprestimos.createdAt));
+}
+
+export async function buscarEmprestimo(id: string) {
+  const [linha] = await db
+    .select()
+    .from(emprestimos)
+    .where(and(eq(emprestimos.id, id), eq(emprestimos.userId, userId)));
+  return linha ?? null;
+}
+
+export async function buscarCategoriaPorNome(nome: string, tipo: "gasto" | "entrada") {
+  const [linha] = await db
+    .select()
+    .from(categorias)
+    .where(and(eq(categorias.userId, userId), eq(categorias.nome, nome), eq(categorias.tipo, tipo)));
+  return linha ?? null;
 }
 
 export async function buscarLancamento(id: string) {
@@ -94,7 +124,7 @@ export function listarCategoriasAtivas() {
     .select({
       id: categorias.id,
       nome: categorias.nome,
-      emoji: categorias.emoji,
+      icone: categorias.icone,
       cor: categorias.cor,
       tipo: categorias.tipo,
     })
@@ -138,7 +168,7 @@ export function listarRecorrencias() {
     .select({
       rec: recorrencias,
       categoriaNome: categorias.nome,
-      categoriaEmoji: categorias.emoji,
+      categoriaIcone: categorias.icone,
       categoriaCor: categorias.cor,
       categoriaTipo: categorias.tipo,
       formaNome: formasPagamento.nome,

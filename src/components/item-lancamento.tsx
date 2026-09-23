@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IconeCategoria } from "@/components/icone-categoria";
 import type { ItemLancamento } from "@/db/consultas";
 import { diaCurto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
@@ -24,11 +25,11 @@ export function ItemLancamentoLinha({ item }: { item: ItemLancamento }) {
         }`}
       >
         <span
-          className="flex size-11 shrink-0 items-center justify-center rounded-full text-xl"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full"
           style={{ backgroundColor: item.categoriaCor }}
           aria-hidden
         >
-          {item.categoriaEmoji}
+          <IconeCategoria nome={item.categoriaIcone} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">

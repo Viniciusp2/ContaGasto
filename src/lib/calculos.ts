@@ -12,7 +12,24 @@ export type EmprestimoCalculo = {
   valor: number;
   direcao: "a_receber" | "a_pagar";
   quitado: boolean;
+  data: string;
+  dataQuitacao: string | null;
 };
+
+// Em aberto numa data: já tinha sido feito e ainda não tinha sido quitado
+export function emAbertoEm(e: EmprestimoCalculo, dataRef: string): boolean {
+  if (e.data > dataRef) return false;
+  if (!e.quitado) return true;
+  return e.dataQuitacao !== null && e.dataQuitacao > dataRef;
+}
+
+export function totaisEmprestimos(emprestimos: EmprestimoCalculo[], dataRef: string) {
+  const abertos = emprestimos.filter((e) => emAbertoEm(e, dataRef));
+  return {
+    teDevem: somar(abertos.filter((e) => e.direcao === "a_receber")),
+    voceDeve: somar(abertos.filter((e) => e.direcao === "a_pagar")),
+  };
+}
 
 // Estimado (fixa variável ainda sem valor real) nunca entra no saldo real (4.8)
 const confirmados = (lista: LancamentoCalculo[]) => lista.filter((l) => l.status === "confirmado");
@@ -40,11 +57,14 @@ export function saldoReal(lancamentos: LancamentoCalculo[]): number {
   return totalEntradas(lancamentos) - totalGasto(lancamentos);
 }
 
-export function saldoEmCaixa(lancamentos: LancamentoCalculo[], emprestimos: EmprestimoCalculo[]): number {
-  const emAberto = emprestimos.filter((e) => !e.quitado);
-  const aReceber = somar(emAberto.filter((e) => e.direcao === "a_receber"));
-  const aPagar = somar(emAberto.filter((e) => e.direcao === "a_pagar"));
-  return saldoReal(lancamentos) + aReceber - aPagar;
+// O que tem na conta (4.6): o que você emprestou saiu dela, o que pegou emprestado entrou
+export function saldoEmCaixa(
+  lancamentos: LancamentoCalculo[],
+  emprestimos: EmprestimoCalculo[],
+  dataRef: string,
+): number {
+  const { teDevem, voceDeve } = totaisEmprestimos(emprestimos, dataRef);
+  return saldoReal(lancamentos) - teDevem + voceDeve;
 }
 
 // Passe o histórico inteiro até a data que quer ver: o que sobra de VA passa pro mês seguinte
@@ -53,11 +73,17 @@ export function saldoVA(lancamentos: LancamentoCalculo[]): number {
   return somar(lista.filter(entradaDeVA)) - somar(lista.filter(pagoComVA));
 }
 
-export function resumoDoMes(lancamentos: LancamentoCalculo[], emprestimos: EmprestimoCalculo[] = []) {
+// dataRef: fim do mês visto (ou hoje, no mês atual)
+export function resumoDoMes(
+  lancamentos: LancamentoCalculo[],
+  emprestimos: EmprestimoCalculo[] = [],
+  dataRef = "9999-12-31",
+) {
   return {
     entradas: totalEntradas(lancamentos),
     gasto: totalGasto(lancamentos),
     saldoReal: saldoReal(lancamentos),
-    saldoEmCaixa: saldoEmCaixa(lancamentos, emprestimos),
+    saldoEmCaixa: saldoEmCaixa(lancamentos, emprestimos, dataRef),
+    ...totaisEmprestimos(emprestimos, dataRef),
   };
 }

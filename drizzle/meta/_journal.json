@@ -22,6 +22,13 @@
       "when": 1790192126994,
       "tag": "0002_salario_e_vale",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790193453280,
+      "tag": "0003_emprestimos",
+      "breakpoints": true
     }
   ]
 }

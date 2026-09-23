@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Landmark, Utensils, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, Landmark, Utensils, Wallet } from "lucide-react";
 import { SeletorMes } from "@/components/seletor-mes";
 import { lancamentosParaCalculo, lancamentosVAAte, listarEmprestimosParaCalculo } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { resumoDoMes, saldoVA } from "@/lib/calculos";
-import { lerMes, mesParaTexto } from "@/lib/datas";
+import { hojeISO, intervaloDoMes, lerMes, mesParaTexto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,11 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
     listarEmprestimosParaCalculo(),
     lancamentosVAAte(mes),
   ]);
-  const resumo = resumoDoMes(lancamentos, emprestimos);
+  // Caixa "de hoje" no mês atual; nos outros meses, como estava no último dia
+  const { fim } = intervaloDoMes(mes);
+  const hoje = hojeISO();
+  const dataRef = mesParaTexto(mes) === hoje.slice(0, 7) ? hoje : fim;
+  const resumo = resumoDoMes(lancamentos, emprestimos, dataRef);
   const va = saldoVA(movimentosVA);
 
   const cards = [
@@ -31,7 +35,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
     },
     {
       rotulo: "Saldo em caixa",
-      dica: "Com empréstimos",
+      dica: "O que tem na conta",
       valor: resumo.saldoEmCaixa,
       Icone: Landmark,
       cor: "bg-lavanda",
@@ -42,7 +46,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
 
   return (
     <section className="flex flex-col gap-5">
-      <h1 className="text-2xl font-bold">Oi, Vinícius 👋</h1>
+      <h1 className="text-2xl font-bold">Oi, Vinícius</h1>
       <SeletorMes mes={mes} href={(m) => `/?mes=${m}`} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -59,6 +63,25 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
           </div>
         ))}
       </div>
+
+      {(resumo.teDevem > 0 || resumo.voceDeve > 0) && (
+        <Link
+          href="/emprestimos"
+          className="flex min-h-14 items-center gap-3 rounded-card bg-cartao px-4 py-3 shadow-suave"
+        >
+          <span className="inline-flex rounded-full bg-lavanda p-2">
+            <HandCoins size={20} aria-hidden />
+          </span>
+          <span className="flex-1 text-sm">
+            <span className="block font-semibold">Empréstimos</span>
+            <span className="block text-tinta-suave">
+              Te devem <strong className="tabular-nums">{formatarCentavos(resumo.teDevem)}</strong> · Você deve{" "}
+              <strong className="tabular-nums">{formatarCentavos(resumo.voceDeve)}</strong>
+            </span>
+          </span>
+          <ChevronRight size={20} aria-hidden />
+        </Link>
+      )}
 
       {movimentosVA.length > 0 && (
         <div className="flex items-center gap-3 rounded-card bg-cartao p-4 shadow-suave">

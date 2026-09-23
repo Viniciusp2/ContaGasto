@@ -38,7 +38,8 @@ const categoriasEntrada = [
   { nome: "Extra", emoji: "➕", icone: "CirclePlus", cor: cor.verde },
   { nome: "Presente", emoji: "🎁", icone: "Gift", cor: cor.rosa },
   { nome: "Reembolso", emoji: "🔁", icone: "RotateCcw", cor: cor.azul },
-  { nome: "Empréstimo recebido", emoji: "🤝", icone: "HandCoins", cor: cor.areia },
+  // Desativada: empréstimo vai na tela de Empréstimos (4.6). Fica pra lançamentos antigos.
+  { nome: "Empréstimo recebido", emoji: "🤝", icone: "HandCoins", cor: cor.areia, ativa: false },
   { nome: "Outros", emoji: "📦", icone: "Package", cor: cor.lavanda },
   // Saldo à parte, fora do saldo real (4.13)
   { nome: "Vale alimentação", emoji: "🍽️", icone: "Utensils", cor: cor.verde },

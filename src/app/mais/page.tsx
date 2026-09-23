@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ChevronRight, CreditCard, Repeat } from "lucide-react";
+import { ChevronRight, CreditCard, HandCoins, Repeat } from "lucide-react";
 
 const itens = [
   { href: "/fixos", rotulo: "Fixos e parcelas", texto: "O que repete todo mês", Icone: Repeat, cor: "bg-lavanda" },
   { href: "/cartoes", rotulo: "Cartões", texto: "Fechamento e vencimento da fatura", Icone: CreditCard, cor: "bg-coral" },
+  { href: "/emprestimos", rotulo: "Empréstimos", texto: "Quem te deve e a quem você deve", Icone: HandCoins, cor: "bg-menta" },
 ];
 
 export default function Mais() {
@@ -27,7 +28,7 @@ export default function Mais() {
         </Link>
       ))}
       <p className="mt-2 text-center text-sm text-tinta-suave">
-        Objetivos, empréstimos, resumo do ano e configurações chegam nas próximas sprints.
+        Objetivos, resumo do ano e configurações chegam nas próximas sprints.
       </p>
     </section>
   );

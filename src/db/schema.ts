@@ -252,6 +252,12 @@ export const emprestimos = pgTable(
     data: date("data").notNull(),
     quitado: boolean("quitado").notNull().default(false),
     dataQuitacao: date("data_quitacao"),
+    // Prazo combinado pra devolver (opcional)
+    prazo: date("prazo"),
+    // "Não vai voltar": o dinheiro saiu de vez (4.6)
+    perdido: boolean("perdido").notNull().default(false),
+    // Gasto criado ao quitar ("paguei") ou perder. Reabrir apaga ele.
+    lancamentoId: uuid("lancamento_id").references(() => lancamentos.id, { onDelete: "set null" }),
     ...datas(),
   },
   (t) => [check("emprestimos_valor_positivo", sql`${t.valor} > 0`)],
