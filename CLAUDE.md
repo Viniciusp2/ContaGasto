@@ -146,6 +146,11 @@ Tela própria "Empréstimos": quem te deve, a quem você deve.
 
 Ex.: "Celular novo — R$ 2.000 até dez/2026". Mostrar: guardado, falta, **quanto guardar por mês** pra bater a data, barra de progresso. Dinheiro guardado sai do disponível, mas **não** é gasto.
 
+- **Guardar e resgatar** são movimentos da caixinha: não viram lançamento, não mudam saldo real nem saldo em caixa (o dinheiro continua na conta). Só o disponível para gastar (Sprint 3.3) desconta o guardado.
+- **Resgatar** não pode passar do que está guardado.
+- **Guardar por mês** = falta ÷ meses cheios até o mês do alvo (set até dez = 3), arredondado pra cima. Alvo no mês atual ou já passado: guardar o que falta agora.
+- **Ícone** lucide escolhido de uma lista fixa (sem emoji). Apagar o objetivo apaga o histórico dele.
+
 ### 4.8 Gastos fixos variáveis
 
 Conta que cai todo mês mas com valor diferente (luz, água, gás, telefone). Regras:
@@ -373,6 +378,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Linha do tempo    | v1, Sprint 3.4                              |
 | Emoji             | nunca na interface, só ícone lucide         |
 | Meta              | gasto confirmado sem VA; estoura só ao passar do limite |
+| Objetivo          | saldo = soma dos movimentos; não mexe no saldo real nem no caixa |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |

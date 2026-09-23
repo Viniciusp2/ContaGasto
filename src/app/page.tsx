@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, Landmark, Target, Utensils, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, Landmark, PiggyBank, Target, Utensils, Wallet } from "lucide-react";
 import { SeletorMes } from "@/components/seletor-mes";
-import { lancamentosParaCalculo, lancamentosVAAte, listarEmprestimosParaCalculo } from "@/db/consultas";
+import { lancamentosParaCalculo, lancamentosVAAte, listarEmprestimosParaCalculo, listarObjetivos } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { metasDoMes } from "@/db/metas-do-mes";
 import { BarraProgresso } from "@/components/barra-progresso";
@@ -27,6 +27,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   const resumo = resumoDoMes(lancamentos, emprestimos, dataRef);
   const va = saldoVA(movimentosVA);
   // Só as metas que pedem atenção (80% ou mais)
+  const guardado = (await listarObjetivos()).reduce((s, o) => s + o.saldo, 0);
   const metasAlerta = (await metasDoMes(mes)).filter((m) => m.estado !== "ok").sort((a, b) => b.fracao - a.fracao);
 
   const cards = [
@@ -103,6 +104,19 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
               <BarraProgresso fracao={m.fracao} estado={m.estado} rotulo={`${m.categoriaNome}: ${Math.round(m.fracao * 100)}%`} />
             </span>
           ))}
+        </Link>
+      )}
+
+      {guardado > 0 && (
+        <Link href="/objetivos" className="flex min-h-14 items-center gap-3 rounded-card bg-cartao px-4 py-3 shadow-suave">
+          <span className="inline-flex rounded-full bg-limao p-2">
+            <PiggyBank size={20} aria-hidden />
+          </span>
+          <span className="flex-1">
+            <span className="block text-sm font-semibold">Guardado em objetivos</span>
+            <span className="block text-xs text-tinta-suave">Continua na conta, mas já tem destino</span>
+          </span>
+          <span className="text-lg font-bold tabular-nums">{formatarCentavos(guardado)}</span>
         </Link>
       )}
 

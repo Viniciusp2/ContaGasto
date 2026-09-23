@@ -1,8 +1,17 @@
 // Consultas do app. Toda consulta filtra pelo usuário (na Fase 5 vira o RLS + login).
-import { and, asc, between, desc, eq, lte, or } from "drizzle-orm";
+import { and, asc, between, desc, eq, lte, or, sql } from "drizzle-orm";
 import { intervaloDoMes, type Mes } from "@/lib/datas";
 import { db } from ".";
-import { categorias, emprestimos, formasPagamento, lancamentos, metas, recorrencias } from "./schema";
+import {
+  categorias,
+  emprestimos,
+  formasPagamento,
+  lancamentos,
+  metas,
+  movimentosObjetivo,
+  objetivos,
+  recorrencias,
+} from "./schema";
 import { USUARIO_PADRAO } from "./usuario-padrao";
 
 const userId = USUARIO_PADRAO.id;
@@ -198,4 +207,38 @@ export function listarMetas() {
     .innerJoin(categorias, eq(metas.categoriaId, categorias.id))
     .where(eq(metas.userId, userId))
     .orderBy(asc(categorias.nome));
+}
+
+// Saldo de cada objetivo = soma dos movimentos (nunca gravado, 4.7)
+export function listarObjetivos() {
+  return db
+    .select({
+      id: objetivos.id,
+      nome: objetivos.nome,
+      icone: objetivos.icone,
+      valorAlvo: objetivos.valorAlvo,
+      dataAlvo: objetivos.dataAlvo,
+      saldo: sql<number>`coalesce(sum(${movimentosObjetivo.valor}), 0)::int`,
+    })
+    .from(objetivos)
+    .leftJoin(movimentosObjetivo, eq(movimentosObjetivo.objetivoId, objetivos.id))
+    .where(eq(objetivos.userId, userId))
+    .groupBy(objetivos.id)
+    .orderBy(asc(objetivos.dataAlvo));
+}
+
+export async function saldoDoObjetivo(objetivoId: string) {
+  const [linha] = await db
+    .select({ saldo: sql<number>`coalesce(sum(${movimentosObjetivo.valor}), 0)::int` })
+    .from(movimentosObjetivo)
+    .where(and(eq(movimentosObjetivo.objetivoId, objetivoId), eq(movimentosObjetivo.userId, userId)));
+  return linha?.saldo ?? 0;
+}
+
+export async function buscarObjetivo(id: string) {
+  const [linha] = await db
+    .select()
+    .from(objetivos)
+    .where(and(eq(objetivos.id, id), eq(objetivos.userId, userId)));
+  return linha ?? null;
 }

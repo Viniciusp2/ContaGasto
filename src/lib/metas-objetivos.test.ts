@@ -40,3 +40,53 @@ describe("metas", () => {
     expect(progressoMeta(25000, 20000)).toMatchObject({ falta: 0, passou: 5000 });
   });
 });
+
+import { mesesAteOAlvo, planoDoObjetivo, saldoObjetivo, validarMovimento, validarObjetivo } from "./objetivos";
+
+const fd = (campos: Record<string, string>) => {
+  const f = new FormData();
+  for (const [k, v] of Object.entries(campos)) f.set(k, v);
+  return f;
+};
+
+describe("objetivos", () => {
+  it("saldo é a soma dos movimentos", () => {
+    expect(saldoObjetivo([{ valor: 30000 }, { valor: 20000 }, { valor: -5000 }])).toBe(45000);
+    expect(saldoObjetivo([])).toBe(0);
+  });
+
+  it("meses até o alvo", () => {
+    expect(mesesAteOAlvo("2026-09-23", "2026-12-31")).toBe(3);
+    expect(mesesAteOAlvo("2026-09-23", "2027-09-01")).toBe(12);
+    expect(mesesAteOAlvo("2026-09-23", "2026-09-30")).toBe(1); // mês do alvo
+    expect(mesesAteOAlvo("2026-09-23", "2026-05-01")).toBe(1); // já passou
+  });
+
+  it("celular de R$ 2.000 até dezembro com R$ 450 guardados", () => {
+    const p = planoDoObjetivo(200000, 45000, "2026-09-23", "2026-12-31");
+    expect(p).toMatchObject({ falta: 155000, meses: 3, porMes: 51667, concluido: false, prazoPassou: false });
+    // arredondado pra cima, 3 meses guardando isso chega no alvo
+    expect(p.porMes * 3).toBeGreaterThanOrEqual(155000);
+  });
+
+  it("concluído e prazo passado", () => {
+    expect(planoDoObjetivo(100000, 120000, "2026-09-23", "2026-12-31")).toMatchObject({ falta: 0, porMes: 0, concluido: true });
+    expect(planoDoObjetivo(100000, 50000, "2026-09-23", "2026-08-01")).toMatchObject({ prazoPassou: true, meses: 1, porMes: 50000 });
+  });
+
+  it("valida o objetivo", () => {
+    const ok = validarObjetivo(fd({ nome: " Celular ", icone: "Smartphone", valorAlvo: "200000", dataAlvo: "2026-12-31" }));
+    expect(ok).toEqual({ ok: true, dados: { nome: "Celular", icone: "Smartphone", valorAlvo: 200000, dataAlvo: "2026-12-31" } });
+    expect(validarObjetivo(fd({ nome: "", valorAlvo: "100", dataAlvo: "2026-12-31" })).ok).toBe(false);
+    expect(validarObjetivo(fd({ nome: "x", icone: "Foguete", valorAlvo: "100", dataAlvo: "2026-12-31" })).ok).toBe(false);
+    expect(validarObjetivo(fd({ nome: "x", valorAlvo: "0", dataAlvo: "2026-12-31" })).ok).toBe(false);
+    expect(validarObjetivo(fd({ nome: "x", valorAlvo: "100", dataAlvo: "31/12" })).ok).toBe(false);
+  });
+
+  it("guardar e resgatar", () => {
+    expect(validarMovimento(fd({ tipo: "guardar", valor: "5000", data: "2026-09-23" }), 0)).toEqual({ ok: true, valor: 5000, data: "2026-09-23" });
+    expect(validarMovimento(fd({ tipo: "resgatar", valor: "3000", data: "2026-09-23" }), 5000)).toEqual({ ok: true, valor: -3000, data: "2026-09-23" });
+    expect(validarMovimento(fd({ tipo: "resgatar", valor: "6000", data: "2026-09-23" }), 5000).ok).toBe(false);
+    expect(validarMovimento(fd({ tipo: "doar", valor: "100", data: "2026-09-23" }), 5000).ok).toBe(false);
+  });
+});

@@ -219,10 +219,10 @@ export const objetivos = pgTable(
     id: id(),
     userId: donoId(),
     nome: text("nome").notNull(),
-    emoji: text("emoji").notNull(),
+    // Ícone lucide (sem emoji na interface). O saldo não é gravado: é a soma de movimentos_objetivo.
+    icone: text("icone").notNull().default("PiggyBank"),
     valorAlvo: integer("valor_alvo").notNull(),
     dataAlvo: date("data_alvo").notNull(),
-    valorGuardado: integer("valor_guardado").notNull().default(0),
     ...datas(),
   },
   (t) => [check("objetivos_alvo_positivo", sql`${t.valorAlvo} > 0`)],
@@ -238,7 +238,7 @@ export const movimentosObjetivo = pgTable("movimentos_objetivo", {
   // Positivo = guardar, negativo = resgatar
   valor: integer("valor").notNull(),
   ...datas(),
-});
+}, (t) => [check("movimentos_valor_nao_zero", sql`${t.valor} <> 0`)]);
 
 export const emprestimos = pgTable(
   "emprestimos",
