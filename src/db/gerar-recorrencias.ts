@@ -10,7 +10,7 @@ import { USUARIO_PADRAO } from "./usuario-padrao";
 
 const userId = USUARIO_PADRAO.id;
 
-async function valoresConfirmadosRecentes(recorrenciaId: string, quantos: number) {
+export async function valoresConfirmadosRecentes(recorrenciaId: string, quantos: number) {
   const linhas = await db
     .select({ valor: lancamentos.valor })
     .from(lancamentos)

@@ -141,3 +141,15 @@ export function mediaEstimada(confirmadosRecentes: number[], meses: number, valo
   if (ultimos.length === 0) return valorInicial;
   return Math.round(ultimos.reduce((a, b) => a + b, 0) / ultimos.length);
 }
+
+// Ocorrências que ainda não viraram lançamento e caem depois de "de" até "ate" (inclusive).
+// Base dos compromissos do mês e do comprometido no próximo mês.
+export function ocorrenciasNoIntervalo(rec: RecorrenciaBase, cartao: Cartao, de: string, ate: string): Ocorrencia[] {
+  const lista: Ocorrencia[] = [];
+  for (let k = primeiroIndicePendente(rec); k < LIMITE; k++) {
+    const o = ocorrencia(rec, k, cartao);
+    if (acabou(rec, k, o) || o.data > ate) break;
+    if (o.data > de) lista.push(o);
+  }
+  return lista;
+}

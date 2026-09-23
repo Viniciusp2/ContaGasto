@@ -56,3 +56,22 @@ export function porDiaDaSemana(lancamentos: Lanc[]) {
   }
   return SEMANA.map((dia, i) => ({ dia, valor: soma[i] }));
 }
+
+// Mapa de calor: gasto de cada dia do mês em 5 níveis (0 = nada, 4 = o dia que mais gastou)
+export function mapaDeCalor(lancamentos: Lanc[], mes: Mes) {
+  const total = diasNoMes(mes);
+  const soma = new Array(total + 1).fill(0);
+  for (const l of lancamentos) {
+    if (contaComoGasto(l)) soma[Number(l.data.slice(8, 10))] += l.valor;
+  }
+  const maior = Math.max(...soma, 0);
+  const prefixo = `${mes.ano}-${String(mes.mes).padStart(2, "0")}`;
+  const dias = Array.from({ length: total }, (_, i) => {
+    const valor = soma[i + 1];
+    const nivel = valor === 0 ? 0 : Math.min(4, Math.max(1, Math.ceil((valor / maior) * 4)));
+    return { dia: i + 1, data: `${prefixo}-${String(i + 1).padStart(2, "0")}`, valor, nivel };
+  });
+  // Quantas casas vazias antes do dia 1 (a semana começa no domingo)
+  const vazias = new Date(Date.UTC(mes.ano, mes.mes - 1, 1)).getUTCDay();
+  return { dias, vazias, maior };
+}

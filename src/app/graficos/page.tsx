@@ -8,7 +8,8 @@ import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { gastoPorCategoria } from "@/lib/calculos";
 import { diasNoMes, hojeISO, lerMes, mesParaTexto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
-import { fluxoDoMes, maioresViloes, porDiaDaSemana, porFormaPagamento } from "@/lib/graficos";
+import { fluxoDoMes, mapaDeCalor, maioresViloes, porDiaDaSemana, porFormaPagamento } from "@/lib/graficos";
+import { MapaDeCalor } from "@/components/mapa-calor";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export default async function Graficos({ searchParams }: PageProps<"/graficos">)
   const viloes = maioresViloes(gastoPorCategoria(lancamentos), new Map(categorias.map((c) => [c.id, c.nome])));
   const formas = porFormaPagamento(lancamentos);
   const semana = porDiaDaSemana(lancamentos);
+  const calor = mapaDeCalor(lancamentos, mes);
   const temGasto = viloes.length > 0;
 
   return (
@@ -79,6 +81,10 @@ export default async function Graficos({ searchParams }: PageProps<"/graficos">)
 
               <Cartao titulo="Por dia da semana" dica="Em que dia você mais gasta">
                 <GraficoSemana dias={semana} />
+              </Cartao>
+
+              <Cartao titulo="Mapa de calor" dica="Quanto mais escuro, mais você gastou no dia">
+                <MapaDeCalor dias={calor.dias} vazias={calor.vazias} hoje={hoje} />
               </Cartao>
             </>
           )}

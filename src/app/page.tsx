@@ -5,7 +5,10 @@ import { lancamentosParaCalculo, lancamentosVAAte, listarEmprestimosParaCalculo,
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { metasDoMes } from "@/db/metas-do-mes";
 import { BarraProgresso } from "@/components/barra-progresso";
-import { resumoDoMes, saldoVA } from "@/lib/calculos";
+import { contaComoGasto, resumoDoMes, saldoVA } from "@/lib/calculos";
+import { disponivelParaGastar, possoGastarPorDia, previsaoDoMes } from "@/lib/painel";
+import { assinaturasAtivas, comprometidoProximoMes, compromissosDoMes, guardadoNoMes } from "@/db/painel";
+import { CartaoDisponivel, CartaoPrevisao, CartoesDoProximoMes, ContasAVencer } from "@/components/painel";
 import { hojeISO, intervaloDoMes, lerMes, mesParaTexto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
@@ -29,6 +32,40 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   // Só as metas que pedem atenção (80% ou mais)
   const guardado = (await listarObjetivos()).reduce((s, o) => s + o.saldo, 0);
   const metasAlerta = (await metasDoMes(mes)).filter((m) => m.estado !== "ok").sort((a, b) => b.fracao - a.fracao);
+
+  // Painel de "agora" (disponível, previsão, contas a vencer): só no mês atual
+  const mesAtual = mesParaTexto(mes) === hoje.slice(0, 7);
+  const painel = mesAtual ? await montarPainel(lancamentos, resumo.saldoReal, resumo.entradas) : null;
+
+  async function montarPainel(lista: typeof lancamentos, saldoReal: number, entradas: number) {
+    const [compromissos, guardadoMes, proximo, assinaturas] = await Promise.all([
+      compromissosDoMes(hoje, mes),
+      guardadoNoMes(mes),
+      comprometidoProximoMes(mes),
+      assinaturasAtivas(hoje),
+    ]);
+    const totalCompromissos = compromissos.reduce((s, c) => s + c.valor, 0);
+    const disponivel = disponivelParaGastar(saldoReal, guardadoMes, totalCompromissos);
+    const ateHoje = lista.filter((l) => l.data <= hoje && contaComoGasto(l));
+    const previsao = previsaoDoMes({
+      gastoAteHoje: ateHoje.reduce((s, l) => s + l.valor, 0),
+      avulsoAteHoje: ateHoje.filter((l) => !l.recorrenciaId).reduce((s, l) => s + l.valor, 0),
+      compromissos: totalCompromissos,
+      hoje,
+      mes,
+    });
+    return {
+      compromissos,
+      totalCompromissos,
+      guardadoMes,
+      disponivel,
+      ...possoGastarPorDia(disponivel, hoje, mes),
+      previsao,
+      entradas,
+      proximo,
+      assinaturas,
+    };
+  }
 
   const cards = [
     {
@@ -54,6 +91,16 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
       <h1 className="text-2xl font-bold">Oi, Vinícius</h1>
       <SeletorMes mes={mes} href={(m) => `/?mes=${m}`} />
 
+      {painel && (
+        <CartaoDisponivel
+          disponivel={painel.disponivel}
+          porDia={painel.porDia}
+          diasRestantes={painel.diasRestantes}
+          guardado={painel.guardadoMes}
+          compromissos={painel.totalCompromissos}
+        />
+      )}
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map(({ rotulo, dica, valor, Icone, cor }) => (
           <div key={rotulo} className="rounded-card bg-cartao p-4 shadow-suave">
@@ -68,6 +115,18 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
           </div>
         ))}
       </div>
+
+      {painel && (
+        <>
+          <CartaoPrevisao previsao={painel.previsao} entradas={painel.entradas} />
+          <ContasAVencer itens={painel.compromissos} hoje={hoje} />
+          <CartoesDoProximoMes
+            comprometido={painel.proximo.total}
+            assinaturas={painel.assinaturas.total}
+            quantasAssinaturas={painel.assinaturas.itens.length}
+          />
+        </>
+      )}
 
       {(resumo.teDevem > 0 || resumo.voceDeve > 0) && (
         <Link

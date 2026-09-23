@@ -180,7 +180,18 @@ Saldo real não é o mesmo que dinheiro livre. Ter R$ 2.000 de saldo com R$ 1.50
 - O saldo real **não muda** ao guardar em objetivo. Só o disponível cai.
 - Se der negativo, mostrar como negativo e avisar. Nunca esconder.
 
-**Posso gastar por dia = disponível para gastar ÷ dias restantes no mês** (contando hoje). Se o disponível for zero ou negativo, mostrar "sem folga" em vez de um valor por dia.
+**Posso gastar por dia = disponível para gastar ÷ dias restantes no mês** (contando hoje). Se o disponível for zero ou negativo, mostrar "sem folga" em vez de um valor por dia. Arredonda pra baixo, pra nunca prometer centavo a mais.
+
+Detalhes decididos na Sprint 3.3:
+
+- **Reservado em objetivos = o que foi guardado (menos resgatado) no mês**, não o saldo total das caixinhas. O saldo real é do mês; descontar o guardado de meses anteriores contaria o mesmo dinheiro de novo.
+- **Compromissos** = fixos, parcelas e fixas variáveis (pela média) que caem depois de hoje até o fim do mês + contas estimadas do mês esperando confirmação + o que você deve com prazo até o fim do mês (inclusive atrasado). Entradas futuras (salário que ainda vai cair) **não** entram: o disponível é conservador. Gastos pagos com VA ficam de fora.
+- **Previsão de gasto no mês** = o que já saiu + compromissos + ritmo dos gastos **avulsos** (não recorrentes) × dias que faltam depois de hoje. A fórmula antiga (gasto até hoje ÷ dias passados × dias do mês) multiplicava o aluguel pelos dias. "Deve sobrar" = entradas que já caíram − previsão.
+- **Comprometido no próximo mês** = fixos, parcelas e fixas variáveis (pela média) que vão cair nele. Só gastos.
+- **Assinaturas ativas** = fixos na categoria Assinaturas que não foram encerrados.
+- **Contas a vencer** = os compromissos em ordem de data (até 6 na tela).
+- Disponível, posso gastar, previsão, contas a vencer e comprometido aparecem **só no mês atual**.
+- **Mapa de calor** mora na tela de Gráficos, pra não pesar o Início. Escala de um tom (coral), 5 níveis pelo dia que mais gastou, validada: número do dia legível em todo tom.
 
 ### 4.10 Linha do tempo financeira
 
@@ -262,11 +273,11 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 - **Saldo real** = entradas − gastos.
 - **Saldo em caixa** = saldo real − emprestimos.a_receber_em_aberto + emprestimos.a_pagar_em_aberto (em aberto no fim do mês visto).
 - **Comprometido no próximo mês** = soma dos fixos ativos + parcelas que ainda vão cair.
-- **Reservado em objetivos** = soma de todos os `movimentos_objetivo`.
+- **Reservado em objetivos** = soma dos `movimentos_objetivo` do mês (ver 4.9).
 - **Compromissos até o fim do mês** = fixos + parcelas + fixas variáveis (valor estimado) que ainda vão cair no mês.
 - **Disponível para gastar** = saldo real − reservado em objetivos − compromissos até o fim do mês (ver 4.9).
-- **Posso gastar por dia** = disponível para gastar / dias restantes no mês (contando hoje). Zero ou negativo vira "sem folga".
-- **Previsão fim do mês** = (gasto até hoje / dias passados) × dias do mês.
+- **Posso gastar por dia** = disponível para gastar / dias restantes no mês (contando hoje), arredondado pra baixo. Zero ou negativo vira "sem folga".
+- **Previsão fim do mês** = gasto até hoje + compromissos até o fim do mês + (gasto avulso até hoje / dias passados) × dias que faltam depois de hoje (ver 4.9).
 - **Progresso da meta** = gasto na categoria no mês / limite.
 - **Saldo do objetivo** = soma dos movimentos desse objetivo.
 - **Guardar por mês (objetivo)** = (valor_alvo − saldo do objetivo) / meses até data_alvo.
@@ -383,6 +394,9 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Objetivo          | saldo = soma dos movimentos; não mexe no saldo real nem no caixa |
 | Resumo do ano     | até o mês atual, período atual "em andamento" |
 | Gráficos          | uma série e uma cor por gráfico, valor escrito, tabela de apoio; mesmas regras do mês |
+| Previsão do mês   | já saiu + compromissos + ritmo só dos avulsos |
+| Disponível        | desconta o guardado no mês e o que ainda cai; não conta entrada futura |
+| Dívida com prazo  | entra nos compromissos do mês do prazo (e atrasada também) |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |
@@ -391,7 +405,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 
 - 1ª cor da paleta (`#FCEFF` tem 5 dígitos, assumido `#FCEFFE`).
 - Nome oficial do app (working name: **Bolso**).
-- "Compromissos relevantes" do disponível: assumi **todos** os que ainda vão cair no mês, sem filtro por valor. Empréstimo a pagar ficou de fora. Agora que ele tem prazo, decidir na Sprint 3.3 se o que vence no mês entra como compromisso.
+
 
 ---
 

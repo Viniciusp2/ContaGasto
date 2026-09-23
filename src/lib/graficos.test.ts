@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fluxoDoMes, maioresViloes, porDiaDaSemana, porFormaPagamento } from "./graficos";
+import { fluxoDoMes, mapaDeCalor, maioresViloes, porDiaDaSemana, porFormaPagamento } from "./graficos";
 
 const l = (data: string, tipo: "gasto" | "entrada", valor: number, extra = {}) => ({
   data,
@@ -76,5 +76,25 @@ describe("por dia da semana", () => {
     expect(r.find((d) => d.dia === "qua")?.valor).toBe(1500);
     expect(r.find((d) => d.dia === "sáb")?.valor).toBe(200);
     expect(r.map((d) => d.dia)).toEqual(["dom", "seg", "ter", "qua", "qui", "sex", "sáb"]);
+  });
+});
+
+describe("mapa de calor", () => {
+  it("níveis de 0 a 4 pelo maior dia", () => {
+    const m = mapaDeCalor(
+      [l("2026-09-01", "gasto", 1000), l("2026-09-02", "gasto", 4000), l("2026-09-03", "gasto", 2000), l("2026-09-04", "gasto", 100)],
+      set,
+    );
+    expect(m.dias).toHaveLength(30);
+    expect(m.dias.slice(0, 5).map((d) => d.nivel)).toEqual([1, 4, 2, 1, 0]);
+    expect(m.maior).toBe(4000);
+  });
+
+  it("setembro/2026 começa numa terça: 2 casas vazias", () => {
+    expect(mapaDeCalor([], set).vazias).toBe(2);
+  });
+
+  it("mês sem gasto fica todo no nível 0", () => {
+    expect(mapaDeCalor([l("2026-09-05", "entrada", 5000)], set).dias.every((d) => d.nivel === 0)).toBe(true);
   });
 });

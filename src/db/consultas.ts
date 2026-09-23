@@ -55,6 +55,8 @@ export function lancamentosParaCalculo(mes: Mes) {
       status: lancamentos.status,
       formaTipo: formasPagamento.tipo,
       categoriaId: lancamentos.categoriaId,
+      data: lancamentos.data,
+      recorrenciaId: lancamentos.recorrenciaId,
     })
     .from(lancamentos)
     .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
