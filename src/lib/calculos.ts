@@ -157,3 +157,13 @@ export function resumoPorPeriodo(
     };
   });
 }
+
+// Um lançamento conta como gasto do mês? (confirmado, gasto e fora do VA). Base dos gráficos.
+export function contaComoGasto(l: LancamentoCalculo): boolean {
+  return l.status === "confirmado" && l.tipo === "gasto" && !pagoComVA(l);
+}
+
+// Conta como entrada de verdade? (confirmada, sem empréstimo e sem VA)
+export function contaComoEntrada(l: LancamentoCalculo): boolean {
+  return l.status === "confirmado" && l.tipo === "entrada" && l.subtipoEntrada !== "emprestimo" && !entradaDeVA(l);
+}

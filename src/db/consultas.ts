@@ -266,3 +266,22 @@ export function listarTodasCategorias() {
     .from(categorias)
     .where(eq(categorias.userId, userId));
 }
+
+// Lançamentos do mês com o que os gráficos precisam
+export function lancamentosParaGraficos(mes: Mes) {
+  const { inicio, fim } = intervaloDoMes(mes);
+  return db
+    .select({
+      data: lancamentos.data,
+      tipo: lancamentos.tipo,
+      valor: lancamentos.valor,
+      subtipoEntrada: lancamentos.subtipoEntrada,
+      status: lancamentos.status,
+      categoriaId: lancamentos.categoriaId,
+      formaTipo: formasPagamento.tipo,
+      formaNome: formasPagamento.nome,
+    })
+    .from(lancamentos)
+    .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
+    .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, inicio, fim)));
+}

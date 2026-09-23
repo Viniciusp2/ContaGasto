@@ -133,13 +133,22 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
         </div>
       )}
 
-      <Link
-        href={`/lancamentos?mes=${mesParaTexto(mes)}`}
-        className="flex min-h-14 items-center justify-between rounded-card bg-cartao px-4 font-semibold shadow-suave"
-      >
-        Ver lançamentos do mês
-        <ChevronRight size={20} aria-hidden />
-      </Link>
+      <div className="grid grid-cols-2 gap-3">
+        <Link
+          href={`/lancamentos?mes=${mesParaTexto(mes)}`}
+          className="flex min-h-14 items-center justify-between rounded-card bg-cartao px-4 text-sm font-semibold shadow-suave"
+        >
+          Lançamentos
+          <ChevronRight size={20} aria-hidden />
+        </Link>
+        <Link
+          href={`/graficos?mes=${mesParaTexto(mes)}`}
+          className="flex min-h-14 items-center justify-between rounded-card bg-cartao px-4 text-sm font-semibold shadow-suave"
+        >
+          Gráficos
+          <ChevronRight size={20} aria-hidden />
+        </Link>
+      </div>
     </section>
   );
 }

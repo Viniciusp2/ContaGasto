@@ -40,6 +40,8 @@ Princípios:
 | Limão  | `#E8E691` | avisos, metas chegando no limite    |
 | Menta   | `#8DFFDB` | positivo, entradas, saldo saudável |
 
+**Cores dos gráficos:** o pastel não tem contraste pra desenhar barra e linha (ficou 1,2 a 1,8 contra 3:1). Nos gráficos usar os mesmos tons, mais escuros: coral `#D9622B` (gasto), menta `#1B8F6E` (saldo positivo), lavanda `#7B4FA8` (neutro). Validados com o validador de paleta (contraste, daltonismo e separação: tudo passa). Cartões e fundos continuam pastel.
+
 **Tinta (texto):** use um tom escuro pra contraste, ex. `#3A2E3F`. Pastel é pra preenchimento e acento, **nunca** texto claro sobre pastel (falha de leitura). Seguir contraste WCAG AA.
 
 ### Regras de UI
@@ -380,6 +382,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Meta              | gasto confirmado sem VA; estoura só ao passar do limite |
 | Objetivo          | saldo = soma dos movimentos; não mexe no saldo real nem no caixa |
 | Resumo do ano     | até o mês atual, período atual "em andamento" |
+| Gráficos          | uma série e uma cor por gráfico, valor escrito, tabela de apoio; mesmas regras do mês |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |
