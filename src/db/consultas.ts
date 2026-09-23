@@ -2,7 +2,7 @@
 import { and, asc, between, desc, eq } from "drizzle-orm";
 import { intervaloDoMes, type Mes } from "@/lib/datas";
 import { db } from ".";
-import { categorias, formasPagamento, lancamentos } from "./schema";
+import { categorias, emprestimos, formasPagamento, lancamentos } from "./schema";
 import { USUARIO_PADRAO } from "./usuario-padrao";
 
 const userId = USUARIO_PADRAO.id;
@@ -30,6 +30,28 @@ export function listarLancamentosDoMes(mes: Mes) {
     .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
     .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, inicio, fim)))
     .orderBy(desc(lancamentos.data), desc(lancamentos.createdAt));
+}
+
+// Só o que o calculos.ts precisa, do mês inteiro
+export function lancamentosParaCalculo(mes: Mes) {
+  const { inicio, fim } = intervaloDoMes(mes);
+  return db
+    .select({
+      tipo: lancamentos.tipo,
+      valor: lancamentos.valor,
+      subtipoEntrada: lancamentos.subtipoEntrada,
+      status: lancamentos.status,
+    })
+    .from(lancamentos)
+    .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, inicio, fim)));
+}
+
+// Empréstimos não dependem do mês: o que está em aberto conta até ser quitado
+export function listarEmprestimosParaCalculo() {
+  return db
+    .select({ valor: emprestimos.valor, direcao: emprestimos.direcao, quitado: emprestimos.quitado })
+    .from(emprestimos)
+    .where(eq(emprestimos.userId, userId));
 }
 
 export async function buscarLancamento(id: string) {
