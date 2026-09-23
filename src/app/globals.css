@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/* Tokens da paleta (ver CLAUDE.md, seção 2). Modo escuro entra na Fase 4. */
+:root {
+  --fundo: #fceffe;
+  --lavanda: #e0cfe8;
+  --coral: #ffac81;
+  --limao: #e8e691;
+  --menta: #8dffdb;
+  --tinta: #3a2e3f;
+  --tinta-suave: #6b5a72;
+  --cartao: #ffffff;
+}
+
+@theme inline {
+  --color-fundo: var(--fundo);
+  --color-lavanda: var(--lavanda);
+  --color-coral: var(--coral);
+  --color-limao: var(--limao);
+  --color-menta: var(--menta);
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-cartao: var(--cartao);
+  --font-sans: var(--font-inter);
+  --radius-card: 1.25rem;
+  --shadow-suave: 0 4px 20px -6px rgb(58 46 63 / 0.15);
+}
+
+body {
+  background: var(--fundo);
+  color: var(--tinta);
+}
