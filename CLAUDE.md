@@ -82,6 +82,9 @@ Campos: data, descrição, valor, categoria, forma de pagamento, observação, `
 - 🔁 Reembolso (te devolveram)
 - 🤝 Empréstimo recebido (**tratado à parte, ver 4.6**)
 - 📦 Outros
+- 🍽️ Vale alimentação (**tratado à parte, ver 4.13**)
+
+**Salário e holerite (decidido em 23/09/2026):** o que conta no saldo é o **líquido**, o que cai na conta. Bruto e descontos (INSS, IR, plano de saúde...) podem ser detalhados no lançamento do salário **só pra consulta**: não viram lançamentos e não aparecem em gastos. Com o holerite preenchido, o valor do lançamento é sempre bruto − descontos.
 
 ### 4.3 Recorrência
 
@@ -95,6 +98,8 @@ Fixos (fixa, fixa variável) e temporárias devem poder ser pausados/encerrados 
 **Quando uma recorrência vira lançamento:** só quando a data chega (a data em que o dinheiro sai, ver 4.4 pro crédito). Antes disso ela é um **compromisso** (aparece em "próximos dias" e no disponível para gastar), mas não mexe no saldo real. Ex.: aluguel dia 10, hoje é dia 5: é compromisso; no dia 10 vira lançamento.
 
 - **Dia que não existe no mês** (31 em fevereiro, 30 em fevereiro...): cai no **último dia do mês**.
+- **Dia útil:** fixo e fixa variável podem cair no **Nº dia útil** do mês (ex. salário no 5º dia útil) ou no **último dia útil**. Dia útil = segunda a sábado (**sábado conta**, regra do Ministério do Trabalho pro pagamento de salário; dá pra desligar em cada fixo), tirando domingo e **feriados nacionais**, inclusive a Sexta-feira Santa. Feriado estadual e municipal não entram. Carnaval e Corpus Christi são ponto facultativo, não feriado nacional, então contam como dia útil.
+- **"Todo mês, valor muda"** vale pra gasto e pra entrada (salário líquido que varia com hora extra e IR). Enquanto estimado, não entra no saldo real.
 - **Parcelado:** o usuário digita o **valor de cada parcela** e o número de parcelas. A parcela 1 é a da compra (no crédito, segue a fatura, ver 4.4).
 - **Apagou um lançamento gerado?** Ele não volta. A recorrência guarda até que mês já gerou (`gerada_ate`).
 
@@ -180,6 +185,15 @@ FIM DO MÊS
 - Fim do mês: o disponível para gastar (4.9) depois de tudo cair.
 - Vive no Início. Reaproveita os mesmos cálculos do disponível, sem lógica própria.
 
+### 4.13 Vale alimentação (benefício)
+
+VA só compra comida, então **não é dinheiro livre**. Ele tem **saldo próprio** e fica fora do saldo real, das entradas, dos gastos e do "posso gastar".
+
+- **Recebeu o VA:** entrada na categoria "Vale alimentação" (subtipo `beneficio`). Pode ser fixo, ex. todo dia 25.
+- **Pagou com o VA:** gasto com a forma de pagamento "Vale alimentação" (tipo `beneficio`).
+- **Saldo do VA** = tudo que entrou de VA − tudo que foi pago com VA, acumulado (o que sobra passa pro mês seguinte).
+- É uma versão mínima das carteiras da 4.11. Quando as carteiras chegarem, o VA vira uma delas.
+
 ### 4.11 Contas e transferências (v2)
 
 Hoje o app diz **quanto** dinheiro existe, não **onde** ele está. Na v2:
@@ -201,9 +215,9 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 
 - **usuarios** — id, nome, email (auth na Fase 5).
 - **categorias** — nome, emoji, icone (nome do ícone lucide), cor, tipo (gasto|entrada), ativa.
-- **formas_pagamento** — nome, tipo (pix|debito|credito|dinheiro|boleto), dia_fechamento e dia_vencimento (só crédito, nullable).
-- **lancamentos** — data (quando o dinheiro sai), data_compra, competencia (`YYYY-MM`, só em lançamento gerado por recorrência), descricao, valor, categoria_id, forma_pagamento_id, tipo (gasto|entrada), subtipo_entrada, recorrencia_id (nullable), parcela (nullable, o X de "parcela X/N"), status (estimado|confirmado, default confirmado), obs.
-- **recorrencias** — tipo (fixa|fixa_variavel|temporaria), descricao, valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa, dia_vencimento, valor_estimado, meses_media (default 3), gerada_ate (`YYYY-MM`).
+- **formas_pagamento** — nome, tipo (pix|debito|credito|dinheiro|boleto|beneficio), dia_fechamento e dia_vencimento (só crédito, nullable).
+- **lancamentos** — data (quando o dinheiro sai), data_compra, competencia (`YYYY-MM`, só em lançamento gerado por recorrência), descricao, valor, categoria_id, forma_pagamento_id, tipo (gasto|entrada), subtipo_entrada, recorrencia_id (nullable), parcela (nullable, o X de "parcela X/N"), status (estimado|confirmado, default confirmado), holerite (jsonb opcional: bruto e descontos), obs. subtipo_entrada ganha `beneficio`.
+- **recorrencias** — tipo (fixa|fixa_variavel|temporaria), descricao, valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa, dia_vencimento, valor_estimado, meses_media (default 3), gerada_ate (`YYYY-MM`), dia_util (Nº dia útil; -1 = último; null = dia fixo), sabado_util (default true).
 - **metas** — categoria_id, limite_mensal.
 - **objetivos** — nome, emoji, valor_alvo, data_alvo. **Sem `valor_guardado`**: o saldo do objetivo é a soma dos movimentos, num lugar só (ver abaixo).
 - **movimentos_objetivo** — objetivo_id, data, valor (positivo = guardar, negativo = resgatar). É a fonte da verdade do saldo do objetivo.
@@ -221,8 +235,9 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 
 ## 6. Cálculos-chave (deixar num módulo `lib/calculos.ts`, testável)
 
-- **Total gasto no mês** = soma de lancamentos tipo gasto no mês.
-- **Total entradas do mês** = soma tipo entrada, **excluindo** empréstimo recebido.
+- **Total gasto no mês** = soma de lancamentos tipo gasto no mês, **excluindo** os pagos com vale alimentação.
+- **Saldo do VA** = entradas de VA − gastos pagos com VA, acumulado até o fim do mês (ver 4.13).
+- **Total entradas do mês** = soma tipo entrada, **excluindo** empréstimo recebido e vale alimentação.
 - **Saldo real** = entradas − gastos.
 - **Saldo em caixa** = saldo real + emprestimos.a_receber_em_aberto − emprestimos.a_pagar_em_aberto.
 - **Comprometido no próximo mês** = soma dos fixos ativos + parcelas que ainda vão cair.
@@ -340,6 +355,9 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Recorrência       | geração idempotente por competência         |
 | Contas/transfer.  | v2, primeiro da fila                        |
 | Linha do tempo    | v1, Sprint 3.4                              |
+| Salário           | líquido no saldo; holerite só pra consulta  |
+| Dia útil          | seg a sáb, sem feriados nacionais           |
+| Vale alimentação  | saldo próprio, fora do saldo real            |
 
 ### A confirmar
 

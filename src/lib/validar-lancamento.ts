@@ -1,5 +1,6 @@
 import { dataValida } from "./datas";
 import { MAX_CENTAVOS } from "./dinheiro";
+import { lerHolerite, liquidoDoHolerite, type Holerite } from "./holerite";
 
 export type DadosLancamento = {
   tipo: "gasto" | "entrada";
@@ -11,7 +12,12 @@ export type DadosLancamento = {
   obs: string | null;
   repetir: Repetir;
   parcelas: number | null; // só no parcelado
+  diaUtil: number | null; // Nº dia útil, -1 = último, null = dia fixo
+  sabadoUtil: boolean;
+  holerite: Holerite | null;
 };
+
+export const MAX_DIA_UTIL = 22;
 
 export type Repetir = "unico" | "fixa" | "fixa_variavel" | "temporaria";
 
@@ -52,9 +58,34 @@ export function validarLancamento(formData: FormData): Resultado {
 
   const repetir = (texto(formData, "repetir") || "unico") as Repetir;
   if (!REPETIR.includes(repetir)) return { ok: false, erro: "Escolha como repete." };
-  if (tipo === "entrada" && (repetir === "fixa_variavel" || repetir === "temporaria")) {
-    return { ok: false, erro: "Entrada só pode ser única ou todo mês." };
+  if (tipo === "entrada" && repetir === "temporaria") {
+    return { ok: false, erro: "Entrada não pode ser parcelada." };
   }
+
+  // Que dia cai: dia fixo do mês, Nº dia útil ou último dia útil (só fixo e fixa variável)
+  let diaUtil: number | null = null;
+  const quando = texto(formData, "quando") || "dia";
+  if (repetir === "fixa" || repetir === "fixa_variavel") {
+    if (quando === "ultimo_util") diaUtil = -1;
+    else if (quando === "util") {
+      diaUtil = Number(texto(formData, "diaUtil"));
+      if (!Number.isInteger(diaUtil) || diaUtil < 1 || diaUtil > MAX_DIA_UTIL) {
+        return { ok: false, erro: `Dia útil vai de 1 a ${MAX_DIA_UTIL}.` };
+      }
+    } else if (quando !== "dia") return { ok: false, erro: "Escolha em que dia cai." };
+  }
+  const sabadoUtil = texto(formData, "sabadoUtil") !== "nao";
+
+  // Holerite só em entrada. Com ele, o valor é sempre o líquido.
+  let holerite: Holerite | null = null;
+  const jsonHolerite = texto(formData, "holerite");
+  if (jsonHolerite) {
+    if (tipo !== "entrada") return { ok: false, erro: "Holerite é só pra entrada." };
+    const lido = lerHolerite(jsonHolerite);
+    if (!lido.ok) return { ok: false, erro: lido.erro };
+    holerite = lido.holerite;
+  }
+  const valorFinal = holerite ? liquidoDoHolerite(holerite) : valor;
 
   let parcelas: number | null = null;
   if (repetir === "temporaria") {
@@ -68,7 +99,7 @@ export function validarLancamento(formData: FormData): Resultado {
     ok: true,
     dados: {
       tipo,
-      valor,
+      valor: valorFinal,
       data,
       categoriaId,
       formaPagamentoId: formaPagamentoId || null,
@@ -76,6 +107,9 @@ export function validarLancamento(formData: FormData): Resultado {
       obs: obs || null,
       repetir,
       parcelas,
+      diaUtil,
+      sabadoUtil,
+      holerite,
     },
   };
 }

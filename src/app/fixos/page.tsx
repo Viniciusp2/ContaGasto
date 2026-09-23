@@ -5,7 +5,7 @@ import { listarRecorrencias } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { diaCurto, hojeISO } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
-import { proximaOcorrencia, quantasGeradas } from "@/lib/recorrencias";
+import { descreverDia, proximaOcorrencia, quantasGeradas } from "@/lib/recorrencias";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +67,7 @@ export default async function Fixos() {
                 <p className="truncate font-semibold">{i.rec.descricao}</p>
                 <p className="truncate text-sm text-tinta-suave">
                   {rotuloTipo[i.rec.tipo]}
+                  {i.rec.tipo !== "temporaria" ? `, ${descreverDia(i.rec)}` : ""}
                   {i.formaNome ? ` · ${i.formaNome}` : ""}
                 </p>
               </div>

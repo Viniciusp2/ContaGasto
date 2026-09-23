@@ -40,6 +40,8 @@ const categoriasEntrada = [
   { nome: "Reembolso", emoji: "🔁", icone: "RotateCcw", cor: cor.azul },
   { nome: "Empréstimo recebido", emoji: "🤝", icone: "HandCoins", cor: cor.areia },
   { nome: "Outros", emoji: "📦", icone: "Package", cor: cor.lavanda },
+  // Saldo à parte, fora do saldo real (4.13)
+  { nome: "Vale alimentação", emoji: "🍽️", icone: "Utensils", cor: cor.verde },
 ];
 
 const formas = [
@@ -48,6 +50,7 @@ const formas = [
   { nome: "Crédito", tipo: "credito" },
   { nome: "Dinheiro", tipo: "dinheiro" },
   { nome: "Boleto", tipo: "boleto" },
+  { nome: "Vale alimentação", tipo: "beneficio" },
 ] as const;
 
 const userId = USUARIO_PADRAO.id;

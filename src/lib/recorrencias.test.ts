@@ -21,6 +21,8 @@ function rec(campos: Partial<RecorrenciaBase>): RecorrenciaBase {
     dataFim: null,
     totalParcelas: null,
     geradaAte: null,
+    diaUtil: null,
+    sabadoUtil: true,
     ...campos,
   };
 }

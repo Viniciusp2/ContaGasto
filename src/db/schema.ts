@@ -7,6 +7,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -15,6 +16,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { Holerite } from "@/lib/holerite";
 
 // ---------- Enums ----------
 
@@ -28,6 +30,7 @@ export const subtipoEntrada = pgEnum("subtipo_entrada", [
   "reembolso",
   "emprestimo",
   "outros",
+  "beneficio", // vale alimentação: saldo à parte (4.13)
 ]);
 
 export const tipoFormaPagamento = pgEnum("tipo_forma_pagamento", [
@@ -36,6 +39,7 @@ export const tipoFormaPagamento = pgEnum("tipo_forma_pagamento", [
   "credito",
   "dinheiro",
   "boleto",
+  "beneficio", // pagar com vale alimentação (4.13)
 ]);
 
 // Seção 4.3. Lançamento sem recorrência é "único".
@@ -133,6 +137,9 @@ export const recorrencias = pgTable(
     mesesMedia: integer("meses_media").notNull().default(3),
     // "YYYY-MM" da última ocorrência já gerada. Assim, lançamento apagado não volta.
     geradaAte: text("gerada_ate"),
+    // Nº dia útil do mês (-1 = último). Null = cai no dia_do_mes.
+    diaUtil: integer("dia_util"),
+    sabadoUtil: boolean("sabado_util").notNull().default(true),
     ...datas(),
   },
   (t) => [
@@ -170,6 +177,8 @@ export const lancamentos = pgTable(
     dataCompra: date("data_compra"),
     // "YYYY-MM" da ocorrência, só em lançamento gerado por recorrência
     competencia: text("competencia"),
+    // Só no salário, só pra consulta: bruto e descontos. O valor é o líquido (4.2).
+    holerite: jsonb("holerite").$type<Holerite>(),
     obs: text("obs"),
     ...datas(),
   },

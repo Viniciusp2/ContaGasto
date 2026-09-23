@@ -10,7 +10,7 @@ import { lancamentos, recorrencias } from "@/db/schema";
 import { USUARIO_PADRAO } from "@/db/usuario-padrao";
 import { mesDe, mesParaTexto } from "@/lib/datas";
 import { subtipoDaCategoria } from "@/lib/entradas";
-import { dataEfetiva } from "@/lib/recorrencias";
+import { dataEfetiva, primeiroDiaUtilAPartirDe } from "@/lib/recorrencias";
 import { ehUuid, validarLancamento } from "@/lib/validar-lancamento";
 
 export type EstadoForm = { erro?: string };
@@ -29,23 +29,31 @@ export async function salvarLancamento(_anterior: EstadoForm, formData: FormData
 
   const forma = d.formaPagamentoId ? await buscarFormaPagamento(d.formaPagamentoId) : null;
   if (d.formaPagamentoId && !forma) return { erro: "Forma de pagamento inválida." };
+  // VA recebido é a categoria "Vale alimentação"; a forma VA é só pra pagar (4.13)
+  if (forma?.tipo === "beneficio" && d.tipo === "entrada") {
+    return { erro: "Pra registrar o VA recebido, use a categoria Vale alimentação sem forma de pagamento." };
+  }
 
   const descricao = d.descricao || categoria.nome;
   const id = String(formData.get("id") ?? "");
 
   // Repete: vira recorrência e o gerador cria os lançamentos quando a data chegar
   if (!id && d.repetir !== "unico") {
+    // No dia útil, a primeira vez é o próximo Nº dia útil a partir da data escolhida
+    const inicio = d.diaUtil !== null ? primeiroDiaUtilAPartirDe(d.data, d.diaUtil, d.sabadoUtil) : d.data;
     await db.insert(recorrencias).values({
       userId,
       tipo: d.repetir,
       descricao,
       valor: d.valor,
-      diaDoMes: Number(d.data.slice(8, 10)),
+      diaDoMes: Number(inicio.slice(8, 10)),
+      diaUtil: d.diaUtil,
+      sabadoUtil: d.sabadoUtil,
       categoriaId: d.categoriaId,
       formaPagamentoId: d.formaPagamentoId,
       totalParcelas: d.parcelas,
-      dataInicio: d.data,
-      diaVencimento: d.repetir === "fixa_variavel" ? Number(d.data.slice(8, 10)) : null,
+      dataInicio: inicio,
+      diaVencimento: d.repetir === "fixa_variavel" ? Number(inicio.slice(8, 10)) : null,
       valorEstimado: d.repetir === "fixa_variavel" ? d.valor : null,
     });
     await gerarRecorrencias();
@@ -65,6 +73,7 @@ export async function salvarLancamento(_anterior: EstadoForm, formData: FormData
     tipo: d.tipo,
     subtipoEntrada: d.tipo === "entrada" ? subtipoDaCategoria(categoria.nome) : null,
     obs: d.obs,
+    holerite: d.holerite,
   };
 
   if (id) {

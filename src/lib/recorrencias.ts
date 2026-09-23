@@ -1,5 +1,6 @@
 // Recorrências e fatura do cartão (CLAUDE.md, 4.3, 4.4 e 4.8). Funções puras, testadas.
 import { diasNoMes, mesDe, mesParaTexto, somarMeses, type Mes } from "./datas";
+import { diaUtilDoMes } from "./dias-uteis";
 
 export type Cartao = { diaFechamento: number | null; diaVencimento: number | null } | null;
 
@@ -10,6 +11,8 @@ export type RecorrenciaBase = {
   dataFim: string | null; // encerrada: nada depois disso é gerado
   totalParcelas: number | null;
   geradaAte: string | null; // "YYYY-MM" da última competência já gerada
+  diaUtil: number | null; // Nº dia útil (-1 = último). Null = cai no diaDoMes.
+  sabadoUtil: boolean;
 };
 
 export type Ocorrencia = {
@@ -57,7 +60,12 @@ export function dataEfetiva(dataCompra: string, cartao: Cartao): string {
 export function ocorrencia(rec: RecorrenciaBase, k: number, cartao: Cartao): Ocorrencia {
   const mes0 = mesDe(rec.dataInicio);
   const mes = somarMeses(mes0, k);
-  const dataCompra = k === 0 ? rec.dataInicio : dataNoMes(mes, rec.diaDoMes);
+  const dataCompra =
+    rec.diaUtil !== null
+      ? diaUtilDoMes(mes, rec.diaUtil, rec.sabadoUtil)
+      : k === 0
+        ? rec.dataInicio
+        : dataNoMes(mes, rec.diaDoMes);
 
   let data = dataCompra;
   if (cartaoConfigurado(cartao)) {
@@ -111,6 +119,20 @@ export function proximaOcorrencia(rec: RecorrenciaBase, cartao: Cartao, hoje: st
 // Quantas ocorrências já viraram lançamento
 export function quantasGeradas(rec: RecorrenciaBase): number {
   return primeiroIndicePendente(rec);
+}
+
+// Primeira ocorrência de uma regra de dia útil a partir de uma data (se já passou no mês, vai pro próximo)
+export function primeiroDiaUtilAPartirDe(dataISO: string, n: number, sabadoUtil: boolean): string {
+  const mes = mesDe(dataISO);
+  const nesteMes = diaUtilDoMes(mes, n, sabadoUtil);
+  return nesteMes >= dataISO ? nesteMes : diaUtilDoMes(somarMeses(mes, 1), n, sabadoUtil);
+}
+
+// "5º dia útil", "último dia útil", "dia 10"
+export function descreverDia(rec: Pick<RecorrenciaBase, "diaUtil" | "diaDoMes">): string {
+  if (rec.diaUtil === -1) return "último dia útil";
+  if (rec.diaUtil !== null) return `${rec.diaUtil}º dia útil`;
+  return `dia ${rec.diaDoMes}`;
 }
 
 // Fixa variável: média dos últimos N valores confirmados (mais recente primeiro). Sem histórico, o valor digitado.

@@ -50,6 +50,7 @@ export default async function EditarLancamento({ params }: PageProps<"/lancament
           formaPagamentoId: lancamento.formaPagamentoId,
           obs: lancamento.obs,
           estimado: lancamento.status === "estimado",
+          holerite: lancamento.holerite,
         }}
       />
       <BotaoApagar id={lancamento.id} mes={mes} />

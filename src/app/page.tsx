@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Landmark, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, Landmark, Utensils, Wallet } from "lucide-react";
 import { SeletorMes } from "@/components/seletor-mes";
-import { lancamentosParaCalculo, listarEmprestimosParaCalculo } from "@/db/consultas";
+import { lancamentosParaCalculo, lancamentosVAAte, listarEmprestimosParaCalculo } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
-import { resumoDoMes } from "@/lib/calculos";
+import { resumoDoMes, saldoVA } from "@/lib/calculos";
 import { lerMes, mesParaTexto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
@@ -13,11 +13,13 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   await gerarRecorrencias(); // fixos e parcelas que chegaram viram lançamento
   const params = await searchParams;
   const mes = lerMes(typeof params.mes === "string" ? params.mes : undefined);
-  const [lancamentos, emprestimos] = await Promise.all([
+  const [lancamentos, emprestimos, movimentosVA] = await Promise.all([
     lancamentosParaCalculo(mes),
     listarEmprestimosParaCalculo(),
+    lancamentosVAAte(mes),
   ]);
   const resumo = resumoDoMes(lancamentos, emprestimos);
+  const va = saldoVA(movimentosVA);
 
   const cards = [
     {
@@ -57,6 +59,19 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
           </div>
         ))}
       </div>
+
+      {movimentosVA.length > 0 && (
+        <div className="flex items-center gap-3 rounded-card bg-cartao p-4 shadow-suave">
+          <span className="inline-flex rounded-full bg-menta p-2">
+            <Utensils size={20} aria-hidden />
+          </span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold">Vale alimentação</p>
+            <p className="text-xs text-tinta-suave">Saldo à parte, só pra comida</p>
+          </div>
+          <p className="text-lg font-bold tabular-nums">{formatarCentavos(va)}</p>
+        </div>
+      )}
 
       <Link
         href={`/lancamentos?mes=${mesParaTexto(mes)}`}

@@ -15,6 +15,13 @@
       "when": 1790189968149,
       "tag": "0001_fatura_e_recorrencias",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790192126994,
+      "tag": "0002_salario_e_vale",
+      "breakpoints": true
     }
   ]
 }

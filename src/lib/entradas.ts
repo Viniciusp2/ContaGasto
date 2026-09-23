@@ -6,6 +6,7 @@ export type SubtipoEntrada =
   | "doacao"
   | "reembolso"
   | "emprestimo"
+  | "beneficio"
   | "outros";
 
 const porCategoria: Record<string, SubtipoEntrada> = {
@@ -14,6 +15,7 @@ const porCategoria: Record<string, SubtipoEntrada> = {
   Presente: "doacao",
   Reembolso: "reembolso",
   "Empréstimo recebido": "emprestimo",
+  "Vale alimentação": "beneficio",
   Outros: "outros",
 };
 

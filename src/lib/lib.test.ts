@@ -127,8 +127,33 @@ describe("validarLancamento", () => {
         obs: null,
         repetir: "unico",
         parcelas: null,
+        diaUtil: null,
+        sabadoUtil: true,
+        holerite: null,
       },
     });
+  });
+
+  it("salário no 5º dia útil e último dia útil", () => {
+    const r = validarLancamento(form({ tipo: "entrada", repetir: "fixa", quando: "util", diaUtil: "5" }));
+    expect(r.ok && [r.dados.diaUtil, r.dados.sabadoUtil]).toEqual([5, true]);
+    const u = validarLancamento(form({ repetir: "fixa", quando: "ultimo_util", sabadoUtil: "nao" }));
+    expect(u.ok && [u.dados.diaUtil, u.dados.sabadoUtil]).toEqual([-1, false]);
+  });
+
+  it("parcelado ignora o dia útil", () => {
+    const r = validarLancamento(form({ repetir: "temporaria", parcelas: "3", quando: "util", diaUtil: "5" }));
+    expect(r.ok && r.dados.diaUtil).toBe(null);
+  });
+
+  it("com holerite, o valor vira o líquido", () => {
+    const holerite = JSON.stringify({ bruto: 600000, descontos: [{ nome: "INSS", valor: 66000 }, { nome: "IR", valor: 34000 }] });
+    const r = validarLancamento(form({ tipo: "entrada", valor: "1", holerite }));
+    expect(r.ok && r.dados.valor).toBe(500000);
+  });
+
+  it("entrada pode ter valor variável", () => {
+    expect(validarLancamento(form({ tipo: "entrada", repetir: "fixa_variavel" })).ok).toBe(true);
   });
 
   it("aceita repetições", () => {
@@ -162,7 +187,11 @@ describe("validarLancamento", () => {
     ["parcelado em 1x", { repetir: "temporaria", parcelas: "1" }],
     ["parcelado em 73x", { repetir: "temporaria", parcelas: "73" }],
     ["entrada parcelada", { tipo: "entrada", repetir: "temporaria", parcelas: "3" }],
-    ["entrada com valor variável", { tipo: "entrada", repetir: "fixa_variavel" }],
+    ["dia útil 0", { repetir: "fixa", quando: "util", diaUtil: "0" }],
+    ["dia útil 30", { repetir: "fixa", quando: "util", diaUtil: "30" }],
+    ["quando inválido", { repetir: "fixa", quando: "sempre" }],
+    ["holerite em gasto", { holerite: JSON.stringify({ bruto: 500000, descontos: [] }) }],
+    ["holerite com descontos maiores que o bruto", { tipo: "entrada", holerite: JSON.stringify({ bruto: 1000, descontos: [{ nome: "INSS", valor: 2000 }] }) }],
   ])("recusa: %s", (_nome, campos) => {
     expect(validarLancamento(form(campos)).ok).toBe(false);
   });

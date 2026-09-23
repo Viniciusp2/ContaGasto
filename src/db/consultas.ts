@@ -1,5 +1,5 @@
 // Consultas do app. Toda consulta filtra pelo usuário (na Fase 5 vira o RLS + login).
-import { and, asc, between, desc, eq } from "drizzle-orm";
+import { and, asc, between, desc, eq, lte, or } from "drizzle-orm";
 import { intervaloDoMes, type Mes } from "@/lib/datas";
 import { db } from ".";
 import { categorias, emprestimos, formasPagamento, lancamentos, recorrencias } from "./schema";
@@ -44,9 +44,33 @@ export function lancamentosParaCalculo(mes: Mes) {
       valor: lancamentos.valor,
       subtipoEntrada: lancamentos.subtipoEntrada,
       status: lancamentos.status,
+      formaTipo: formasPagamento.tipo,
     })
     .from(lancamentos)
+    .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
     .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, inicio, fim)));
+}
+
+// Tudo que mexeu no VA até o fim do mês: o saldo dele é acumulado (4.13)
+export function lancamentosVAAte(mes: Mes) {
+  const { fim } = intervaloDoMes(mes);
+  return db
+    .select({
+      tipo: lancamentos.tipo,
+      valor: lancamentos.valor,
+      subtipoEntrada: lancamentos.subtipoEntrada,
+      status: lancamentos.status,
+      formaTipo: formasPagamento.tipo,
+    })
+    .from(lancamentos)
+    .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
+    .where(
+      and(
+        eq(lancamentos.userId, userId),
+        lte(lancamentos.data, fim),
+        or(eq(lancamentos.subtipoEntrada, "beneficio"), eq(formasPagamento.tipo, "beneficio")),
+      ),
+    );
 }
 
 // Empréstimos não dependem do mês: o que está em aberto conta até ser quitado
