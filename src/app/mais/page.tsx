@@ -5,7 +5,7 @@ import { BotaoSair } from "@/components/botao-sair";
 import { FormSenha } from "@/components/form-senha";
 import { obterAcesso } from "@/db/acesso";
 import { COOKIE_TEMA, lerTema } from "@/lib/tema";
-import { CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat } from "lucide-react";
+import { Tags, CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat } from "lucide-react";
 
 const itens = [
   { href: "/fixos", rotulo: "Fixos e parcelas", texto: "O que repete todo mês", Icone: Repeat, cor: "bg-lavanda" },
@@ -14,6 +14,7 @@ const itens = [
   { href: "/graficos", rotulo: "Gráficos", texto: "Fluxo, vilões, forma de pagamento e dia da semana", Icone: ChartColumn, cor: "bg-menta" },
   { href: "/resumo", rotulo: "Resumo do ano", texto: "Mês, trimestre, semestre e ano", Icone: CalendarRange, cor: "bg-lavanda" },
   { href: "/exportar", rotulo: "Exportar e backup", texto: "Excel, relatório em PDF e backup", Icone: Download, cor: "bg-limao" },
+  { href: "/configuracoes", rotulo: "Categorias e formas", texto: "Criar, editar e desativar", Icone: Tags, cor: "bg-lavanda" },
   { href: "/emprestimos", rotulo: "Empréstimos", texto: "Quem te deve e a quem você deve", Icone: HandCoins, cor: "bg-menta" },
 ];
 

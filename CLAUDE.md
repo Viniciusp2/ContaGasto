@@ -349,8 +349,8 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 ### 🔵 Fase 5 — Nuvem (deixado pro final, de propósito)
 
 - **Sprint 5.1** Migrar pro Neon + auth (login). Parte de código feita: `DATABASE_URL` liga o Neon (driver `neon-serverless`, com transação), sem ela segue o PGlite local; `npm run db:migrate` serve pros dois. Login com **senha única** (`BOLSO_SENHA`) e sessão assinada (`BOLSO_SEGREDO`, 32+ caracteres) num cookie HttpOnly de 90 dias, conferida no `src/proxy.ts`. Local sem senha fica aberto; **em produção sem as duas variáveis ninguém entra**. Sair apaga as páginas guardadas pro offline. **Revisto em 24/09/2026:** senha e segredo moram no banco (tabela `acesso`), sem precisar de variável na Vercel. Senha inicial **1234** (o Início avisa pra trocar); trocar em Mais salva só o hash (scrypt) e troca o segredo, derrubando os outros aparelhos. `BOLSO_SENHA`/`BOLSO_SEGREDO` continuam opcionais e têm prioridade. Banco Neon criado (us-east-1) e migrado. A Vercel criou a variável com prefixo: o app aceita `DATABASE_URL`, `neon_DATABASE_URL` ou `POSTGRES_URL`, e na Vercel sem nenhuma dá erro em vez de usar banco local.
-- **Sprint 5.2** Deploy na Vercel, variáveis de ambiente, RLS por usuário.
-- **Sprint 5.3** Ajustes finais e publicação.
+- **Sprint 5.2** Deploy na Vercel, variáveis de ambiente. Feito: projeto conta-gasto na Vercel com Neon (aceita `DATABASE_URL`, `neon_DATABASE_URL` ou `POSTGRES_URL`). Senha e segredo da sessão ficam no banco (tabela `acesso`), senha inicial **1234**, troca em Mais. **RLS: não na v1** (um usuário só; o app já filtra tudo por `user_id`). Volta quando tiver mais de um usuário.
+- **Sprint 5.3** Ajustes finais e publicação. Feito: busca nos lançamentos (sem acento, todas as palavras, também pelo valor), conta variável confirmada mostra a diferença vs média, pausar e retomar fixos (pausado não gera nem conta nos compromissos; ao retomar não gera os meses parados), tela Categorias e formas (Mais): criar, editar ícone e cor, desativar categoria (some dos formulários, histórico fica); categorias que o app usa pelo nome só trocam ícone e cor; forma de pagamento só é apagada se nunca foi usada, o tipo não muda depois de criada; nome repetido não pode.
 
 ---
 
@@ -408,6 +408,9 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | PDF               | página de relatório + imprimir do navegador, sem biblioteca |
 | Restaurar backup  | apaga tudo e põe o backup no lugar, tudo ou nada |
 | Login             | senha no banco, inicial 1234, troca em Mais |
+| RLS               | não na v1 (um usuário, filtro por user_id no app) |
+| Fixo pausado      | não gera nem conta; retomar não cobra os meses parados |
+| Forma de pagamento | apaga só se nunca usada; tipo fixo depois de criada |
 | Barber-saas       | o Bolso usa o endereço dele (decisão de 23/09/2026); depende de que tipo de endereço é |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
