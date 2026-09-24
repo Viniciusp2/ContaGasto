@@ -58,7 +58,7 @@ export default async function Fixos() {
           <li key={i.rec.id} className="rounded-card bg-cartao p-4 shadow-suave">
             <div className="flex items-center gap-3">
               <span
-                className="flex size-11 shrink-0 items-center justify-center rounded-full"
+                className="sobre-pastel flex size-11 shrink-0 items-center justify-center rounded-full"
                 style={{ backgroundColor: i.categoriaCor }}
                 aria-hidden
               >

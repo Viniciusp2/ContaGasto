@@ -58,7 +58,7 @@ export async function salvarLancamento(_anterior: EstadoForm, formData: FormData
     });
     await gerarRecorrencias();
     revalidatePath("/", "layout");
-    redirect("/fixos");
+    redirect("/fixos?salvo=fixo");
   }
 
   // No crédito com fatura configurada, o gasto entra no vencimento (4.4)
@@ -91,7 +91,7 @@ export async function salvarLancamento(_anterior: EstadoForm, formData: FormData
 
   revalidatePath("/", "layout");
   // Volta pra lista do mês em que o dinheiro sai, pra ele aparecer na tela
-  redirect(`/lancamentos?mes=${mesParaTexto(mesDe(valores.data))}`);
+  redirect(`/lancamentos?mes=${mesParaTexto(mesDe(valores.data))}&salvo=${id ? "editado" : d.tipo}`);
 }
 
 export async function apagarLancamento(id: string, mes: string) {

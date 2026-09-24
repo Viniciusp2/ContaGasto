@@ -12,7 +12,7 @@ function Item({ item, hoje, apagado = false }: { item: ItemTempo; hoje: string; 
   const conteudo = (
     <>
       <span
-        className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full bg-lavanda ring-4 ring-cartao"
+        className={`relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full bg-lavanda ring-4 ring-cartao ${item.cor ? "sobre-pastel" : ""}`}
         style={item.cor ? { backgroundColor: item.cor } : undefined}
         aria-hidden
       >

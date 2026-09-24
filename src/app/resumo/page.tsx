@@ -91,7 +91,7 @@ export default async function Resumo({ searchParams }: PageProps<"/resumo">) {
             </div>
             <div>
               <p className="text-xs text-tinta-suave">Sobrou</p>
-              <p className={`font-bold tabular-nums ${total.saldo < 0 ? "text-[#b3261e]" : ""}`}>{formatarCentavos(total.saldo)}</p>
+              <p className={`font-bold tabular-nums ${total.saldo < 0 ? "text-negativo" : ""}`}>{formatarCentavos(total.saldo)}</p>
             </div>
           </div>
 
@@ -106,7 +106,7 @@ export default async function Resumo({ searchParams }: PageProps<"/resumo">) {
                         {p.rotulo}
                         {p.emAndamento && <span className="ml-2 rounded-full bg-limao px-2 text-xs font-semibold normal-case">em andamento</span>}
                       </p>
-                      <p className={`font-bold tabular-nums ${p.saldo < 0 ? "text-[#b3261e]" : ""}`}>{formatarCentavos(p.saldo)}</p>
+                      <p className={`font-bold tabular-nums ${p.saldo < 0 ? "text-negativo" : ""}`}>{formatarCentavos(p.saldo)}</p>
                     </div>
                     <div className="flex flex-col gap-1 text-xs">
                       <span className="flex items-center gap-2">
@@ -139,7 +139,7 @@ export default async function Resumo({ searchParams }: PageProps<"/resumo">) {
                   return (
                     <li key={id} className="flex items-center gap-3 text-sm">
                       <span
-                        className="flex size-9 shrink-0 items-center justify-center rounded-full"
+                        className="sobre-pastel flex size-9 shrink-0 items-center justify-center rounded-full"
                         style={{ backgroundColor: c?.cor }}
                         aria-hidden
                       >

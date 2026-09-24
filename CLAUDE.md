@@ -49,7 +49,8 @@ Princípios:
 - **Ícones sempre, emoji nunca** (decidido em 23/09/2026). Biblioteca: `lucide-react`. Cada categoria tem um ícone (coluna `icone`). A coluna `emoji` continua no banco, mas não aparece na tela. Objetivos também usam ícone, não emoji.
 - **Cantos arredondados** (radius 16–20px), sombras suaves.
 - **Tipografia:** uma fonte só, limpa (ex. Inter). Números com destaque.
-- **Modo escuro:** previsto (Fase 4), com versões escuras dos tokens.
+- **Modo escuro** (feito na Sprint 4.1): segue o sistema por padrão; dá pra fixar Claro ou Escuro em Mais (cookie `bolso-tema`, a página já vem no tema certo). Os tokens têm versões escuras em `globals.css`, conferidas: texto claro >= 4.5:1 em todos os fundos de destaque; marcas dos gráficos >= 3:1 nos dois temas (o roxo troca por `#9B72C9` no escuro). Ícone em cima da cor pastel da categoria fica sempre escuro (`.sobre-pastel`).
+- **Micro-animações** (Framer Motion, pacote `motion`): números que contam nos cartões do Início, check animado depois de salvar (`?salvo=` na URL, some sozinho), barras de meta e objetivo enchendo. Quem pede "reduzir movimento" no celular vê tudo parado.
 - **Sem travessão (—) em textos da interface.** Usar vírgula ou dois pontos.
 
 ---
@@ -402,6 +403,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Disponível        | desconta o guardado no mês e o que ainda cai; não conta entrada futura |
 | Dívida com prazo  | entra nos compromissos do mês do prazo (e atrasada também) |
 | Linha do tempo    | substitui contas a vencer; mostra entradas previstas à parte |
+| Tema              | sistema por padrão, escolha em Mais, guardada em cookie |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |

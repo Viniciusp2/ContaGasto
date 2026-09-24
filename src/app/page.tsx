@@ -19,6 +19,7 @@ import { LinhaDoTempo } from "@/components/linha-do-tempo";
 import { montarLinhaDoTempo } from "@/lib/linha-do-tempo";
 import { hojeISO, intervaloDoMes, lerMes, mesParaTexto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
+import { NumeroAnimado } from "@/components/animacoes";
 
 export const dynamic = "force-dynamic";
 
@@ -139,7 +140,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
             <p className="text-sm font-semibold">{rotulo}</p>
             <p className="text-xs text-tinta-suave">{dica}</p>
             <p className="mt-1 text-lg font-bold tabular-nums break-all sm:text-xl">
-              {formatarCentavos(valor)}
+              <NumeroAnimado centavos={valor} />
             </p>
           </div>
         ))}

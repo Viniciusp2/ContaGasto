@@ -160,7 +160,7 @@ export function FormLancamento({
                 onClick={() => setCategoriaId(c.id)}
                 style={escolhida ? { backgroundColor: c.cor } : undefined}
                 className={`flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-2xl border-2 px-1 text-center text-xs leading-tight transition-colors ${
-                  escolhida ? "border-tinta font-semibold" : "border-transparent bg-cartao"
+                  escolhida ? "sobre-pastel border-[#3a2e3f] font-semibold" : "border-transparent bg-cartao"
                 }`}
               >
                 <IconeCategoria nome={c.icone} size={22} />

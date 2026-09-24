@@ -52,7 +52,7 @@ export function NovaMeta({ categorias }: { categorias: Categoria[] }) {
             onClick={() => setCategoriaId(c.id)}
             style={c.id === categoriaId ? { backgroundColor: c.cor } : undefined}
             className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border-2 px-1 text-xs leading-tight ${
-              c.id === categoriaId ? "border-tinta font-semibold" : "border-transparent bg-fundo"
+              c.id === categoriaId ? "sobre-pastel border-[#3a2e3f] font-semibold" : "border-transparent bg-fundo"
             }`}
           >
             <IconeCategoria nome={c.icone} size={20} />

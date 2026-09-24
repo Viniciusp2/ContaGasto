@@ -25,7 +25,7 @@ export function ItemLancamentoLinha({ item }: { item: ItemLancamento }) {
         }`}
       >
         <span
-          className="flex size-11 shrink-0 items-center justify-center rounded-full"
+          className="sobre-pastel flex size-11 shrink-0 items-center justify-center rounded-full"
           style={{ backgroundColor: item.categoriaCor }}
           aria-hidden
         >

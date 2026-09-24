@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Sparkles, TrendingUp, Tv } from "lucide-react";
 import { formatarCentavos } from "@/lib/dinheiro";
+import { NumeroAnimado } from "@/components/animacoes";
 
 // Destaque do Início: quanto dá pra gastar sem comprometer o que já tem destino
 export function CartaoDisponivel({
@@ -22,7 +23,9 @@ export function CartaoDisponivel({
       <p className="flex items-center gap-2 text-sm font-semibold">
         <Sparkles size={18} aria-hidden /> Disponível para gastar
       </p>
-      <p className="mt-1 text-3xl font-bold tabular-nums">{formatarCentavos(disponivel)}</p>
+      <p className="mt-1 text-3xl font-bold tabular-nums">
+        <NumeroAnimado centavos={disponivel} />
+      </p>
       <p className="mt-2 text-base font-semibold">
         {semFolga
           ? "Sem folga até o fim do mês"

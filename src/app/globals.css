@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
-/* Tokens da paleta (ver CLAUDE.md, seção 2). Modo escuro entra na Fase 4. */
+/* Tokens da paleta (ver CLAUDE.md, seção 2). Claro por padrão; escuro pelo sistema ou pela escolha em Mais. */
 :root {
+  color-scheme: light;
   --fundo: #fceffe;
   --lavanda: #e0cfe8;
   --coral: #ffac81;
@@ -10,6 +11,58 @@
   --tinta: #3a2e3f;
   --tinta-suave: #6b5a72;
   --cartao: #ffffff;
+  --negativo: #b3261e;
+  /* Barras de meta e objetivo */
+  --barra-ok: #8dffdb;
+  --barra-atencao: #ffac81;
+  --barra-estourou: #d64545;
+  /* Marcas dos gráficos: tons escuros da paleta, validados (contraste >= 3:1 no cartão) */
+  --grafico-gasto: #d9622b;
+  --grafico-positivo: #1b8f6e;
+  --grafico-neutro: #7b4fa8;
+  --grade: #efe6f2;
+}
+
+/* Escuro: mesmos papéis, tons próprios (texto claro >= 4.5:1 em todos os fundos de destaque) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    color-scheme: dark;
+    --fundo: #1c1620;
+    --lavanda: #4b3a5a;
+    --coral: #8c4527;
+    --limao: #5e5b1c;
+    --menta: #1d5e4c;
+    --tinta: #f3eaf6;
+    --tinta-suave: #c2b3c9;
+    --cartao: #2a2130;
+    --negativo: #ff8a80;
+    --barra-ok: #2bae87;
+    --barra-atencao: #e8763f;
+    --barra-estourou: #ff6b5e;
+    --grafico-gasto: #e8763f;
+    --grafico-positivo: #2bae87;
+    --grafico-neutro: #9b72c9;
+    --grade: #3a2f41;
+  }
+}
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+  --fundo: #1c1620;
+  --lavanda: #4b3a5a;
+  --coral: #8c4527;
+  --limao: #5e5b1c;
+  --menta: #1d5e4c;
+  --tinta: #f3eaf6;
+  --tinta-suave: #c2b3c9;
+  --cartao: #2a2130;
+  --negativo: #ff8a80;
+  --barra-ok: #2bae87;
+  --barra-atencao: #e8763f;
+  --barra-estourou: #ff6b5e;
+  --grafico-gasto: #e8763f;
+  --grafico-positivo: #2bae87;
+  --grafico-neutro: #9b72c9;
+  --grade: #3a2f41;
 }
 
 @theme inline {
@@ -21,6 +74,7 @@
   --color-tinta: var(--tinta);
   --color-tinta-suave: var(--tinta-suave);
   --color-cartao: var(--cartao);
+  --color-negativo: var(--negativo);
   --font-sans: var(--font-inter);
   --radius-card: 1.25rem;
   --shadow-suave: 0 4px 20px -6px rgb(58 46 63 / 0.15);
@@ -29,4 +83,24 @@
 body {
   background: var(--fundo);
   color: var(--tinta);
+}
+
+/* Ícone em cima da cor pastel da categoria: sempre escuro, nos dois temas */
+.sobre-pastel {
+  color: #3a2e3f;
+}
+
+/* Recharts: grade, eixos e cursor seguem o tema */
+.recharts-cartesian-grid line {
+  stroke: var(--grade);
+}
+.recharts-cartesian-axis-tick-value {
+  fill: var(--tinta-suave);
+}
+.recharts-tooltip-cursor {
+  fill: var(--grade);
+  stroke: var(--tinta-suave);
+}
+.recharts-reference-line line {
+  stroke: var(--tinta-suave);
 }

@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { SeletorTema } from "@/components/seletor-tema";
+import { COOKIE_TEMA, lerTema } from "@/lib/tema";
 import { CalendarRange, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat } from "lucide-react";
 
 const itens = [
@@ -10,7 +13,8 @@ const itens = [
   { href: "/emprestimos", rotulo: "Empréstimos", texto: "Quem te deve e a quem você deve", Icone: HandCoins, cor: "bg-menta" },
 ];
 
-export default function Mais() {
+export default async function Mais() {
+  const tema = lerTema((await cookies()).get(COOKIE_TEMA)?.value);
   return (
     <section className="flex flex-col gap-3">
       <h1 className="mb-1 text-2xl font-bold">Mais</h1>
@@ -30,6 +34,7 @@ export default function Mais() {
           <ChevronRight size={20} className="text-tinta-suave" aria-hidden />
         </Link>
       ))}
+      <SeletorTema atual={tema} />
       <p className="mt-2 text-center text-sm text-tinta-suave">
         Configurações chegam nas próximas sprints.
       </p>

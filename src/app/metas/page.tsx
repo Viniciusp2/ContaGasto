@@ -47,7 +47,7 @@ export default async function Metas({ searchParams }: PageProps<"/metas">) {
           <li key={m.id} className="rounded-card bg-cartao p-4 shadow-suave">
             <div className="mb-2 flex items-center gap-3">
               <span
-                className="flex size-10 shrink-0 items-center justify-center rounded-full"
+                className="sobre-pastel flex size-10 shrink-0 items-center justify-center rounded-full"
                 style={{ backgroundColor: m.categoriaCor }}
                 aria-hidden
               >
