@@ -8,7 +8,7 @@ import { Plus } from "lucide-react";
 // Some nas telas de formulário, onde cobriria o botão de salvar.
 export function BotaoLancar() {
   const caminho = usePathname();
-  if (caminho === "/lancamentos/novo" || caminho.endsWith("/editar")) return null;
+  if (caminho === "/lancamentos/novo" || caminho.endsWith("/editar") || caminho === "/entrar") return null;
 
   return (
     <Link

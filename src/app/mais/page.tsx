@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { SeletorTema } from "@/components/seletor-tema";
+import { BotaoSair } from "@/components/botao-sair";
+import { configuracaoLogin } from "@/lib/sessao";
 import { COOKIE_TEMA, lerTema } from "@/lib/tema";
 import { CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat } from "lucide-react";
 
@@ -36,8 +38,9 @@ export default async function Mais() {
         </Link>
       ))}
       <SeletorTema atual={tema} />
+      {configuracaoLogin(process.env).ligado && <BotaoSair />}
       <p className="mt-2 text-center text-sm text-tinta-suave">
-        Login e publicação chegam na Fase 5.
+        Publicação na internet chega na Fase 5.
       </p>
     </section>
   );

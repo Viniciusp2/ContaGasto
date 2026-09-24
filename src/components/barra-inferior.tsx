@@ -13,6 +13,7 @@ const abas = [
 
 export function BarraInferior() {
   const caminho = usePathname();
+  if (caminho === "/entrar") return null;
 
   return (
     <nav

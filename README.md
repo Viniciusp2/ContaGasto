@@ -23,4 +23,16 @@ O banco local é um Postgres embutido (PGlite), salvo em `.data/pglite`. Não pr
 | `npm run build` | build de produção |
 | `npm test` | testes unitários (vitest) |
 
+## Publicar (Vercel + Neon)
+
+Variáveis de ambiente (modelo em `.env.example`):
+
+| Variável | Pra quê |
+| --- | --- |
+| `DATABASE_URL` | banco Neon. Sem ela, usa o banco local |
+| `BOLSO_SENHA` | senha pra entrar no app |
+| `BOLSO_SEGREDO` | segredo da sessão (32+ caracteres aleatórios) |
+
+Com a `DATABASE_URL` do Neon no terminal, `npm run db:setup` cria as tabelas e os dados iniciais lá.
+
 > O banco local aceita um processo por vez. Com o `npm run dev` aberto, pare o servidor antes de rodar `db:seed`, `db:migrate` ou `db:ping`.
