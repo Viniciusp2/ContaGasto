@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import { AvisoSalvo, ProvedorMovimento } from "@/components/animacoes";
 import { BarraInferior } from "@/components/barra-inferior";
 import { BotaoLancar } from "@/components/botao-lancar";
+import { AvisoOffline, RegistrarServiceWorker } from "@/components/pwa";
 import { COOKIE_TEMA, lerTema } from "@/lib/tema";
 import "./globals.css";
 
@@ -16,6 +17,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Bolso",
   description: "Seu controle de gastos, leve e rápido.",
+  applicationName: "Bolso",
+  // iPhone: abre em tela cheia quando instalado pela tela de início
+  appleWebApp: { capable: true, title: "Bolso", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -39,6 +43,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full font-sans">
+        <AvisoOffline />
+        <RegistrarServiceWorker />
         <ProvedorMovimento>
           {/* pb extra pra barra inferior não cobrir o conteúdo */}
           <main className="mx-auto w-full max-w-md px-4 pt-6 pb-32 md:max-w-3xl lg:max-w-5xl">{children}</main>

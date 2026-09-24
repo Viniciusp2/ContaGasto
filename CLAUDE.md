@@ -343,7 +343,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 ### 🟢 Fase 4 — Acabamento
 
 - **Sprint 4.1** Modo escuro + micro-animações (Framer Motion, leve).
-- **Sprint 4.2** PWA (instalar no celular, funcionar offline básico).
+- **Sprint 4.2** PWA (instalar no celular, funcionar offline básico). Feito: manifesto (`app/manifest.ts`), ícones gerados por `npm run icones` (bolso coral com moeda menta, sem emoji; versão maskable), service worker próprio em `public/sw.js`. Offline: páginas já vistas abrem com a última versão (aviso "Sem internet" no topo); página nunca vista mostra `/offline`; lançar precisa de conexão. O service worker só registra em produção. **Instalar exige HTTPS**: no celular só funciona depois do deploy (Fase 5) ou com `next dev --experimental-https`.
 - **Sprint 4.3** Exportar Excel/PDF + backup.
 
 ### 🔵 Fase 5 — Nuvem (deixado pro final, de propósito)
@@ -404,6 +404,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Dívida com prazo  | entra nos compromissos do mês do prazo (e atrasada também) |
 | Linha do tempo    | substitui contas a vencer; mostra entradas previstas à parte |
 | Tema              | sistema por padrão, escolha em Mais, guardada em cookie |
+| Offline           | só leitura do que já foi visto; gravar precisa de internet |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |

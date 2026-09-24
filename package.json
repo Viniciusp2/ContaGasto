@@ -14,7 +14,8 @@
     "db:seed": "tsx scripts/seed.mts",
     "db:setup": "npm run db:migrate && npm run db:seed",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "icones": "tsx scripts/gerar-icones.tsx"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
