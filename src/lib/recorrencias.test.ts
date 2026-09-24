@@ -193,3 +193,27 @@ describe("média da fixa variável", () => {
     expect(mediaEstimada([12000, 10000], 3, 0)).toBe(11000);
   });
 });
+
+import { comparacaoComMedia } from "./recorrencias";
+import { textoDiferencaMedia } from "./dinheiro";
+
+describe("comparação com a média (4.8)", () => {
+  it("exemplo do CLAUDE.md: R$ 128 com média de R$ 110", () => {
+    const c = comparacaoComMedia(12800, [11000, 11500, 10500], 3);
+    expect(c).toEqual({ media: 11000, diferenca: 1800 });
+    expect(textoDiferencaMedia(c!.diferenca).replace(/\s/g, " ")).toBe("R$ 18,00 acima da média");
+  });
+
+  it("abaixo e igual", () => {
+    expect(textoDiferencaMedia(-500).replace(/\s/g, " ")).toBe("R$ 5,00 abaixo da média");
+    expect(textoDiferencaMedia(0)).toBe("igual à média");
+  });
+
+  it("usa só os últimos N meses", () => {
+    expect(comparacaoComMedia(10000, [10000, 10000, 10000, 90000], 3)).toEqual({ media: 10000, diferenca: 0 });
+  });
+
+  it("primeira conta: sem média pra comparar", () => {
+    expect(comparacaoComMedia(10000, [], 3)).toBeNull();
+  });
+});

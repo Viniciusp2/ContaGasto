@@ -13,3 +13,9 @@ export function centavosDeDigitos(texto: string): number {
   const digitos = texto.replace(/\D/g, "").slice(0, 9);
   return Number(digitos || 0);
 }
+
+// "R$ 18,00 acima da média" / "R$ 5,00 abaixo da média" / "igual à média"
+export function textoDiferencaMedia(diferenca: number): string {
+  if (diferenca === 0) return "igual à média";
+  return `${formatarCentavos(Math.abs(diferenca))} ${diferenca > 0 ? "acima" : "abaixo"} da média`;
+}

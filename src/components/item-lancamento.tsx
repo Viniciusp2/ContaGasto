@@ -4,7 +4,7 @@ import type { ItemLancamento } from "@/db/consultas";
 import { diaCurto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
-export function ItemLancamentoLinha({ item }: { item: ItemLancamento }) {
+export function ItemLancamentoLinha({ item, comparacao }: { item: ItemLancamento; comparacao?: string }) {
   const estimado = item.status === "estimado";
   const entrada = item.tipo === "entrada";
 
@@ -14,6 +14,7 @@ export function ItemLancamentoLinha({ item }: { item: ItemLancamento }) {
     item.parcela && item.totalParcelas ? `parcela ${item.parcela}/${item.totalParcelas}` : null,
     // No crédito, a data da lista é o vencimento: mostra quando foi a compra
     item.dataCompra && item.dataCompra !== item.data ? `compra ${diaCurto(item.dataCompra)}` : null,
+    comparacao ?? null,
   ].filter(Boolean);
 
   return (

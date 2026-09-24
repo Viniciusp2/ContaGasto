@@ -1,5 +1,5 @@
 // Consultas do app. Toda consulta filtra pelo usuário (na Fase 5 vira o RLS + login).
-import { and, asc, between, desc, eq, lte, or, sql } from "drizzle-orm";
+import { and, asc, between, desc, eq, inArray, lte, or, sql } from "drizzle-orm";
 import { intervaloDoMes, type Mes } from "@/lib/datas";
 import { db } from ".";
 import {
@@ -31,6 +31,10 @@ export function listarLancamentosDoMes(mes: Mes) {
       parcela: lancamentos.parcela,
       totalParcelas: recorrencias.totalParcelas,
       dataCompra: lancamentos.dataCompra,
+      obs: lancamentos.obs,
+      recorrenciaId: lancamentos.recorrenciaId,
+      recorrenciaTipo: recorrencias.tipo,
+      mesesMedia: recorrencias.mesesMedia,
       categoriaNome: categorias.nome,
       categoriaIcone: categorias.icone,
       categoriaCor: categorias.cor,
@@ -310,4 +314,27 @@ export function lancamentosParaPlanilha(ano: number) {
     .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
     .leftJoin(recorrencias, eq(lancamentos.recorrenciaId, recorrencias.id))
     .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, `${ano}-01-01`, `${ano}-12-31`)));
+}
+
+// Histórico confirmado das contas de valor variável, pra comparar com a média (4.8)
+export async function historicoContasVariaveis(recorrenciaIds: string[]) {
+  if (recorrenciaIds.length === 0) return new Map<string, { data: string; valor: number }[]>();
+  const linhas = await db
+    .select({ recorrenciaId: lancamentos.recorrenciaId, data: lancamentos.data, valor: lancamentos.valor })
+    .from(lancamentos)
+    .where(
+      and(
+        eq(lancamentos.userId, userId),
+        eq(lancamentos.status, "confirmado"),
+        inArray(lancamentos.recorrenciaId, recorrenciaIds),
+      ),
+    )
+    .orderBy(desc(lancamentos.data));
+  const mapa = new Map<string, { data: string; valor: number }[]>();
+  for (const l of linhas) {
+    const lista = mapa.get(l.recorrenciaId!) ?? [];
+    lista.push({ data: l.data, valor: l.valor });
+    mapa.set(l.recorrenciaId!, lista);
+  }
+  return mapa;
 }

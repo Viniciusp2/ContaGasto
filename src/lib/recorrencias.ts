@@ -153,3 +153,12 @@ export function ocorrenciasNoIntervalo(rec: RecorrenciaBase, cartao: Cartao, de:
   }
   return lista;
 }
+
+// Conta variável confirmada comparada com a média dos meses anteriores (4.8: "R$ 18 acima da média").
+// "anteriores" são os valores confirmados antes deste, do mais recente pro mais antigo.
+export function comparacaoComMedia(valor: number, anteriores: number[], meses: number) {
+  const base = anteriores.slice(0, Math.max(1, meses));
+  if (base.length === 0) return null;
+  const media = Math.round(base.reduce((a, b) => a + b, 0) / base.length);
+  return { media, diferenca: valor - media };
+}
