@@ -104,3 +104,26 @@ body {
 .recharts-reference-line line {
   stroke: var(--tinta-suave);
 }
+
+/* Impressão (relatório em PDF): papel branco, tinta escura, sem a barra e o botão flutuante */
+@media print {
+  :root,
+  :root[data-tema="escuro"] {
+    --fundo: #ffffff;
+    --cartao: #ffffff;
+    --tinta: #1f1823;
+    --tinta-suave: #5a4a60;
+    --lavanda: #d9c8e2;
+  }
+  nav[aria-label="Navegação principal"],
+  a[aria-label="Novo lançamento"] {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}

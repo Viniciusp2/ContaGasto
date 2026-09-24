@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { SeletorTema } from "@/components/seletor-tema";
 import { COOKIE_TEMA, lerTema } from "@/lib/tema";
-import { CalendarRange, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat } from "lucide-react";
+import { CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat } from "lucide-react";
 
 const itens = [
   { href: "/fixos", rotulo: "Fixos e parcelas", texto: "O que repete todo mês", Icone: Repeat, cor: "bg-lavanda" },
@@ -10,6 +10,7 @@ const itens = [
   { href: "/objetivos", rotulo: "Objetivos", texto: "Caixinhas pra juntar dinheiro", Icone: PiggyBank, cor: "bg-limao" },
   { href: "/graficos", rotulo: "Gráficos", texto: "Fluxo, vilões, forma de pagamento e dia da semana", Icone: ChartColumn, cor: "bg-menta" },
   { href: "/resumo", rotulo: "Resumo do ano", texto: "Mês, trimestre, semestre e ano", Icone: CalendarRange, cor: "bg-lavanda" },
+  { href: "/exportar", rotulo: "Exportar e backup", texto: "Excel, relatório em PDF e backup", Icone: Download, cor: "bg-limao" },
   { href: "/emprestimos", rotulo: "Empréstimos", texto: "Quem te deve e a quem você deve", Icone: HandCoins, cor: "bg-menta" },
 ];
 
@@ -36,7 +37,7 @@ export default async function Mais() {
       ))}
       <SeletorTema atual={tema} />
       <p className="mt-2 text-center text-sm text-tinta-suave">
-        Configurações chegam nas próximas sprints.
+        Login e publicação chegam na Fase 5.
       </p>
     </section>
   );

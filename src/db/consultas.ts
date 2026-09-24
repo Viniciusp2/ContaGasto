@@ -287,3 +287,27 @@ export function lancamentosParaGraficos(mes: Mes) {
     .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
     .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, inicio, fim)));
 }
+
+// Tudo do ano com nomes, pra planilha
+export function lancamentosParaPlanilha(ano: number) {
+  return db
+    .select({
+      data: lancamentos.data,
+      dataCompra: lancamentos.dataCompra,
+      descricao: lancamentos.descricao,
+      valor: lancamentos.valor,
+      tipo: lancamentos.tipo,
+      subtipoEntrada: lancamentos.subtipoEntrada,
+      status: lancamentos.status,
+      parcela: lancamentos.parcela,
+      totalParcelas: recorrencias.totalParcelas,
+      categoriaNome: categorias.nome,
+      formaNome: formasPagamento.nome,
+      formaTipo: formasPagamento.tipo,
+    })
+    .from(lancamentos)
+    .innerJoin(categorias, eq(lancamentos.categoriaId, categorias.id))
+    .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
+    .leftJoin(recorrencias, eq(lancamentos.recorrenciaId, recorrencias.id))
+    .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, `${ano}-01-01`, `${ano}-12-31`)));
+}

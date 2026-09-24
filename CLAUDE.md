@@ -344,7 +344,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 
 - **Sprint 4.1** Modo escuro + micro-animações (Framer Motion, leve).
 - **Sprint 4.2** PWA (instalar no celular, funcionar offline básico). Feito: manifesto (`app/manifest.ts`), ícones gerados por `npm run icones` (bolso coral com moeda menta, sem emoji; versão maskable), service worker próprio em `public/sw.js`. Offline: páginas já vistas abrem com a última versão (aviso "Sem internet" no topo); página nunca vista mostra `/offline`; lançar precisa de conexão. O service worker só registra em produção. **Instalar exige HTTPS**: no celular só funciona depois do deploy (Fase 5) ou com `next dev --experimental-https`.
-- **Sprint 4.3** Exportar Excel/PDF + backup.
+- **Sprint 4.3** Exportar Excel/PDF + backup. Feito em Mais, Exportar e backup: planilha `.xlsx` do ano (aba de lançamentos com gasto negativo + aba de resumo por mês), relatório do mês feito pra impressão (`/relatorio`, "Salvar como PDF" do navegador, sem biblioteca de PDF), backup JSON de tudo e restauração (substitui tudo numa transação só, pede RESTAURAR digitado, valida o arquivo antes).
 
 ### 🔵 Fase 5 — Nuvem (deixado pro final, de propósito)
 
@@ -405,6 +405,8 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Linha do tempo    | substitui contas a vencer; mostra entradas previstas à parte |
 | Tema              | sistema por padrão, escolha em Mais, guardada em cookie |
 | Offline           | só leitura do que já foi visto; gravar precisa de internet |
+| PDF               | página de relatório + imprimir do navegador, sem biblioteca |
+| Restaurar backup  | apaga tudo e põe o backup no lugar, tudo ou nada |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |
