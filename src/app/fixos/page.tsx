@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Plus, Repeat } from "lucide-react";
 import { BotaoEncerrar } from "@/components/botao-encerrar";
+import { BotaoPausar, BotaoRetomar } from "@/components/botoes-pausa";
 import { IconeCategoria } from "@/components/icone-categoria";
 import { listarRecorrencias } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
@@ -24,10 +25,12 @@ export default async function Fixos() {
   const itens = linhas.map((l) => {
     const cartao = l.formaTipo === "credito" ? { diaFechamento: l.diaFechamento, diaVencimento: l.diaVencimento } : null;
     const proxima = proximaOcorrencia(l.rec, cartao, hoje);
-    return { ...l, proxima, geradas: quantasGeradas(l.rec), ativo: proxima !== null };
+    const pausado = !l.rec.ativa && !l.rec.dataFim;
+    return { ...l, proxima, pausado, geradas: quantasGeradas(l.rec), ativo: proxima !== null && !pausado };
   });
   const ativos = itens.filter((i) => i.ativo);
-  const encerrados = itens.filter((i) => !i.ativo);
+  const pausados = itens.filter((i) => i.pausado);
+  const encerrados = itens.filter((i) => !i.ativo && !i.pausado);
 
   return (
     <section className="flex flex-col gap-4">
@@ -106,11 +109,35 @@ export default async function Fixos() {
                   </>
                 )}
               </p>
-              <BotaoEncerrar id={i.rec.id} />
+              <span className="flex items-center gap-2">
+                {i.rec.tipo !== "temporaria" && <BotaoPausar id={i.rec.id} />}
+                <BotaoEncerrar id={i.rec.id} />
+              </span>
             </div>
           </li>
         ))}
       </ul>
+
+      {pausados.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-bold text-tinta-suave uppercase">Pausados</h2>
+          <p className="text-sm text-tinta-suave">Não geram lançamento nem entram nos compromissos. Ao retomar, voltam na próxima data.</p>
+          <ul className="flex flex-col gap-2">
+            {pausados.map((i) => (
+              <li key={i.rec.id} className="flex items-center gap-3 rounded-card bg-cartao p-3 opacity-80 shadow-suave">
+                <span className="sobre-pastel flex size-9 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: i.categoriaCor }} aria-hidden>
+                  <IconeCategoria nome={i.categoriaIcone} size={18} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{i.rec.descricao}</span>
+                  <span className="block text-sm text-tinta-suave tabular-nums">{formatarCentavos(i.rec.valor)} · pausado</span>
+                </span>
+                <BotaoRetomar id={i.rec.id} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {encerrados.length > 0 && (
         <details className="rounded-card bg-cartao px-4 py-1 shadow-suave">

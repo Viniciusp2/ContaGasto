@@ -217,3 +217,34 @@ describe("comparação com a média (4.8)", () => {
     expect(comparacaoComMedia(10000, [], 3)).toBeNull();
   });
 });
+
+import { geradaAteAoRetomar, ocorrenciasPendentes as pendentesDepois } from "./recorrencias";
+
+describe("pausar e retomar", () => {
+  const internet = {
+    tipo: "fixa" as const,
+    diaDoMes: 10,
+    dataInicio: "2026-05-10",
+    dataFim: null,
+    totalParcelas: null,
+    geradaAte: "2026-06",
+    diaUtil: null,
+    sabadoUtil: true,
+  };
+
+  it("retomar pula os meses parados (jul, ago, set) e volta em outubro", () => {
+    const geradaAte = geradaAteAoRetomar(internet, null, "2026-09-23");
+    expect(geradaAte).toBe("2026-09");
+    const retomado = { ...internet, geradaAte };
+    expect(pendentesDepois(retomado, null, "2026-09-23")).toEqual([]);
+    expect(pendentesDepois(retomado, null, "2026-10-10").map((o) => o.competencia)).toEqual(["2026-10"]);
+  });
+
+  it("retomar antes do dia do mês não pula o mês atual", () => {
+    expect(geradaAteAoRetomar(internet, null, "2026-07-05")).toBe("2026-06");
+  });
+
+  it("nada caiu na pausa: mantém como estava", () => {
+    expect(geradaAteAoRetomar({ ...internet, geradaAte: "2026-09" }, null, "2026-09-23")).toBe("2026-09");
+  });
+});

@@ -43,6 +43,8 @@ export async function gerarRecorrencias(hoje = hojeISO()) {
 
   let criados = 0;
   for (const { rec, categoriaNome, categoriaTipo, diaFechamento, diaVencimento, formaTipo } of lista) {
+    // Pausado (ativa = false sem data de fim) não gera nada; encerrado ainda gera o que caiu até o fim
+    if (!rec.ativa && !rec.dataFim) continue;
     const cartao = formaTipo === "credito" ? { diaFechamento, diaVencimento } : null;
     const pendentes = ocorrenciasPendentes(rec, cartao, hoje);
     if (pendentes.length === 0) continue;

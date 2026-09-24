@@ -27,6 +27,7 @@ async function recorrenciasNoIntervalo(de: string, ate: string, tipo: "gasto" | 
   const itens: Compromisso[] = [];
   for (const r of await listarRecorrencias()) {
     if (r.categoriaTipo !== tipo || r.formaTipo === "beneficio" || r.categoriaNome === "Vale alimentação") continue;
+    if (!r.rec.ativa && !r.rec.dataFim) continue; // pausado não é compromisso
     const cartao = r.formaTipo === "credito" ? { diaFechamento: r.diaFechamento, diaVencimento: r.diaVencimento } : null;
     const ocorrencias = ocorrenciasNoIntervalo(r.rec, cartao, de, ate);
     if (ocorrencias.length === 0) continue;
@@ -129,7 +130,7 @@ export async function comprometidoProximoMes(mes: Mes) {
 // Assinaturas ativas: fixos na categoria Assinaturas que ainda vão continuar
 export async function assinaturasAtivas(hoje: string) {
   const lista = (await listarRecorrencias()).filter(
-    (r) => r.categoriaNome === "Assinaturas" && r.rec.tipo !== "temporaria" && (!r.rec.dataFim || r.rec.dataFim >= hoje),
+    (r) => r.categoriaNome === "Assinaturas" && r.rec.tipo !== "temporaria" && r.rec.ativa && (!r.rec.dataFim || r.rec.dataFim >= hoje),
   );
   return { total: lista.reduce((s, r) => s + r.rec.valor, 0), itens: lista };
 }

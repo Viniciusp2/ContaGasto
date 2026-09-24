@@ -162,3 +162,15 @@ export function comparacaoComMedia(valor: number, anteriores: number[], meses: n
   const media = Math.round(base.reduce((a, b) => a + b, 0) / base.length);
   return { media, diferenca: valor - media };
 }
+
+// Retomar um fixo pausado: marca como já gerado tudo que caiu até hoje, pra não cobrar os meses parados.
+// Devolve o novo "gerada_ate" (ou o atual, se nada caiu durante a pausa).
+export function geradaAteAoRetomar(rec: RecorrenciaBase, cartao: Cartao, hoje: string): string | null {
+  let ultima = rec.geradaAte;
+  for (let k = primeiroIndicePendente(rec); k < LIMITE; k++) {
+    const o = ocorrencia(rec, k, cartao);
+    if (acabou(rec, k, o) || o.data > hoje) break;
+    ultima = o.competencia;
+  }
+  return ultima;
+}
