@@ -215,7 +215,11 @@ FIM DO MÊS
 - Passado e hoje: lançamentos confirmados.
 - Próximos dias: fixos, parcelas e fixas variáveis (com tag "estimado") que ainda vão cair, em ordem de data.
 - Fim do mês: o disponível para gastar (4.9) depois de tudo cair.
-- Vive no Início. Reaproveita os mesmos cálculos do disponível, sem lógica própria.
+- Vive no Início, só no mês atual. Reaproveita os mesmos cálculos do disponível, sem lógica própria.
+- **Substitui a lista "contas a vencer"** (seria a mesma informação duas vezes).
+- **Até hoje:** os lançamentos de hoje + os 3 mais recentes do mês, com link pro resto.
+- **Próximos dias:** compromissos (4.9) + **entradas previstas** (fixos de entrada que ainda vão cair). No mesmo dia, entrada vem antes do gasto.
+- **Fim do mês:** o disponível; se houver entrada prevista, mostra também quanto fica se ela cair (o disponível continua sem contar com ela).
 
 ### 4.13 Vale alimentação (benefício)
 
@@ -397,6 +401,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Previsão do mês   | já saiu + compromissos + ritmo só dos avulsos |
 | Disponível        | desconta o guardado no mês e o que ainda cai; não conta entrada futura |
 | Dívida com prazo  | entra nos compromissos do mês do prazo (e atrasada também) |
+| Linha do tempo    | substitui contas a vencer; mostra entradas previstas à parte |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |

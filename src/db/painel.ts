@@ -15,18 +15,18 @@ export type Compromisso = {
   descricao: string;
   valor: number;
   data: string;
-  tipo: "fixo" | "parcela" | "estimado" | "a_confirmar" | "emprestimo";
+  tipo: "fixo" | "parcela" | "estimado" | "a_confirmar" | "emprestimo" | "entrada";
   detalhe?: string;
   icone?: string;
   cor?: string;
   href?: string;
 };
 
-// Gastos recorrentes que ainda vão cair no intervalo (de, ate]. Entradas e VA ficam de fora.
-async function recorrenciasNoIntervalo(de: string, ate: string): Promise<Compromisso[]> {
+// Recorrências que ainda vão cair no intervalo (de, ate]. Por padrão só gastos; VA sempre fica de fora.
+async function recorrenciasNoIntervalo(de: string, ate: string, tipo: "gasto" | "entrada" = "gasto"): Promise<Compromisso[]> {
   const itens: Compromisso[] = [];
   for (const r of await listarRecorrencias()) {
-    if (r.categoriaTipo !== "gasto" || r.formaTipo === "beneficio") continue;
+    if (r.categoriaTipo !== tipo || r.formaTipo === "beneficio" || r.categoriaNome === "Vale alimentação") continue;
     const cartao = r.formaTipo === "credito" ? { diaFechamento: r.diaFechamento, diaVencimento: r.diaVencimento } : null;
     const ocorrencias = ocorrenciasNoIntervalo(r.rec, cartao, de, ate);
     if (ocorrencias.length === 0) continue;
@@ -42,7 +42,7 @@ async function recorrenciasNoIntervalo(de: string, ate: string): Promise<Comprom
         descricao: r.rec.descricao,
         valor,
         data: o.data,
-        tipo: variavel ? "estimado" : o.parcela ? "parcela" : "fixo",
+        tipo: tipo === "entrada" ? "entrada" : variavel ? "estimado" : o.parcela ? "parcela" : "fixo",
         detalhe: o.parcela ? `parcela ${o.parcela}/${r.rec.totalParcelas}` : variavel ? "estimado" : undefined,
         icone: r.categoriaIcone,
         cor: r.categoriaCor,
@@ -142,4 +142,10 @@ export async function guardadoNoMes(mes: Mes) {
     .from(movimentosObjetivo)
     .where(and(eq(movimentosObjetivo.userId, userId), between(movimentosObjetivo.data, inicio, fim)));
   return linha?.total ?? 0;
+}
+
+// Entradas recorrentes que ainda vão cair até o fim do mês (salário no 5º dia útil etc). Só pra linha do tempo:
+// o disponível não conta com elas.
+export async function entradasPrevistasDoMes(hoje: string, mes: Mes) {
+  return recorrenciasNoIntervalo(hoje, intervaloDoMes(mes).fim, "entrada");
 }

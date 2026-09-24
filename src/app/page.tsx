@@ -1,14 +1,22 @@
 import Link from "next/link";
 import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, Landmark, PiggyBank, Target, Utensils, Wallet } from "lucide-react";
 import { SeletorMes } from "@/components/seletor-mes";
-import { lancamentosParaCalculo, lancamentosVAAte, listarEmprestimosParaCalculo, listarObjetivos } from "@/db/consultas";
+import {
+  lancamentosParaCalculo,
+  lancamentosVAAte,
+  listarEmprestimosParaCalculo,
+  listarLancamentosDoMes,
+  listarObjetivos,
+} from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { metasDoMes } from "@/db/metas-do-mes";
 import { BarraProgresso } from "@/components/barra-progresso";
 import { contaComoGasto, resumoDoMes, saldoVA } from "@/lib/calculos";
 import { disponivelParaGastar, possoGastarPorDia, previsaoDoMes } from "@/lib/painel";
-import { assinaturasAtivas, comprometidoProximoMes, compromissosDoMes, guardadoNoMes } from "@/db/painel";
-import { CartaoDisponivel, CartaoPrevisao, CartoesDoProximoMes, ContasAVencer } from "@/components/painel";
+import { assinaturasAtivas, comprometidoProximoMes, compromissosDoMes, entradasPrevistasDoMes, guardadoNoMes } from "@/db/painel";
+import { CartaoDisponivel, CartaoPrevisao, CartoesDoProximoMes } from "@/components/painel";
+import { LinhaDoTempo } from "@/components/linha-do-tempo";
+import { montarLinhaDoTempo } from "@/lib/linha-do-tempo";
 import { hojeISO, intervaloDoMes, lerMes, mesParaTexto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
@@ -38,11 +46,13 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   const painel = mesAtual ? await montarPainel(lancamentos, resumo.saldoReal, resumo.entradas) : null;
 
   async function montarPainel(lista: typeof lancamentos, saldoReal: number, entradas: number) {
-    const [compromissos, guardadoMes, proximo, assinaturas] = await Promise.all([
+    const [compromissos, guardadoMes, proximo, assinaturas, entradasPrevistas, doMes] = await Promise.all([
       compromissosDoMes(hoje, mes),
       guardadoNoMes(mes),
       comprometidoProximoMes(mes),
       assinaturasAtivas(hoje),
+      entradasPrevistasDoMes(hoje, mes),
+      listarLancamentosDoMes(mes),
     ]);
     const totalCompromissos = compromissos.reduce((s, c) => s + c.valor, 0);
     const disponivel = disponivelParaGastar(saldoReal, guardadoMes, totalCompromissos);
@@ -54,7 +64,26 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
       hoje,
       mes,
     });
+    const linha = montarLinhaDoTempo({
+      hoje,
+      disponivel,
+      passados: doMes
+        .filter((l) => l.status === "confirmado" && l.data <= hoje)
+        .map((l) => ({
+          chave: l.id,
+          descricao: l.descricao,
+          valor: l.valor,
+          data: l.data,
+          entrada: l.tipo === "entrada",
+          icone: l.categoriaIcone,
+          cor: l.categoriaCor,
+          href: `/lancamentos/${l.id}/editar`,
+          detalhe: l.parcela && l.totalParcelas ? `parcela ${l.parcela}/${l.totalParcelas}` : undefined,
+        })),
+      proximos: [...compromissos, ...entradasPrevistas].map((c) => ({ ...c, entrada: c.tipo === "entrada" })),
+    });
     return {
+      linha,
       compromissos,
       totalCompromissos,
       guardadoMes,
@@ -119,7 +148,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
       {painel && (
         <>
           <CartaoPrevisao previsao={painel.previsao} entradas={painel.entradas} />
-          <ContasAVencer itens={painel.compromissos} hoje={hoje} />
+          <LinhaDoTempo linha={painel.linha} hoje={hoje} mesTexto={mesParaTexto(mes)} />
           <CartoesDoProximoMes
             comprometido={painel.proximo.total}
             assinaturas={painel.assinaturas.total}

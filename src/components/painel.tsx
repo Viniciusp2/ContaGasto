@@ -1,8 +1,5 @@
 import Link from "next/link";
-import { CalendarClock, ChevronRight, Sparkles, TrendingUp, Tv } from "lucide-react";
-import { IconeCategoria } from "@/components/icone-categoria";
-import type { Compromisso } from "@/db/painel";
-import { diaCurto } from "@/lib/datas";
+import { ChevronRight, Sparkles, TrendingUp, Tv } from "lucide-react";
 import { formatarCentavos } from "@/lib/dinheiro";
 
 // Destaque do Início: quanto dá pra gastar sem comprometer o que já tem destino
@@ -54,63 +51,6 @@ export function CartaoPrevisao({ previsao, entradas }: { previsao: number; entra
         </p>
       </div>
       <p className="text-lg font-bold tabular-nums">{formatarCentavos(previsao)}</p>
-    </section>
-  );
-}
-
-export function ContasAVencer({ itens, hoje }: { itens: Compromisso[]; hoje: string }) {
-  if (itens.length === 0) return null;
-  const visiveis = itens.slice(0, 6);
-  return (
-    <section className="rounded-card bg-cartao p-4 shadow-suave">
-      <h2 className="mb-3 flex items-center gap-2 font-semibold">
-        <CalendarClock size={18} aria-hidden /> Contas a vencer
-      </h2>
-      <ul className="flex flex-col gap-1">
-        {visiveis.map((c) => {
-          const alerta = c.tipo === "a_confirmar" || c.detalhe === "atrasado";
-          const conteudo = (
-            <>
-              <span
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-lavanda"
-                style={c.cor ? { backgroundColor: c.cor } : undefined}
-                aria-hidden
-              >
-                <IconeCategoria nome={c.icone ?? ""} size={18} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">{c.descricao}</span>
-                <span className="block text-xs text-tinta-suave">
-                  <span className="capitalize">{c.data === hoje ? "hoje" : diaCurto(c.data)}</span>
-                  {c.detalhe && (
-                    <span className={`ml-1 rounded-full px-1.5 font-semibold ${alerta ? "bg-coral text-tinta" : "bg-fundo"}`}>
-                      {c.detalhe}
-                    </span>
-                  )}
-                </span>
-              </span>
-              <span className="shrink-0 text-sm font-bold tabular-nums">
-                {c.tipo === "estimado" || c.tipo === "a_confirmar" ? "~ " : ""}
-                {formatarCentavos(c.valor)}
-              </span>
-            </>
-          );
-          return (
-            <li key={c.chave}>
-              {c.href ? (
-                <Link href={c.href} className="flex min-h-12 items-center gap-3 rounded-2xl px-1 active:bg-fundo">
-                  {conteudo}
-                </Link>
-              ) : (
-                <div className="flex min-h-12 items-center gap-3 px-1">{conteudo}</div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {itens.length > visiveis.length && (
-        <p className="mt-2 text-xs text-tinta-suave">E mais {itens.length - visiveis.length} até o fim do mês.</p>
-      )}
     </section>
   );
 }
