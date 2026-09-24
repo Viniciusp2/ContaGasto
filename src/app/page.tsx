@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, Landmark, PiggyBank, Target, Utensils, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, KeyRound, Landmark, PiggyBank, Target, Utensils, Wallet } from "lucide-react";
 import { SeletorMes } from "@/components/seletor-mes";
 import {
   lancamentosParaCalculo,
@@ -9,6 +9,7 @@ import {
   listarObjetivos,
 } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
+import { obterAcesso } from "@/db/acesso";
 import { metasDoMes } from "@/db/metas-do-mes";
 import { BarraProgresso } from "@/components/barra-progresso";
 import { contaComoGasto, resumoDoMes, saldoVA } from "@/lib/calculos";
@@ -25,6 +26,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Inicio({ searchParams }: PageProps<"/">) {
   await gerarRecorrencias(); // fixos e parcelas que chegaram viram lançamento
+  const acesso = await obterAcesso();
   const params = await searchParams;
   const mes = lerMes(typeof params.mes === "string" ? params.mes : undefined);
   const [lancamentos, emprestimos, movimentosVA] = await Promise.all([
@@ -119,6 +121,11 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   return (
     <section className="flex flex-col gap-5">
       <h1 className="text-2xl font-bold">Oi, Vinícius</h1>
+      {acesso.ligado && acesso.usandoSenhaInicial && (
+        <Link href="/mais" className="flex min-h-12 items-center gap-2 rounded-card bg-limao px-4 py-2 text-sm font-semibold">
+          <KeyRound size={18} aria-hidden /> Você ainda está com a senha 1234. Toque aqui pra trocar.
+        </Link>
+      )}
       <SeletorMes mes={mes} href={(m) => `/?mes=${m}`} />
 
       {painel && (

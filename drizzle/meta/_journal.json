@@ -43,6 +43,13 @@
       "when": 1790194424267,
       "tag": "0005_objetivos_icone",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790249545237,
+      "tag": "0006_acesso",
+      "breakpoints": true
     }
   ]
 }

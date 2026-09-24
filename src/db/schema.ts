@@ -262,3 +262,14 @@ export const emprestimos = pgTable(
   },
   (t) => [check("emprestimos_valor_positivo", sql`${t.valor} > 0`)],
 );
+
+// Acesso (login com senha única): uma linha por usuário. A senha nunca é guardada, só o hash (scrypt).
+// O segredo assina o cookie da sessão; trocar a senha troca o segredo e derruba as outras sessões.
+export const acesso = pgTable("acesso", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => usuarios.id, { onDelete: "cascade" }),
+  senhaHash: text("senha_hash"), // null = ainda na senha inicial (1234)
+  segredoSessao: text("segredo_sessao").notNull(),
+  ...datas(),
+});

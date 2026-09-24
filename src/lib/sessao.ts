@@ -1,9 +1,12 @@
 // Login com senha única (Sprint 5.1). O cookie guarda só a data de validade assinada com um segredo:
 // sem senha, sem dado pessoal. Trocar o segredo derruba todas as sessões.
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 export const COOKIE_SESSAO = "bolso-sessao";
 export const DURACAO_SESSAO_MS = 90 * 24 * 60 * 60 * 1000; // 90 dias
+// Senha de fábrica, até o Vinícius trocar em Mais (o app avisa enquanto ela estiver valendo)
+export const SENHA_INICIAL = "1234";
+export const TAMANHO_MINIMO_SENHA = 4;
 
 function assinatura(expiraEm: number, segredo: string) {
   return createHmac("sha256", segredo).update(`bolso:${expiraEm}`).digest("base64url");
@@ -14,7 +17,7 @@ export function criarSessao(segredo: string, agora = Date.now()) {
   return { valor: `${expiraEm}.${assinatura(expiraEm, segredo)}`, expiraEm };
 }
 
-// Comparação em tempo constante: não dá pra descobrir a assinatura medindo o tempo da resposta
+// Comparação em tempo constante: não dá pra descobrir nada medindo o tempo da resposta
 function iguais(a: string, b: string) {
   const x = createHash("sha256").update(a).digest();
   const y = createHash("sha256").update(b).digest();
@@ -29,20 +32,38 @@ export function sessaoValida(valor: string | undefined, segredo: string, agora =
   return iguais(assinado, assinatura(expiraEm, segredo));
 }
 
-export function senhaConfere(digitada: string, correta: string): boolean {
-  if (!correta) return false;
-  return iguais(digitada, correta);
+export function novoSegredo() {
+  return randomBytes(32).toString("base64url");
 }
 
-// Login ligado quando tem senha configurada, e sempre em produção (sem senha lá, ninguém entra)
-export function configuracaoLogin(env: { BOLSO_SENHA?: string; BOLSO_SEGREDO?: string; NODE_ENV?: string }) {
-  const senha = env.BOLSO_SENHA ?? "";
-  const segredo = env.BOLSO_SEGREDO ?? "";
-  const producao = env.NODE_ENV === "production";
-  return {
-    ligado: Boolean(senha) || producao,
-    configurado: Boolean(senha) && segredo.length >= 32,
-    senha,
-    segredo,
-  };
+// Hash da senha com scrypt (lento de propósito) e sal próprio: "scrypt$sal$hash"
+export function hashDaSenha(senha: string): string {
+  const sal = randomBytes(16).toString("base64url");
+  const hash = scryptSync(senha, sal, 32).toString("base64url");
+  return `scrypt$${sal}$${hash}`;
+}
+
+export function senhaConfereComHash(senha: string, guardado: string): boolean {
+  const [tipo, sal, hash] = guardado.split("$");
+  if (tipo !== "scrypt" || !sal || !hash) return false;
+  return iguais(scryptSync(senha, sal, 32).toString("base64url"), hash);
+}
+
+// Qual senha vale: a trocada no app (hash no banco) > a da variável BOLSO_SENHA > a inicial 1234
+export function senhaConfere(digitada: string, fonte: { senhaHash: string | null; senhaEnv: string }): boolean {
+  if (fonte.senhaHash) return senhaConfereComHash(digitada, fonte.senhaHash);
+  return iguais(digitada, fonte.senhaEnv || SENHA_INICIAL);
+}
+
+// Login ligado: sempre em produção; no computador, só se já tiver uma senha definida
+export function loginLigado(env: { NODE_ENV?: string; BOLSO_SENHA?: string }, temSenhaNoBanco: boolean) {
+  return env.NODE_ENV === "production" || Boolean(env.BOLSO_SENHA) || temSenhaNoBanco;
+}
+
+export function validarNovaSenha(nova: string, confirmacao: string): string | null {
+  if (nova.length < TAMANHO_MINIMO_SENHA) return `A senha nova precisa de pelo menos ${TAMANHO_MINIMO_SENHA} caracteres.`;
+  if (nova.length > 200) return "Senha grande demais.";
+  if (nova !== confirmacao) return "A confirmação não bate com a senha nova.";
+  if (nova === SENHA_INICIAL) return "Escolha uma senha diferente de 1234.";
+  return null;
 }

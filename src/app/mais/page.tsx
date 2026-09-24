@@ -2,7 +2,8 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { SeletorTema } from "@/components/seletor-tema";
 import { BotaoSair } from "@/components/botao-sair";
-import { configuracaoLogin } from "@/lib/sessao";
+import { FormSenha } from "@/components/form-senha";
+import { obterAcesso } from "@/db/acesso";
 import { COOKIE_TEMA, lerTema } from "@/lib/tema";
 import { CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat } from "lucide-react";
 
@@ -16,8 +17,11 @@ const itens = [
   { href: "/emprestimos", rotulo: "Empréstimos", texto: "Quem te deve e a quem você deve", Icone: HandCoins, cor: "bg-menta" },
 ];
 
+export const dynamic = "force-dynamic";
+
 export default async function Mais() {
   const tema = lerTema((await cookies()).get(COOKIE_TEMA)?.value);
+  const acesso = await obterAcesso(false);
   return (
     <section className="flex flex-col gap-3">
       <h1 className="mb-1 text-2xl font-bold">Mais</h1>
@@ -38,10 +42,8 @@ export default async function Mais() {
         </Link>
       ))}
       <SeletorTema atual={tema} />
-      {configuracaoLogin(process.env).ligado && <BotaoSair />}
-      <p className="mt-2 text-center text-sm text-tinta-suave">
-        Publicação na internet chega na Fase 5.
-      </p>
+      <FormSenha usandoSenhaInicial={acesso.usandoSenhaInicial} />
+      {acesso.ligado && <BotaoSair />}
     </section>
   );
 }

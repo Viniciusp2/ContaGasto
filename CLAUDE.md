@@ -348,7 +348,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 
 ### 🔵 Fase 5 — Nuvem (deixado pro final, de propósito)
 
-- **Sprint 5.1** Migrar pro Neon + auth (login). Parte de código feita: `DATABASE_URL` liga o Neon (driver `neon-serverless`, com transação), sem ela segue o PGlite local; `npm run db:migrate` serve pros dois. Login com **senha única** (`BOLSO_SENHA`) e sessão assinada (`BOLSO_SEGREDO`, 32+ caracteres) num cookie HttpOnly de 90 dias, conferida no `src/proxy.ts`. Local sem senha fica aberto; **em produção sem as duas variáveis ninguém entra**. Sair apaga as páginas guardadas pro offline. Falta: criar o banco no Neon e aplicar as migrations (precisa do Vinícius).
+- **Sprint 5.1** Migrar pro Neon + auth (login). Parte de código feita: `DATABASE_URL` liga o Neon (driver `neon-serverless`, com transação), sem ela segue o PGlite local; `npm run db:migrate` serve pros dois. Login com **senha única** (`BOLSO_SENHA`) e sessão assinada (`BOLSO_SEGREDO`, 32+ caracteres) num cookie HttpOnly de 90 dias, conferida no `src/proxy.ts`. Local sem senha fica aberto; **em produção sem as duas variáveis ninguém entra**. Sair apaga as páginas guardadas pro offline. **Revisto em 24/09/2026:** senha e segredo moram no banco (tabela `acesso`), sem precisar de variável na Vercel. Senha inicial **1234** (o Início avisa pra trocar); trocar em Mais salva só o hash (scrypt) e troca o segredo, derrubando os outros aparelhos. `BOLSO_SENHA`/`BOLSO_SEGREDO` continuam opcionais e têm prioridade. Banco Neon criado (us-east-1) e migrado. A Vercel criou a variável com prefixo: o app aceita `DATABASE_URL`, `neon_DATABASE_URL` ou `POSTGRES_URL`, e na Vercel sem nenhuma dá erro em vez de usar banco local.
 - **Sprint 5.2** Deploy na Vercel, variáveis de ambiente, RLS por usuário.
 - **Sprint 5.3** Ajustes finais e publicação.
 
@@ -407,7 +407,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Offline           | só leitura do que já foi visto; gravar precisa de internet |
 | PDF               | página de relatório + imprimir do navegador, sem biblioteca |
 | Restaurar backup  | apaga tudo e põe o backup no lugar, tudo ou nada |
-| Login             | senha única + sessão assinada; produção fechada sem configurar |
+| Login             | senha no banco, inicial 1234, troca em Mais |
 | Barber-saas       | o Bolso usa o endereço dele (decisão de 23/09/2026); depende de que tipo de endereço é |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
