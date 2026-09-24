@@ -3,12 +3,14 @@ import { PGlite } from "@electric-sql/pglite";
 import { Pool } from "@neondatabase/serverless";
 import { drizzle as drizzlePglite, type PgliteDatabase } from "drizzle-orm/pglite";
 import { drizzle as drizzleNeon } from "drizzle-orm/neon-serverless";
+import { urlDoBanco } from "@/lib/url-banco";
 import * as schema from "./schema";
 
-// Com DATABASE_URL (Neon, na Vercel), usa o Postgres na nuvem.
+// Com a URL do Neon (ver lib/url-banco), usa o Postgres na nuvem.
 // Sem ela, o Postgres embutido (PGlite) salvo em ./.data, como no desenvolvimento local.
 export const PASTA_BANCO = process.env.PGLITE_DIR ?? "./.data/pglite";
-export const USA_NEON = Boolean(process.env.DATABASE_URL);
+const banco = urlDoBanco(process.env);
+export const USA_NEON = Boolean(banco.url);
 
 // As duas conexões falam o mesmo Postgres pelo Drizzle; o tipo do PGlite serve pras duas
 type Banco = PgliteDatabase<typeof schema>;
@@ -20,8 +22,9 @@ const global = globalThis as unknown as { pglite?: PGlite; pool?: Pool; bolsoDb?
 // abre a mesma pasta em paralelo, o que corromperia um banco de arquivo único.
 function abrir() {
   if (!global.bolsoDb) {
-    if (USA_NEON) {
-      global.pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    if (banco.erro) throw new Error(banco.erro);
+    if (banco.url) {
+      global.pool = new Pool({ connectionString: banco.url });
       global.bolsoDb = drizzleNeon(global.pool, { schema }) as unknown as Banco;
     } else {
       mkdirSync(PASTA_BANCO, { recursive: true });
