@@ -25,11 +25,11 @@ export function BarraInferior() {
         {abas.map(({ href, rotulo, Icone }) => {
           const ativa = href === "/" ? caminho === "/" : caminho.startsWith(href);
           return (
-            <li key={href} className="flex-1">
+            <li key={href} className="min-w-0 flex-1">
               <Link
                 href={href}
                 aria-current={ativa ? "page" : undefined}
-                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs transition-colors ${
+                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] leading-tight tracking-tight transition-colors ${
                   ativa ? "font-semibold text-tinta" : "text-tinta-suave"
                 }`}
               >
@@ -38,7 +38,8 @@ export function BarraInferior() {
                 >
                   <Icone size={22} aria-hidden />
                 </span>
-                {rotulo}
+                {/* Com 5 abas, no celular estreito o nome não pode encostar no do lado */}
+                <span className="max-w-full truncate px-1">{rotulo}</span>
               </Link>
             </li>
           );
