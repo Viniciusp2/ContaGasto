@@ -55,14 +55,19 @@ export async function salvarLancamento(_anterior: EstadoForm, formData: FormData
       dataInicio: inicio,
       diaVencimento: d.repetir === "fixa_variavel" ? Number(inicio.slice(8, 10)) : null,
       valorEstimado: d.repetir === "fixa_variavel" ? d.valor : null,
+      tipoConta: d.tipoConta,
+      pagamentoAutomatico: d.automatico,
     });
     await gerarRecorrencias();
     revalidatePath("/", "layout");
-    redirect("/fixos?salvo=fixo");
+    redirect(formData.get("voltar") === "pagamentos" ? "/pagamentos?salvo=conta" : "/fixos?salvo=fixo");
   }
 
   // No crédito com fatura configurada, o gasto entra no vencimento (4.4)
   const cartao = forma?.tipo === "credito" ? forma : null;
+  // Gasto ainda não pago fica "a pagar": não sai do saldo até marcar Paguei, e a data é o vencimento.
+  // Crédito segue a fatura e VA tem saldo próprio, então esses contam direto.
+  const aPagar = d.tipo === "gasto" && !d.pago && !cartao && forma?.tipo !== "beneficio";
   const valores = {
     data: d.tipo === "gasto" ? dataEfetiva(d.data, cartao) : d.data,
     dataCompra: d.data,
@@ -80,13 +85,15 @@ export async function salvarLancamento(_anterior: EstadoForm, formData: FormData
     if (!ehUuid(id)) return { erro: "Lançamento não encontrado." };
     const editados = await db
       .update(lancamentos)
-      // Salvar a edição confirma o valor (fixa variável deixa de ser estimada, 4.8)
-      .set({ ...valores, status: "confirmado" })
+      // Salvar a edição confirma o valor (fixa variável deixa de ser estimada, 4.8); pago ou não vem do formulário
+      .set({ ...valores, status: aPagar ? "a_pagar" : "confirmado", ...(aPagar ? { vencimento: d.data } : {}) })
       .where(and(eq(lancamentos.id, id), eq(lancamentos.userId, userId)))
       .returning({ id: lancamentos.id });
     if (editados.length === 0) return { erro: "Lançamento não encontrado." };
   } else {
-    await db.insert(lancamentos).values({ ...valores, userId });
+    await db
+      .insert(lancamentos)
+      .values({ ...valores, userId, status: aPagar ? "a_pagar" : "confirmado", vencimento: aPagar ? d.data : null });
   }
 
   revalidatePath("/", "layout");

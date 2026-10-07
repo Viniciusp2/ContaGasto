@@ -54,7 +54,7 @@ export async function montarPlanilha(ano: number, linhas: LinhaPlanilha[], mesAt
       forma: l.formaNome ?? "",
       // Gasto negativo, entrada positiva: dá pra somar a coluna direto
       valor: (l.tipo === "gasto" ? -l.valor : l.valor) / 100,
-      situacao: l.status === "estimado" ? "Estimado" : "Confirmado",
+      situacao: l.status === "estimado" ? "Estimado" : l.status === "a_pagar" ? "A pagar" : "Confirmado",
       parcela: l.parcela && l.totalParcelas ? `${l.parcela}/${l.totalParcelas}` : "",
       compra: l.dataCompra && l.dataCompra !== l.data ? paraData(l.dataCompra) : null,
     });

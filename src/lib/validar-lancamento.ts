@@ -1,3 +1,4 @@
+import { tipoContaValido, type TipoConta } from "./contas";
 import { dataValida } from "./datas";
 import { MAX_CENTAVOS } from "./dinheiro";
 import { lerHolerite, liquidoDoHolerite, type Holerite } from "./holerite";
@@ -15,6 +16,9 @@ export type DadosLancamento = {
   diaUtil: number | null; // Nº dia útil, -1 = último, null = dia fixo
   sabadoUtil: boolean;
   holerite: Holerite | null;
+  pago: boolean; // gasto: já pagou ou ainda vai pagar (a data vira o vencimento)
+  automatico: boolean; // fixo em débito automático: nasce pago, sem precisar marcar
+  tipoConta: TipoConta | null; // luz, água, cartão... só em gasto que repete
 };
 
 export const MAX_DIA_UTIL = 22;
@@ -95,6 +99,12 @@ export function validarLancamento(formData: FormData): Resultado {
     }
   }
 
+  const pago = tipo === "entrada" || texto(formData, "pago") !== "nao";
+  const automatico = tipo === "gasto" && repetir !== "unico" && texto(formData, "automatico") === "sim";
+  const tipoContaTexto = texto(formData, "tipoConta");
+  if (tipoContaTexto && !tipoContaValido(tipoContaTexto)) return { ok: false, erro: "Tipo de conta inválido." };
+  const tipoConta = tipo === "gasto" && repetir !== "unico" && tipoContaTexto ? (tipoContaTexto as TipoConta) : null;
+
   return {
     ok: true,
     dados: {
@@ -110,6 +120,9 @@ export function validarLancamento(formData: FormData): Resultado {
       diaUtil,
       sabadoUtil,
       holerite,
+      pago,
+      automatico,
+      tipoConta,
     },
   };
 }

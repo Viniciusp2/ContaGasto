@@ -50,6 +50,13 @@
       "when": 1790249545237,
       "tag": "0006_acesso",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791411200476,
+      "tag": "0007_pagamentos",
+      "breakpoints": true
     }
   ]
 }

@@ -21,6 +21,8 @@ import { montarLinhaDoTempo } from "@/lib/linha-do-tempo";
 import { hojeISO, intervaloDoMes, lerMes, mesParaTexto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 import { NumeroAnimado } from "@/components/animacoes";
+import { ContaPagamento } from "@/components/conta-pagamento";
+import { contasPendentes } from "@/db/pagamentos";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +49,8 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   // Painel de "agora" (disponível, previsão, contas a vencer): só no mês atual
   const mesAtual = mesParaTexto(mes) === hoje.slice(0, 7);
   const painel = mesAtual ? await montarPainel(lancamentos, resumo.saldoReal, resumo.entradas) : null;
+  // Contas atrasadas ou vencendo nos próximos 3 dias: o Paguei fica a um toque, logo no topo
+  const pendentes = mesAtual ? await contasPendentes(hoje, 3) : [];
 
   async function montarPainel(lista: typeof lancamentos, saldoReal: number, entradas: number) {
     const [compromissos, guardadoMes, proximo, assinaturas, entradasPrevistas, doMes] = await Promise.all([
@@ -127,6 +131,29 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
         </Link>
       )}
       <SeletorMes mes={mes} href={(m) => `/?mes=${m}`} />
+
+      {pendentes.length > 0 && (
+        <section aria-labelledby="contas-pagar" className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h2 id="contas-pagar" className="font-semibold">
+              Contas pra pagar
+            </h2>
+            <Link href="/pagamentos" className="flex min-h-11 items-center gap-1 text-sm text-tinta-suave">
+              Ver todas <ChevronRight size={16} aria-hidden />
+            </Link>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {pendentes.slice(0, 3).map((c) => (
+              <ContaPagamento key={c.chave} conta={c} hoje={hoje} compacta />
+            ))}
+          </ul>
+          {pendentes.length > 3 && (
+            <Link href="/pagamentos" className="text-center text-sm text-tinta-suave underline">
+              e mais {pendentes.length - 3}
+            </Link>
+          )}
+        </section>
+      )}
 
       {painel && (
         <CartaoDisponivel

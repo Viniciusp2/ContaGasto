@@ -6,6 +6,7 @@ import { formatarCentavos } from "@/lib/dinheiro";
 
 export function ItemLancamentoLinha({ item, comparacao }: { item: ItemLancamento; comparacao?: string }) {
   const estimado = item.status === "estimado";
+  const aPagar = item.status === "a_pagar";
   const entrada = item.tipo === "entrada";
 
   const detalhes = [
@@ -22,7 +23,7 @@ export function ItemLancamentoLinha({ item, comparacao }: { item: ItemLancamento
       <Link
         href={`/lancamentos/${item.id}/editar`}
         className={`flex min-h-16 items-center gap-3 rounded-card bg-cartao px-3 py-2 shadow-suave transition-transform active:scale-[0.98] ${
-          estimado ? "opacity-70" : ""
+          estimado || aPagar ? "opacity-70" : ""
         }`}
       >
         <span
@@ -37,6 +38,9 @@ export function ItemLancamentoLinha({ item, comparacao }: { item: ItemLancamento
             <span className="truncate font-semibold">{item.descricao}</span>
             {estimado && (
               <span className="shrink-0 rounded-full bg-limao px-2 text-xs font-semibold">estimado</span>
+            )}
+            {aPagar && (
+              <span className="shrink-0 rounded-full bg-limao px-2 text-xs font-semibold">a pagar</span>
             )}
           </span>
           <span className="block truncate text-sm text-tinta-suave">{detalhes.join(" · ")}</span>

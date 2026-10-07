@@ -41,3 +41,23 @@ describe("prepararLinha", () => {
 it("nome do arquivo leva a data", () => {
   expect(nomeDoArquivo("2026-09-23")).toBe("bolso-backup-2026-09-23.json");
 });
+
+describe("backup antigo", () => {
+  it("sem pagamentosFatura ainda é aceito", async () => {
+    const { lerBackup } = await import("./backup");
+    const id = "11111111-1111-4111-8111-111111111111";
+    const dados = {
+      categorias: [{ id }],
+      formasPagamento: [],
+      recorrencias: [],
+      lancamentos: [],
+      metas: [],
+      objetivos: [],
+      movimentosObjetivo: [],
+      emprestimos: [],
+    };
+    const r = lerBackup(JSON.stringify({ app: "bolso", versao: 1, geradoEm: "", dados }));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.backup.dados.pagamentosFatura).toEqual([]);
+  });
+});

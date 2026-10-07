@@ -8,6 +8,7 @@ import { diaCurto } from "@/lib/datas";
 import { centavosDeDigitos, formatarCentavos } from "@/lib/dinheiro";
 import { liquidoDoHolerite, MAX_DESCONTOS, type Holerite } from "@/lib/holerite";
 import { dataEfetiva } from "@/lib/recorrencias";
+import { TIPOS_CONTA } from "@/lib/contas";
 import { MAX_DIA_UTIL, MAX_PARCELAS, type Repetir } from "@/lib/validar-lancamento";
 
 type Categoria = { id: string; nome: string; icone: string; cor: string; tipo: "gasto" | "entrada" };
@@ -36,6 +37,8 @@ export type LancamentoInicial = {
   formaPagamentoId: string | null;
   obs: string | null;
   estimado: boolean;
+  pago: boolean;
+  vencimento: string | null;
   holerite: Holerite | null;
 };
 
@@ -48,11 +51,13 @@ export function FormLancamento({
   formas,
   hoje,
   inicial,
+  modoConta = false,
 }: {
   categorias: Categoria[];
   formas: Forma[];
   hoje: string;
   inicial?: LancamentoInicial;
+  modoConta?: boolean; // aberto pela tela Pagamentos: começa como "todo mês" e volta pra lá
 }) {
   const [estado, acao, salvando] = useActionState(salvarLancamento, inicialVazio);
   const [tipo, setTipo] = useState<"gasto" | "entrada">(inicial?.tipo ?? "gasto");
@@ -63,12 +68,15 @@ export function FormLancamento({
   const [data, setData] = useState(inicial?.data ?? hoje);
   const [descricao, setDescricao] = useState(inicial?.descricao ?? "");
   const [obs, setObs] = useState(inicial?.obs ?? "");
-  const [repetir, setRepetir] = useState<Repetir>("unico");
+  const [repetir, setRepetir] = useState<Repetir>(modoConta ? "fixa" : "unico");
   const [parcelas, setParcelas] = useState("2");
   const [quando, setQuando] = useState<Quando>("dia");
   const [diaUtil, setDiaUtil] = useState("5");
   const [sabadoUtil, setSabadoUtil] = useState(true);
   const [holerite, setHolerite] = useState<Holerite>(inicial?.holerite ?? { bruto: 0, descontos: [] });
+  const [pago, setPago] = useState(inicial?.pago ?? true);
+  const [automatico, setAutomatico] = useState(false);
+  const [tipoConta, setTipoConta] = useState("");
 
   const daCategoria = categorias.filter((c) => c.tipo === tipo);
   const parcelado = repetir === "temporaria";
@@ -87,6 +95,18 @@ export function FormLancamento({
   const forma = formas.find((f) => f.id === formaId);
   const cartao = tipo === "gasto" && forma?.tipo === "credito" ? forma : null;
   const vencimento = cartao && data ? dataEfetiva(data, cartao) : null;
+  // Já paguei ou ainda vou pagar: só no gasto pago na mão (crédito segue a fatura, VA tem saldo próprio)
+  const pagoNaMao = tipo === "gasto" && !cartao && forma?.tipo !== "beneficio";
+  const perguntaPago = pagoNaMao && repetir === "unico";
+  const aPagar = perguntaPago && !pago;
+  const contaQueRepete = tipo === "gasto" && repetir !== "unico";
+
+  function trocarPago(novo: boolean) {
+    if (novo === pago) return;
+    setPago(novo);
+    // Pagou agora: a data vira hoje. Voltou pra a pagar: a data volta a ser o vencimento.
+    if (inicial) setData(novo ? hoje : (inicial.vencimento ?? data));
+  }
 
   function trocarTipo(novo: "gasto" | "entrada") {
     if (novo === tipo) return;
@@ -106,6 +126,10 @@ export function FormLancamento({
       <input type="hidden" name="quando" value={quando} />
       <input type="hidden" name="diaUtil" value={diaUtil} />
       <input type="hidden" name="sabadoUtil" value={sabadoUtil ? "sim" : "nao"} />
+      {modoConta && <input type="hidden" name="voltar" value="pagamentos" />}
+      <input type="hidden" name="pago" value={aPagar ? "nao" : "sim"} />
+      <input type="hidden" name="automatico" value={automatico ? "sim" : "nao"} />
+      <input type="hidden" name="tipoConta" value={contaQueRepete ? tipoConta : ""} />
       {usandoHolerite && <input type="hidden" name="holerite" value={JSON.stringify(holerite)} />}
 
       <div role="radiogroup" aria-label="Tipo" className="grid grid-cols-2 gap-2 rounded-card bg-lavanda p-1.5">
@@ -301,6 +325,68 @@ export function FormLancamento({
         </fieldset>
       )}
 
+      {contaQueRepete && (
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold">
+            Que conta é? <span className="font-normal text-tinta-suave">(opcional)</span>
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {TIPOS_CONTA.map((t) => (
+              <button
+                key={t.valor}
+                type="button"
+                aria-pressed={tipoConta === t.valor}
+                onClick={() => setTipoConta(tipoConta === t.valor ? "" : t.valor)}
+                className={`flex min-h-11 items-center gap-1.5 rounded-full border-2 px-3 text-sm transition-colors ${
+                  tipoConta === t.valor ? "border-tinta bg-lavanda font-semibold" : "border-transparent bg-cartao"
+                }`}
+              >
+                <IconeCategoria nome={t.icone} size={16} />
+                {t.rotulo}
+              </button>
+            ))}
+          </div>
+          {pagoNaMao && (
+            <label className="mt-3 flex min-h-11 items-center gap-3 text-sm">
+              <input
+                type="checkbox"
+                checked={automatico}
+                onChange={(e) => setAutomatico(e.target.checked)}
+                className="size-5 accent-tinta"
+              />
+              Débito automático (sai sozinho, não preciso marcar que paguei)
+            </label>
+          )}
+          {pagoNaMao && !automatico && (
+            <p className="mt-1 text-sm text-tinta-suave">
+              Todo mês ela aparece em Pagamentos como &quot;a pagar&quot; e só sai do saldo quando você marcar Paguei.
+            </p>
+          )}
+        </fieldset>
+      )}
+
+      {perguntaPago && (
+        <div role="radiogroup" aria-label="Já pagou?" className="grid grid-cols-2 gap-2 rounded-card bg-cartao p-1.5">
+          {([
+            [true, "Já paguei"],
+            [false, "Ainda vou pagar"],
+          ] as const).map(([v, rotulo]) => (
+            <button
+              key={rotulo}
+              type="button"
+              role="radio"
+              aria-checked={pago === v}
+              onClick={() => trocarPago(v)}
+              className={`min-h-11 rounded-2xl text-sm font-semibold transition-colors ${
+                pago === v ? (v ? "bg-menta shadow-suave" : "bg-limao shadow-suave") : "text-tinta-suave"
+              }`}
+            >
+              {rotulo}
+            </button>
+          ))}
+        </div>
+      )}
+
       {podeHolerite && <CamposHolerite holerite={holerite} setHolerite={setHolerite} />}
 
       <div>
@@ -308,7 +394,11 @@ export function FormLancamento({
           {cartao
             ? "Data da compra"
             : repetir === "unico"
-              ? "Data"
+              ? aPagar
+                ? "Vence em"
+                : inicial && !inicial.pago
+                  ? "Pago em"
+                  : "Data"
               : repeteTodoMes && quando !== "dia"
                 ? "A partir de"
                 : "Primeira vez"}
@@ -373,9 +463,11 @@ export function FormLancamento({
       >
         {salvando ? <LoaderCircle className="animate-spin" aria-hidden /> : <Check aria-hidden />}
         {inicial
-          ? inicial.estimado
-            ? "Confirmar valor"
-            : "Salvar alterações"
+          ? !inicial.pago && !aPagar
+            ? "Salvar como pago"
+            : inicial.estimado
+              ? "Confirmar valor"
+              : "Salvar alterações"
           : repetir !== "unico"
             ? "Salvar e repetir"
             : tipo === "gasto"

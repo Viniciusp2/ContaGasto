@@ -130,8 +130,25 @@ describe("validarLancamento", () => {
         diaUtil: null,
         sabadoUtil: true,
         holerite: null,
+        pago: true,
+        automatico: false,
+        tipoConta: null,
       },
     });
+  });
+
+  it("conta: ainda vou pagar, débito automático e tipo de conta", () => {
+    const r = validarLancamento(form({ pago: "nao" }));
+    expect(r.ok && r.dados.pago).toBe(false);
+    const f = validarLancamento(form({ repetir: "fixa", automatico: "sim", tipoConta: "luz" }));
+    expect(f.ok && [f.dados.automatico, f.dados.tipoConta]).toEqual([true, "luz"]);
+    // Tipo de conta e débito automático só em gasto que repete
+    const u = validarLancamento(form({ automatico: "sim", tipoConta: "luz" }));
+    expect(u.ok && [u.dados.automatico, u.dados.tipoConta]).toEqual([false, null]);
+    expect(validarLancamento(form({ repetir: "fixa", tipoConta: "xyz" })).ok).toBe(false);
+    // Entrada é sempre "paga"
+    const e = validarLancamento(form({ tipo: "entrada", pago: "nao" }));
+    expect(e.ok && e.dados.pago).toBe(true);
   });
 
   it("salário no 5º dia útil e último dia útil", () => {

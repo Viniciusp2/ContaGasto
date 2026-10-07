@@ -1,10 +1,11 @@
 // Painel do Início (Sprint 3.3): junta o que vai cair, o que foi guardado e as assinaturas.
-import { and, between, eq, lte, sql } from "drizzle-orm";
+import { and, between, eq, inArray, lte, sql } from "drizzle-orm";
 import { intervaloDoMes, somarMeses, type Mes } from "@/lib/datas";
 import { mediaEstimada, ocorrenciasNoIntervalo } from "@/lib/recorrencias";
 import { db } from ".";
 import { listarRecorrencias } from "./consultas";
 import { valoresConfirmadosRecentes } from "./gerar-recorrencias";
+import { ocorrenciasJaLancadas } from "./pagamentos";
 import { categorias, emprestimos, lancamentos, movimentosObjetivo } from "./schema";
 import { USUARIO_PADRAO } from "./usuario-padrao";
 
@@ -15,7 +16,7 @@ export type Compromisso = {
   descricao: string;
   valor: number;
   data: string;
-  tipo: "fixo" | "parcela" | "estimado" | "a_confirmar" | "emprestimo" | "entrada";
+  tipo: "fixo" | "parcela" | "estimado" | "a_confirmar" | "a_pagar" | "emprestimo" | "entrada";
   detalhe?: string;
   icone?: string;
   cor?: string;
@@ -25,6 +26,7 @@ export type Compromisso = {
 // Recorrências que ainda vão cair no intervalo (de, ate]. Por padrão só gastos; VA sempre fica de fora.
 async function recorrenciasNoIntervalo(de: string, ate: string, tipo: "gasto" | "entrada" = "gasto"): Promise<Compromisso[]> {
   const itens: Compromisso[] = [];
+  const jaLancadas = await ocorrenciasJaLancadas(de); // pago adiantado não cai de novo
   for (const r of await listarRecorrencias()) {
     if (r.categoriaTipo !== tipo || r.formaTipo === "beneficio" || r.categoriaNome === "Vale alimentação") continue;
     if (!r.rec.ativa && !r.rec.dataFim) continue; // pausado não é compromisso
@@ -38,6 +40,7 @@ async function recorrenciasNoIntervalo(de: string, ate: string, tipo: "gasto" | 
       : r.rec.valor;
 
     for (const o of ocorrencias) {
+      if (jaLancadas.has(`${r.rec.id}-${o.competencia}`)) continue;
       itens.push({
         chave: `${r.rec.id}-${o.competencia}`,
         descricao: r.rec.descricao,
@@ -54,16 +57,17 @@ async function recorrenciasNoIntervalo(de: string, ate: string, tipo: "gasto" | 
   return itens;
 }
 
-// Compromissos do mês atual (4.9): o que ainda vai cair até o fim do mês, as contas estimadas
-// esperando confirmação e o que você deve com prazo até o fim do mês (inclusive atrasado)
+// Compromissos do mês atual (4.9): o que ainda vai cair até o fim do mês, as contas não pagas
+// (a pagar ou estimadas, inclusive atrasadas de meses anteriores) e o que você deve com prazo até o fim do mês
 export async function compromissosDoMes(hoje: string, mes: Mes): Promise<Compromisso[]> {
-  const { inicio, fim } = intervaloDoMes(mes);
+  const { fim } = intervaloDoMes(mes);
 
   const futuros = await recorrenciasNoIntervalo(hoje, fim);
 
-  const aConfirmar = await db
+  const naoPagas = await db
     .select({
       id: lancamentos.id,
+      status: lancamentos.status,
       descricao: lancamentos.descricao,
       valor: lancamentos.valor,
       data: lancamentos.data,
@@ -76,8 +80,8 @@ export async function compromissosDoMes(hoje: string, mes: Mes): Promise<Comprom
       and(
         eq(lancamentos.userId, userId),
         eq(lancamentos.tipo, "gasto"),
-        eq(lancamentos.status, "estimado"),
-        between(lancamentos.data, inicio, fim),
+        inArray(lancamentos.status, ["estimado", "a_pagar"]),
+        lte(lancamentos.data, fim),
       ),
     );
 
@@ -94,16 +98,16 @@ export async function compromissosDoMes(hoje: string, mes: Mes): Promise<Comprom
     );
 
   return [
-    ...aConfirmar.map((l) => ({
+    ...naoPagas.map((l) => ({
       chave: l.id,
       descricao: l.descricao,
       valor: l.valor,
       data: l.data,
-      tipo: "a_confirmar" as const,
-      detalhe: "confirme o valor",
+      tipo: l.status === "estimado" ? ("a_confirmar" as const) : ("a_pagar" as const),
+      detalhe: l.data < hoje ? "atrasada" : l.status === "estimado" ? "confirme o valor" : "a pagar",
       icone: l.icone,
       cor: l.cor,
-      href: `/lancamentos/${l.id}/editar`,
+      href: "/pagamentos",
     })),
     ...futuros,
     ...dividas.map((e) => ({

@@ -46,7 +46,7 @@ export const tipoFormaPagamento = pgEnum("tipo_forma_pagamento", [
 export const tipoRecorrencia = pgEnum("tipo_recorrencia", ["fixa", "fixa_variavel", "temporaria"]);
 
 // Seção 4.8. Só "confirmado" entra no saldo real.
-export const statusLancamento = pgEnum("status_lancamento", ["estimado", "confirmado"]);
+export const statusLancamento = pgEnum("status_lancamento", ["estimado", "confirmado", "a_pagar"]);
 
 export const direcaoEmprestimo = pgEnum("direcao_emprestimo", ["a_receber", "a_pagar"]);
 
@@ -140,6 +140,9 @@ export const recorrencias = pgTable(
     // Nº dia útil do mês (-1 = último). Null = cai no dia_do_mes.
     diaUtil: integer("dia_util"),
     sabadoUtil: boolean("sabado_util").notNull().default(true),
+    // Pagamentos do mês (6.1): tipo da conta (luz, água...) e se sai sozinho (débito automático)
+    tipoConta: text("tipo_conta"),
+    pagamentoAutomatico: boolean("pagamento_automatico").notNull().default(false),
     ...datas(),
   },
   (t) => [
@@ -177,6 +180,8 @@ export const lancamentos = pgTable(
     dataCompra: date("data_compra"),
     // "YYYY-MM" da ocorrência, só em lançamento gerado por recorrência
     competencia: text("competencia"),
+    // Quando a conta vence. Ao marcar "Paguei", "data" vira o dia do pagamento e isto fica.
+    vencimento: date("vencimento"),
     // Só no salário, só pra consulta: bruto e descontos. O valor é o líquido (4.2).
     holerite: jsonb("holerite").$type<Holerite>(),
     obs: text("obs"),
@@ -273,3 +278,20 @@ export const acesso = pgTable("acesso", {
   segredoSessao: text("segredo_sessao").notNull(),
   ...datas(),
 });
+
+// Fatura do cartão marcada como paga (6.1). Só controle: os gastos do cartão já contam no vencimento (4.4).
+export const pagamentosFatura = pgTable(
+  "pagamentos_fatura",
+  {
+    id: id(),
+    userId: donoId(),
+    formaPagamentoId: uuid("forma_pagamento_id")
+      .notNull()
+      .references(() => formasPagamento.id, { onDelete: "cascade" }),
+    // "YYYY-MM" do mês em que a fatura vence
+    competencia: text("competencia").notNull(),
+    pagoEm: date("pago_em").notNull(),
+    ...datas(),
+  },
+  (t) => [unique().on(t.formaPagamentoId, t.competencia)],
+);

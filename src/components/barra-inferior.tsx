@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, ListOrdered, Target, Menu } from "lucide-react";
+import { House, ListOrdered, Receipt, Target, Menu } from "lucide-react";
 
 const abas = [
   { href: "/", rotulo: "Início", Icone: House },
   { href: "/lancamentos", rotulo: "Lançamentos", Icone: ListOrdered },
+  { href: "/pagamentos", rotulo: "Pagamentos", Icone: Receipt },
   { href: "/metas", rotulo: "Metas", Icone: Target },
   { href: "/mais", rotulo: "Mais", Icone: Menu },
 ];
@@ -33,7 +34,7 @@ export function BarraInferior() {
                 }`}
               >
                 <span
-                  className={`rounded-full px-4 py-1 transition-colors ${ativa ? "bg-lavanda" : ""}`}
+                  className={`rounded-full px-3 py-1 transition-colors ${ativa ? "bg-lavanda" : ""}`}
                 >
                   <Icone size={22} aria-hidden />
                 </span>

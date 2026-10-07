@@ -1,6 +1,7 @@
 // Transforma recorrências em lançamentos quando a data chega (CLAUDE.md 4.3).
 // Pode rodar quantas vezes quiser: gerada_ate + índice único impedem duplicar.
 import { and, desc, eq } from "drizzle-orm";
+import { statusAoGerar } from "@/lib/contas";
 import { hojeISO } from "@/lib/datas";
 import { subtipoDaCategoria } from "@/lib/entradas";
 import { mediaEstimada, ocorrenciasPendentes } from "@/lib/recorrencias";
@@ -72,7 +73,8 @@ export async function gerarRecorrencias(hoje = hojeISO()) {
           subtipoEntrada: categoriaTipo === "entrada" ? subtipoDaCategoria(categoriaNome) : null,
           recorrenciaId: rec.id,
           parcela: o.parcela,
-          status: variavel ? ("estimado" as const) : ("confirmado" as const),
+          vencimento: o.data,
+          status: statusAoGerar({ variavel, tipo: categoriaTipo, formaTipo, automatico: rec.pagamentoAutomatico }),
         })),
       )
       .onConflictDoNothing()

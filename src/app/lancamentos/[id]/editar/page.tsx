@@ -36,6 +36,11 @@ export default async function EditarLancamento({ params }: PageProps<"/lancament
           valor e confirme: aí ele entra no saldo.
         </p>
       )}
+      {lancamento.status === "a_pagar" && (
+        <p className="rounded-card bg-limao px-4 py-3 text-sm">
+          Essa conta <strong>ainda não foi paga</strong>, então não saiu do seu saldo. Marque &quot;Já paguei&quot; quando pagar.
+        </p>
+      )}
       <FormLancamento
         categorias={categorias}
         formas={formas}
@@ -50,6 +55,8 @@ export default async function EditarLancamento({ params }: PageProps<"/lancament
           formaPagamentoId: lancamento.formaPagamentoId,
           obs: lancamento.obs,
           estimado: lancamento.status === "estimado",
+          pago: lancamento.status === "confirmado",
+          vencimento: lancamento.vencimento,
           holerite: lancamento.holerite,
         }}
       />

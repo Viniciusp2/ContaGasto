@@ -231,6 +231,21 @@ VA só compra comida, então **não é dinheiro livre**. Ele tem **saldo própri
 - **Saldo do VA** = tudo que entrou de VA − tudo que foi pago com VA, acumulado (o que sobra passa pro mês seguinte).
 - É uma versão mínima das carteiras da 4.11. Quando as carteiras chegarem, o VA vira uma delas.
 
+### 4.14 Pagamentos do mês (Sprint 6.1, pedido em 07/10/2026)
+
+Aba própria na barra de baixo. Lista as contas do mês: o que já pagou, o que falta e o que está atrasado.
+
+- **Paguei ou não:** gasto pago na mão nasce **a pagar** (status `a_pagar`). Não sai do saldo real até você marcar **Paguei**; aí o lançamento passa a `confirmado` e a `data` vira o **dia do pagamento** (o `vencimento` fica guardado). "Ainda não paguei" desfaz e a data volta pro vencimento.
+- **Conta não paga não some:** fica como **atrasada** nos meses seguintes até ser paga (não pagou o aluguel de setembro: em outubro aparecem os dois). Paga em outubro, ela entra no saldo de outubro e aparece em Pagas de outubro.
+- **Disponível para gastar** desconta tudo que está a pagar, inclusive atrasado, pra nunca parecer que sobra dinheiro.
+- **Quem nasce pago:** crédito (segue a fatura, 4.4), VA, entradas e fixo marcado como **débito automático**. Valor que muda (luz, água) nasce estimado: o Paguei pede quanto veio.
+- **Gasto avulso:** no formulário, "Já paguei" (padrão) ou "Ainda vou pagar" (a data vira o vencimento).
+- **Tipo da conta:** aluguel, condomínio, luz, água, gás, internet, telefone, cartão, financiamento, empréstimo, escola, plano de saúde, seguro, assinatura, imposto, outra (`recorrencias.tipo_conta`, ícone lucide). Mostra também quanto tempo falta: "parcela 4/10, termina em mar/2027", "até dez/2026" ou "todo mês".
+- **Fatura do cartão** aparece como conta: soma dos gastos no crédito que vencem no mês + parcelas e fixos do cartão que ainda vão cair. Marcar a fatura como paga é **só controle** (`pagamentos_fatura`): os gastos do cartão já contam no vencimento.
+- **Pagar adiantado:** conta que ainda vai vencer já pode ser paga; vira lançamento da competência dela e o gerador não duplica.
+- **Fácil de achar:** aba Pagamentos, bloco "Contas pra pagar" no topo do Início (atrasadas e as que vencem em até 3 dias, com Paguei a um toque) e etiqueta "a pagar" na lista de lançamentos.
+- **Próximos:** notificações (conta vencendo, atrasada) e comprovantes (foto ou PDF, no Vercel Blob).
+
 ### 4.11 Contas e transferências (v2)
 
 Hoje o app diz **quanto** dinheiro existe, não **onde** ele está. Na v2:
@@ -253,8 +268,9 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 - **usuarios** — id, nome, email (auth na Fase 5).
 - **categorias** — nome, emoji, icone (nome do ícone lucide), cor, tipo (gasto|entrada), ativa.
 - **formas_pagamento** — nome, tipo (pix|debito|credito|dinheiro|boleto|beneficio), dia_fechamento e dia_vencimento (só crédito, nullable).
-- **lancamentos** — data (quando o dinheiro sai), data_compra, competencia (`YYYY-MM`, só em lançamento gerado por recorrência), descricao, valor, categoria_id, forma_pagamento_id, tipo (gasto|entrada), subtipo_entrada, recorrencia_id (nullable), parcela (nullable, o X de "parcela X/N"), status (estimado|confirmado, default confirmado), holerite (jsonb opcional: bruto e descontos), obs. subtipo_entrada ganha `beneficio`.
-- **recorrencias** — tipo (fixa|fixa_variavel|temporaria), descricao, valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa, dia_vencimento, valor_estimado, meses_media (default 3), gerada_ate (`YYYY-MM`), dia_util (Nº dia útil; -1 = último; null = dia fixo), sabado_util (default true).
+- **lancamentos** — data (quando o dinheiro sai), data_compra, competencia (`YYYY-MM`, só em lançamento gerado por recorrência), descricao, valor, categoria_id, forma_pagamento_id, tipo (gasto|entrada), subtipo_entrada, recorrencia_id (nullable), parcela (nullable, o X de "parcela X/N"), status (estimado|confirmado|a_pagar, default confirmado), vencimento (quando a conta vence; ao pagar, data vira o dia do pagamento), holerite (jsonb opcional: bruto e descontos), obs. subtipo_entrada ganha `beneficio`.
+- **recorrencias** — tipo (fixa|fixa_variavel|temporaria), descricao, valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa, dia_vencimento, valor_estimado, meses_media (default 3), gerada_ate (`YYYY-MM`), dia_util (Nº dia útil; -1 = último; null = dia fixo), sabado_util (default true), tipo_conta (luz, água...), pagamento_automatico (débito automático, default false).
+- **pagamentos_fatura** — forma_pagamento_id, competencia (`YYYY-MM`), pago_em. Fatura marcada como paga (só controle, 4.14).
 - **metas** — categoria_id, limite_mensal.
 - **objetivos** — nome, emoji, valor_alvo, data_alvo. **Sem `valor_guardado`**: o saldo do objetivo é a soma dos movimentos, num lugar só (ver abaixo).
 - **movimentos_objetivo** — objetivo_id, data, valor (positivo = guardar, negativo = resgatar). É a fonte da verdade do saldo do objetivo.
@@ -346,6 +362,12 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Sprint 4.2** PWA (instalar no celular, funcionar offline básico). Feito: manifesto (`app/manifest.ts`), ícones gerados por `npm run icones` (bolso coral com moeda menta, sem emoji; versão maskable), service worker próprio em `public/sw.js`. Offline: páginas já vistas abrem com a última versão (aviso "Sem internet" no topo); página nunca vista mostra `/offline`; lançar precisa de conexão. O service worker só registra em produção. **Instalar exige HTTPS**: no celular só funciona depois do deploy (Fase 5) ou com `next dev --experimental-https`.
 - **Sprint 4.3** Exportar Excel/PDF + backup. Feito em Mais, Exportar e backup: planilha `.xlsx` do ano (aba de lançamentos com gasto negativo + aba de resumo por mês), relatório do mês feito pra impressão (`/relatorio`, "Salvar como PDF" do navegador, sem biblioteca de PDF), backup JSON de tudo e restauração (substitui tudo numa transação só, pede RESTAURAR digitado, valida o arquivo antes).
 
+### 🟤 Fase 6 — v2
+
+- **Sprint 6.1** Pagamentos do mês (4.14): aba Pagamentos, paguei ou não, atrasadas que seguem pro mês seguinte, tipo da conta, fatura do cartão, aviso no Início. Feito. A Vercel aplica as migrations sozinha a cada deploy (`vercel-build` = `db:migrate` + `next build`).
+- **Sprint 6.2** Notificações (conta vencendo amanhã, vence hoje, atrasada).
+- **Sprint 6.3** Comprovantes nas contas pagas (precisa do Vercel Blob ligado ao projeto).
+
 ### 🔵 Fase 5 — Nuvem (deixado pro final, de propósito)
 
 - **Sprint 5.1** Migrar pro Neon + auth (login). Parte de código feita: `DATABASE_URL` liga o Neon (driver `neon-serverless`, com transação), sem ela segue o PGlite local; `npm run db:migrate` serve pros dois. Login com **senha única** (`BOLSO_SENHA`) e sessão assinada (`BOLSO_SEGREDO`, 32+ caracteres) num cookie HttpOnly de 90 dias, conferida no `src/proxy.ts`. Local sem senha fica aberto; **em produção sem as duas variáveis ninguém entra**. Sair apaga as páginas guardadas pro offline. **Revisto em 24/09/2026:** senha e segredo moram no banco (tabela `acesso`), sem precisar de variável na Vercel. Senha inicial **1234** (o Início avisa pra trocar); trocar em Mais salva só o hash (scrypt) e troca o segredo, derrubando os outros aparelhos. `BOLSO_SENHA`/`BOLSO_SEGREDO` continuam opcionais e têm prioridade. Banco Neon criado (us-east-1) e migrado. A Vercel criou a variável com prefixo: o app aceita `DATABASE_URL`, `neon_DATABASE_URL` ou `POSTGRES_URL`, e na Vercel sem nenhuma dá erro em vez de usar banco local.
@@ -412,6 +434,11 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Fixo pausado      | não gera nem conta; retomar não cobra os meses parados |
 | Forma de pagamento | apaga só se nunca usada; tipo fixo depois de criada |
 | Barber-saas       | o Bolso usa o endereço dele (decisão de 23/09/2026); depende de que tipo de endereço é |
+| Pagamentos        | gasto pago na mão nasce a pagar; só sai do saldo ao marcar Paguei, na data do pagamento |
+| Conta atrasada    | continua aparecendo nos meses seguintes até pagar; conta no disponível |
+| Nasce pago        | crédito, VA, entrada e débito automático |
+| Fatura paga       | só controle; gastos do cartão já contam no vencimento |
+| Migrations no deploy | `vercel-build` roda db:migrate antes do build |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |

@@ -12,7 +12,10 @@ export const TABELAS_BACKUP = [
   "objetivos",
   "movimentosObjetivo",
   "emprestimos",
+  "pagamentosFatura",
 ] as const;
+// Tabelas que vieram depois: backup antigo sem elas ainda vale (fica vazio)
+const TABELAS_NOVAS: readonly string[] = ["pagamentosFatura"];
 export type TabelaBackup = (typeof TABELAS_BACKUP)[number];
 
 export type Backup = {
@@ -41,6 +44,7 @@ export function lerBackup(texto: string): { ok: true; backup: Backup; linhas: nu
 
   let linhas = 0;
   for (const tabela of TABELAS_BACKUP) {
+    if (TABELAS_NOVAS.includes(tabela) && !(tabela in b.dados)) (b.dados as Record<string, unknown>)[tabela] = [];
     const lista = (b.dados as Record<string, unknown>)[tabela];
     if (!Array.isArray(lista)) return { ok: false, erro: `Backup incompleto: falta "${tabela}".` };
     for (const linha of lista) {

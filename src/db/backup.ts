@@ -10,6 +10,7 @@ import {
   metas,
   movimentosObjetivo,
   objetivos,
+  pagamentosFatura,
   recorrencias,
 } from "./schema";
 import { USUARIO_PADRAO } from "./usuario-padrao";
@@ -25,6 +26,7 @@ const tabelas = {
   objetivos,
   movimentosObjetivo,
   emprestimos,
+  pagamentosFatura,
 } satisfies Record<TabelaBackup, unknown>;
 
 export async function exportarTudo(): Promise<Backup> {

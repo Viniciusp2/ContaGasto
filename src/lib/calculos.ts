@@ -4,7 +4,7 @@ export type LancamentoCalculo = {
   tipo: "gasto" | "entrada";
   valor: number;
   subtipoEntrada: string | null;
-  status: "estimado" | "confirmado";
+  status: "estimado" | "confirmado" | "a_pagar"; // só confirmado conta no saldo
   formaTipo?: string | null; // "beneficio" = pago com vale alimentação
 };
 
