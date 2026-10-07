@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { IconeCategoria } from "@/components/icone-categoria";
+import { SeloConta } from "@/components/selo-conta";
 import type { ItemLancamento } from "@/db/consultas";
 import { diaCurto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
@@ -35,6 +36,9 @@ export function ItemLancamentoLinha({ item, comparacao }: { item: ItemLancamento
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
+            {item.contaNome && item.contaSigla && (
+              <SeloConta nome={item.contaNome} sigla={item.contaSigla} cor={item.contaCor!} corTexto={item.contaCorTexto!} />
+            )}
             <span className="truncate font-semibold">{item.descricao}</span>
             {estimado && (
               <span className="shrink-0 rounded-full bg-limao px-2 text-xs font-semibold">estimado</span>

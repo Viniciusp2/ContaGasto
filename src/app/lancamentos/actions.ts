@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { buscarCategoria, buscarFormaPagamento } from "@/db/consultas";
+import { buscarCategoria, buscarConta, buscarFormaPagamento } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { lancamentos, recorrencias } from "@/db/schema";
 import { USUARIO_PADRAO } from "@/db/usuario-padrao";
@@ -33,6 +33,8 @@ export async function salvarLancamento(_anterior: EstadoForm, formData: FormData
   if (forma?.tipo === "beneficio" && d.tipo === "entrada") {
     return { erro: "Pra registrar o VA recebido, use a categoria Vale alimentação sem forma de pagamento." };
   }
+
+  if (d.contaId && !(await buscarConta(d.contaId))) return { erro: "Essa conta não existe mais." };
 
   const descricao = d.descricao || categoria.nome;
   const id = String(formData.get("id") ?? "");
@@ -75,6 +77,7 @@ export async function salvarLancamento(_anterior: EstadoForm, formData: FormData
     valor: d.valor,
     categoriaId: d.categoriaId,
     formaPagamentoId: d.formaPagamentoId,
+    contaId: d.contaId,
     tipo: d.tipo,
     subtipoEntrada: d.tipo === "entrada" ? subtipoDaCategoria(categoria.nome) : null,
     obs: d.obs,

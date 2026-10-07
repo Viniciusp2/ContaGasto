@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Check, LoaderCircle, Plus, X } from "lucide-react";
 import { salvarLancamento, type EstadoForm } from "@/app/lancamentos/actions";
 import { IconeCategoria } from "@/components/icone-categoria";
+import { SeloConta } from "@/components/selo-conta";
 import { diaCurto } from "@/lib/datas";
 import { centavosDeDigitos, formatarCentavos } from "@/lib/dinheiro";
 import { liquidoDoHolerite, MAX_DESCONTOS, type Holerite } from "@/lib/holerite";
@@ -12,6 +13,7 @@ import { TIPOS_CONTA } from "@/lib/contas";
 import { MAX_DIA_UTIL, MAX_PARCELAS, type Repetir } from "@/lib/validar-lancamento";
 
 type Categoria = { id: string; nome: string; icone: string; cor: string; tipo: "gasto" | "entrada" };
+type Conta = { id: string; nome: string; sigla: string; cor: string; corTexto: string };
 type Forma = {
   id: string;
   nome: string;
@@ -35,6 +37,7 @@ export type LancamentoInicial = {
   descricao: string;
   categoriaId: string;
   formaPagamentoId: string | null;
+  contaId: string | null;
   obs: string | null;
   estimado: boolean;
   pago: boolean;
@@ -49,12 +52,14 @@ const inicialVazio = { erro: undefined } satisfies EstadoForm;
 export function FormLancamento({
   categorias,
   formas,
+  contas = [],
   hoje,
   inicial,
   modoConta = false,
 }: {
   categorias: Categoria[];
   formas: Forma[];
+  contas?: Conta[];
   hoje: string;
   inicial?: LancamentoInicial;
   modoConta?: boolean; // aberto pela tela Pagamentos: começa como "todo mês" e volta pra lá
@@ -64,6 +69,7 @@ export function FormLancamento({
   const [centavos, setCentavos] = useState(inicial?.valor ?? 0);
   const [categoriaId, setCategoriaId] = useState(inicial?.categoriaId ?? "");
   const [formaId, setFormaId] = useState(inicial?.formaPagamentoId ?? "");
+  const [contaId, setContaId] = useState(inicial?.contaId ?? "");
   // Controlados: o React 19 limpa campos soltos depois da action, e um erro não pode apagar o que foi digitado
   const [data, setData] = useState(inicial?.data ?? hoje);
   const [descricao, setDescricao] = useState(inicial?.descricao ?? "");
@@ -122,6 +128,7 @@ export function FormLancamento({
       <input type="hidden" name="valor" value={valor} />
       <input type="hidden" name="categoriaId" value={categoriaId} />
       <input type="hidden" name="formaPagamentoId" value={formaId} />
+      <input type="hidden" name="contaId" value={contaId} />
       <input type="hidden" name="repetir" value={repetir} />
       <input type="hidden" name="quando" value={quando} />
       <input type="hidden" name="diaUtil" value={diaUtil} />
@@ -219,6 +226,33 @@ export function FormLancamento({
           })}
         </div>
       </fieldset>
+
+      {contas.length > 0 && (
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold">
+            Banco <span className="font-normal text-tinta-suave">(opcional)</span>
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {contas.map((c) => {
+              const escolhida = c.id === contaId;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  aria-pressed={escolhida}
+                  onClick={() => setContaId(escolhida ? "" : c.id)}
+                  className={`flex min-h-11 items-center gap-2 rounded-full border-2 px-3 text-sm transition-colors ${
+                    escolhida ? "border-tinta bg-lavanda font-semibold" : "border-transparent bg-cartao"
+                  }`}
+                >
+                  <SeloConta nome={c.nome} sigla={c.sigla} cor={c.cor} corTexto={c.corTexto} />
+                  {c.nome}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
 
       {!inicial && (
         <fieldset>

@@ -5,11 +5,13 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
   categorias,
+  contas,
   formasPagamento,
   lancamentos,
   recorrencias,
 } from "@/db/schema";
 import { USUARIO_PADRAO } from "@/db/usuario-padrao";
+import { seloDoBanco } from "@/lib/bancos";
 import {
   categoriaProtegida,
   validarCategoria,
@@ -169,6 +171,28 @@ export async function apagarForma(
     };
   }
   await db.delete(formasPagamento).where(eq(formasPagamento.id, id));
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// Banco novo ganha o selo dele (sigla e cor) se for conhecido
+export async function criarConta(_: EstadoConfig, fd: FormData): Promise<EstadoConfig> {
+  const nome = String(fd.get("nome") ?? "").trim().replace(/\s+/g, " ");
+  if (!nome || nome.length > 30) return { erro: "O nome precisa ter de 1 a 30 letras." };
+  const existentes = await db.select({ nome: contas.nome }).from(contas).where(eq(contas.userId, userId));
+  if (existentes.some((c) => c.nome.toLowerCase() === nome.toLowerCase())) return { erro: "Esse banco já está aqui." };
+  await db.insert(contas).values({ userId, nome, ...seloDoBanco(nome) });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// Só apaga banco que nenhum lançamento usa
+export async function apagarConta(_: EstadoConfig, fd: FormData): Promise<EstadoConfig> {
+  const id = String(fd.get("id") ?? "");
+  if (!ehUuid(id)) return { erro: "Banco não encontrado." };
+  const [uso] = await db.select({ n: count() }).from(lancamentos).where(and(eq(lancamentos.contaId, id), eq(lancamentos.userId, userId)));
+  if (uso.n > 0) return { erro: `Esse banco tem ${uso.n} lançamento(s), então fica, pra não perder o histórico.` };
+  await db.delete(contas).where(and(eq(contas.id, id), eq(contas.userId, userId)));
   revalidatePath("/", "layout");
   return { ok: true };
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, DatabaseBackup, FileSpreadsheet, FileText } from "lucide-react";
+import { ArrowLeft, DatabaseBackup, FileInput, FileSpreadsheet, FileText } from "lucide-react";
+import { ImportarLancamentos } from "@/components/importar-lancamentos";
 import { RestaurarBackup } from "@/components/restaurar-backup";
 import { hojeISO, mesParaTexto, mesDe } from "@/lib/datas";
 
@@ -59,6 +60,16 @@ export default function Exportar() {
           Baixar backup
         </a>
         <RestaurarBackup />
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-card bg-cartao p-4 shadow-suave">
+        <h2 className="flex items-center gap-2 font-semibold">
+          <FileInput size={20} aria-hidden /> Importar lançamentos
+        </h2>
+        <p className="text-sm text-tinta-suave">
+          Pra trazer um extrato do banco já convertido. Só adiciona: não apaga nada, e o que já está no app fica de fora.
+        </p>
+        <ImportarLancamentos />
       </section>
     </section>
   );

@@ -111,6 +111,21 @@ export const formasPagamento = pgTable(
   ],
 );
 
+// Contas/bancos (começo da 4.11): de qual banco saiu ou entrou o dinheiro. Na tela vira um selo com sigla e cor.
+export const contas = pgTable(
+  "contas",
+  {
+    id: id(),
+    userId: donoId(),
+    nome: text("nome").notNull(),
+    sigla: text("sigla").notNull(),
+    cor: text("cor").notNull(), // fundo do selo
+    corTexto: text("cor_texto").notNull(), // texto do selo, escolhido pelo contraste
+    ...datas(),
+  },
+  (t) => [unique().on(t.userId, t.nome)],
+);
+
 export const recorrencias = pgTable(
   "recorrencias",
   {
@@ -168,6 +183,8 @@ export const lancamentos = pgTable(
       .notNull()
       .references(() => categorias.id),
     formaPagamentoId: uuid("forma_pagamento_id").references(() => formasPagamento.id),
+    // Banco do lançamento (opcional)
+    contaId: uuid("conta_id").references(() => contas.id, { onDelete: "set null" }),
     tipo: tipoLancamento("tipo").notNull(),
     subtipoEntrada: subtipoEntrada("subtipo_entrada"),
     recorrenciaId: uuid("recorrencia_id").references(() => recorrencias.id, {

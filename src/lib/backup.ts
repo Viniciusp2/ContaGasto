@@ -6,6 +6,7 @@ export const VERSAO_BACKUP = 1;
 export const TABELAS_BACKUP = [
   "categorias",
   "formasPagamento",
+  "contas",
   "recorrencias",
   "lancamentos",
   "metas",
@@ -15,7 +16,7 @@ export const TABELAS_BACKUP = [
   "pagamentosFatura",
 ] as const;
 // Tabelas que vieram depois: backup antigo sem elas ainda vale (fica vazio)
-const TABELAS_NOVAS: readonly string[] = ["pagamentosFatura"];
+const TABELAS_NOVAS: readonly string[] = ["pagamentosFatura", "contas"];
 export type TabelaBackup = (typeof TABELAS_BACKUP)[number];
 
 export type Backup = {

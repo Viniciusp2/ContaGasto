@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { BotaoApagar } from "@/components/botao-apagar";
 import { FormLancamento } from "@/components/form-lancamento";
-import { buscarLancamento, listarCategoriasAtivas, listarFormasPagamento } from "@/db/consultas";
+import { buscarLancamento, listarCategoriasAtivas, listarContas, listarFormasPagamento } from "@/db/consultas";
 import { hojeISO, mesDe, mesParaTexto } from "@/lib/datas";
 import { ehUuid } from "@/lib/validar-lancamento";
 
@@ -16,7 +16,7 @@ export default async function EditarLancamento({ params }: PageProps<"/lancament
   const lancamento = await buscarLancamento(id);
   if (!lancamento) notFound();
 
-  const [categorias, formas] = await Promise.all([listarCategoriasAtivas(), listarFormasPagamento()]);
+  const [categorias, formas, contas] = await Promise.all([listarCategoriasAtivas(), listarFormasPagamento(), listarContas()]);
   const mes = mesParaTexto(mesDe(lancamento.data));
 
   return (
@@ -42,6 +42,7 @@ export default async function EditarLancamento({ params }: PageProps<"/lancament
         </p>
       )}
       <FormLancamento
+        contas={contas}
         categorias={categorias}
         formas={formas}
         hoje={hojeISO()}
@@ -53,6 +54,7 @@ export default async function EditarLancamento({ params }: PageProps<"/lancament
           descricao: lancamento.descricao,
           categoriaId: lancamento.categoriaId,
           formaPagamentoId: lancamento.formaPagamentoId,
+          contaId: lancamento.contaId,
           obs: lancamento.obs,
           estimado: lancamento.status === "estimado",
           pago: lancamento.status === "confirmado",

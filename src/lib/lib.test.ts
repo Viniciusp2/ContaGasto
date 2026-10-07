@@ -123,6 +123,7 @@ describe("validarLancamento", () => {
         data: "2026-09-23",
         categoriaId: cat,
         formaPagamentoId: null,
+        contaId: null,
         descricao: "",
         obs: null,
         repetir: "unico",

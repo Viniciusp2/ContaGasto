@@ -4,6 +4,7 @@ import { intervaloDoMes, type Mes } from "@/lib/datas";
 import { db } from ".";
 import {
   categorias,
+  contas,
   emprestimos,
   formasPagamento,
   lancamentos,
@@ -39,11 +40,16 @@ export function listarLancamentosDoMes(mes: Mes) {
       categoriaIcone: categorias.icone,
       categoriaCor: categorias.cor,
       formaNome: formasPagamento.nome,
+      contaNome: contas.nome,
+      contaSigla: contas.sigla,
+      contaCor: contas.cor,
+      contaCorTexto: contas.corTexto,
     })
     .from(lancamentos)
     .innerJoin(categorias, eq(lancamentos.categoriaId, categorias.id))
     .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
     .leftJoin(recorrencias, eq(lancamentos.recorrenciaId, recorrencias.id))
+    .leftJoin(contas, eq(lancamentos.contaId, contas.id))
     .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, inicio, fim)))
     .orderBy(desc(lancamentos.data), desc(lancamentos.createdAt));
 }
@@ -197,6 +203,15 @@ export function listarRecorrencias() {
     .leftJoin(formasPagamento, eq(recorrencias.formaPagamentoId, formasPagamento.id))
     .where(eq(recorrencias.userId, userId))
     .orderBy(asc(recorrencias.diaDoMes), asc(recorrencias.createdAt));
+}
+
+export async function buscarConta(id: string) {
+  const [c] = await db.select().from(contas).where(and(eq(contas.id, id), eq(contas.userId, userId)));
+  return c ?? null;
+}
+
+export function listarContas() {
+  return db.select().from(contas).where(eq(contas.userId, userId)).orderBy(asc(contas.nome));
 }
 
 export function listarMetas() {

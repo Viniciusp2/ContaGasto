@@ -4,6 +4,7 @@ import { TABELAS_BACKUP, VERSAO_BACKUP, prepararLinha, type Backup, type TabelaB
 import { db } from ".";
 import {
   categorias,
+  contas,
   emprestimos,
   formasPagamento,
   lancamentos,
@@ -20,6 +21,7 @@ const userId = USUARIO_PADRAO.id;
 const tabelas = {
   categorias,
   formasPagamento,
+  contas,
   recorrencias,
   lancamentos,
   metas,

@@ -3,10 +3,11 @@ import { and, asc, eq } from "drizzle-orm";
 import { ArrowLeft } from "lucide-react";
 import { alternarCategoria } from "@/app/configuracoes/actions";
 import { EditorCategoria } from "@/components/editor-categoria";
+import { LinhaConta, NovaConta } from "@/components/editor-conta";
 import { LinhaForma, NovaForma } from "@/components/editor-forma";
 import { IconeCategoria } from "@/components/icone-categoria";
 import { db } from "@/db";
-import { listarFormasPagamento } from "@/db/consultas";
+import { listarContas, listarFormasPagamento } from "@/db/consultas";
 import { categorias } from "@/db/schema";
 import { USUARIO_PADRAO } from "@/db/usuario-padrao";
 import { TIPOS_FORMA, categoriaProtegida } from "@/lib/categorias";
@@ -26,6 +27,7 @@ export default async function Configuracoes() {
     .where(and(eq(categorias.userId, USUARIO_PADRAO.id)))
     .orderBy(asc(categorias.createdAt), asc(categorias.nome));
   const formas = await listarFormasPagamento();
+  const bancos = await listarContas();
 
   return (
     <section className="flex flex-col gap-4">
@@ -33,7 +35,7 @@ export default async function Configuracoes() {
         <Link href="/mais" className="mb-2 inline-flex min-h-11 items-center gap-1 text-sm text-tinta-suave">
           <ArrowLeft size={16} aria-hidden /> Mais
         </Link>
-        <h1 className="text-2xl font-bold">Categorias e formas de pagamento</h1>
+        <h1 className="text-2xl font-bold">Categorias, formas e bancos</h1>
       </div>
 
       {(["gasto", "entrada"] as const).map((tipo) => (
@@ -80,6 +82,19 @@ export default async function Configuracoes() {
           ))}
         </ul>
         <NovaForma />
+      </section>
+
+      <section className="flex flex-col gap-2 rounded-card bg-cartao p-4 shadow-suave">
+        <h2 className="font-semibold">Bancos</h2>
+        <p className="text-xs text-tinta-suave">
+          Aparecem como um selo com a sigla e a cor do banco em cada lançamento. Banco com lançamento não pode ser apagado.
+        </p>
+        <ul className="flex flex-col divide-y divide-fundo">
+          {bancos.map((b) => (
+            <LinhaConta key={b.id} conta={{ id: b.id, nome: b.nome, sigla: b.sigla, cor: b.cor, corTexto: b.corTexto }} />
+          ))}
+        </ul>
+        <NovaConta />
       </section>
     </section>
   );

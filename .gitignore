@@ -44,3 +44,8 @@ next-env.d.ts
 /.data/
 
 !.env.example
+
+# Extratos e documentos pessoais nunca vão pro repositório (public é publicado no site)
+/public/*.pdf
+/public/*.csv
+/public/*.ofx

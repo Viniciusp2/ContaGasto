@@ -9,6 +9,7 @@ export type DadosLancamento = {
   data: string;
   categoriaId: string;
   formaPagamentoId: string | null;
+  contaId: string | null; // banco (opcional)
   descricao: string; // vazio = usar o nome da categoria
   obs: string | null;
   repetir: Repetir;
@@ -50,6 +51,9 @@ export function validarLancamento(formData: FormData): Resultado {
 
   const formaPagamentoId = texto(formData, "formaPagamentoId");
   if (formaPagamentoId && !ehUuid(formaPagamentoId)) return { ok: false, erro: "Forma de pagamento inválida." };
+
+  const contaId = texto(formData, "contaId");
+  if (contaId && !ehUuid(contaId)) return { ok: false, erro: "Conta inválida." };
 
   const data = texto(formData, "data");
   if (!dataValida(data)) return { ok: false, erro: "Data inválida." };
@@ -113,6 +117,7 @@ export function validarLancamento(formData: FormData): Resultado {
       data,
       categoriaId,
       formaPagamentoId: formaPagamentoId || null,
+      contaId: contaId || null,
       descricao,
       obs: obs || null,
       repetir,
