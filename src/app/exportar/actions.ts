@@ -50,6 +50,9 @@ export async function importarLancamentos(_: EstadoImportar, formData: FormData)
     return {
       ok:
         `${r.importados} lançamento${r.importados === 1 ? "" : "s"} importado${r.importados === 1 ? "" : "s"}${meses}.` +
+        (r.completados > 0
+          ? ` ${r.completados} já estava${r.completados === 1 ? "" : "m"} lançado${r.completados === 1 ? "" : "s"} por você e só ganharam banco e descrição${r.pagas > 0 ? ` (${r.pagas} conta${r.pagas === 1 ? "" : "s"} marcada${r.pagas === 1 ? "" : "s"} como paga${r.pagas === 1 ? "" : "s"})` : ""}.`
+          : "") +
         (r.repetidos > 0 ? ` ${r.repetidos} já estava${r.repetidos === 1 ? "" : "m"} no app e ficaram de fora.` : ""),
     };
   } catch {

@@ -8,6 +8,11 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.3.0 (07/10/2026)
+
+- **Importar concilia com o que já está no app:** o que você lançou manda. Se o extrato trouxer o mesmo valor e tipo até 4 dias de diferença, o seu lançamento fica (data, valor, categoria) e só ganha banco, forma de pagamento, observação e a descrição, se estava em branco. Nada duplica.
+- Conta que estava **a pagar** e aparece paga no extrato é marcada como paga no dia do banco, quitando a mais antiga primeiro (ex.: pagou setembro e outubro no mesmo dia).
+
 ## 1.2.3 (07/10/2026)
 
 - Tocar num gráfico (por dia da semana, fluxo do mês) não desenha mais uma moldura preta por cima das barras.

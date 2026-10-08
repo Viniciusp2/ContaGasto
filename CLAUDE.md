@@ -366,7 +366,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 ### 🟤 Fase 6 — v2
 
 - **Sprint 6.1** Pagamentos do mês (4.14): aba Pagamentos, paguei ou não, atrasadas que seguem pro mês seguinte, tipo da conta, fatura do cartão, aviso no Início. Feito. A Vercel aplica as migrations sozinha a cada deploy (`vercel-build` = `db:migrate` + `next build`).
-- **Sprint 6.2** Importar lançamentos + bancos com selo (4.11, começo). Feito: Mais, Exportar e backup, **Importar lançamentos** recebe um JSON `{app: "bolso", tipo: "importacao", lancamentos: [...]}` (data, descricao, valor em centavos, tipo, categoria e forma pelo nome, conta = banco, obs). Só adiciona, nunca apaga; o que já existe (mesmo dia, valor, tipo e descrição) fica de fora, então importar duas vezes não duplica. Categoria que não existe vira Outros; banco que não existe é criado com o selo dele. Extrato em PDF não é lido pelo app: o Claude converte e confere antes (saldo do dia ou total do mês batendo).
+- **Sprint 6.2** Importar lançamentos + bancos com selo (4.11, começo). Feito: Mais, Exportar e backup, **Importar lançamentos** recebe um JSON `{app: "bolso", tipo: "importacao", lancamentos: [...]}` (data, descricao, valor em centavos, tipo, categoria e forma pelo nome, conta = banco, obs). Só adiciona, nunca apaga; o que já existe (mesmo dia, valor, tipo e descrição) fica de fora, então importar duas vezes não duplica. Categoria que não existe vira Outros; banco que não existe é criado com o selo dele. **Conciliação (1.3.0, pedido do Vinícius):** o que já está no app manda. Linha do extrato com mesmo tipo e valor até 4 dias de um lançamento seu (sem banco) completa o seu: ganha banco, forma, observação e a descrição se estava em branco (igual ao nome da categoria); data, valor e categoria ficam. Conta a pagar com o mesmo valor, de 7 dias antes até 45 dias depois do vencimento, vira paga no dia do banco, a mais antiga primeiro. Lançamento do mesmo banco perto da data conta como já importado (respeita edição). Banco diferente nunca casa. Extrato em PDF não é lido pelo app: o Claude converte e confere antes (saldo do dia ou total do mês batendo).
 - **Sprint 6.3** Notificações (conta vencendo amanhã, vence hoje, atrasada).
 - **Sprint 6.4** Comprovantes nas contas pagas (precisa do Vercel Blob ligado ao projeto).
 
@@ -441,7 +441,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Conta atrasada    | continua aparecendo nos meses seguintes até pagar; conta no disponível |
 | Nasce pago        | crédito, VA, entrada e débito automático |
 | Fatura paga       | só controle; gastos do cartão já contam no vencimento |
-| Importar extrato | só adiciona, pula repetido; transferência entre contas suas e cofrinho ficam de fora |
+| Importar extrato | só adiciona, pula repetido, completa o que você já lançou (não duplica); transferência entre contas suas e cofrinho ficam de fora |
 | Banco no lançamento | selo com sigla e cor, nunca o logo oficial |
 | Versões            | semântica, começando em 1.2.1; rodapé de Mais mostra versão e commit |
 | Migrations no deploy | `vercel-build` roda db:migrate antes do build |

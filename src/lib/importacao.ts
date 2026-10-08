@@ -78,3 +78,84 @@ export function separarNovos<T extends LinhaImportacao>(linhas: T[], existentes:
   }
   return { novos, repetidos };
 }
+
+// Conciliação (07/10/2026): o que já está no app manda. Lançamento do extrato que bate com um que você
+// já tem não vira outro: só completa o seu (banco, forma, observação e descrição, se a sua era só a categoria).
+export type Existente = {
+  id: string;
+  data: string;
+  vencimento: string | null;
+  valor: number;
+  tipo: string;
+  descricao: string;
+  descricaoGenerica: boolean; // a descrição é só o nome da categoria (deixada em branco)
+  contaNome: string | null;
+  status: "confirmado" | "a_pagar" | "estimado";
+};
+
+export type Completar<T> = { id: string; linha: T; pagar: boolean; trocarDescricao: boolean };
+
+export const JANELA_DIAS = 4; // diferença de dias aceita entre o que você lançou e o que o banco registrou
+const PAGOU_ATE_DIAS_ANTES = 7; // conta a pagar quitada até 7 dias antes do vencimento...
+const PAGOU_ATE_DIAS_DEPOIS = 45; // ...ou até 45 dias depois (conta atrasada)
+
+function diasEntre(a: string, b: string) {
+  const d = (s: string) => Date.UTC(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10)));
+  return Math.round((d(b) - d(a)) / 86_400_000);
+}
+
+export function conciliar<T extends LinhaImportacao>(linhas: T[], existentes: Existente[]) {
+  // 1. Igual de verdade (mesmo dia, valor, tipo e descrição): já importado antes
+  const { novos: restantes, repetidos: iguais } = separarNovos(linhas, existentes);
+  const usados = new Set<string>();
+  // Os iguais "gastam" um existente cada, pra não serem casados de novo
+  for (const l of linhas) {
+    if (restantes.includes(l)) continue;
+    const e = existentes.find((x) => !usados.has(x.id) && chaveDoLancamento(x) === chaveDoLancamento(l));
+    if (e) usados.add(e.id);
+  }
+
+  const novos: T[] = [];
+  const completar: Completar<T>[] = [];
+  let repetidos = iguais;
+  const mesmaConta = (e: Existente, l: T) => e.contaNome !== null && l.conta !== null && e.contaNome.toLowerCase() === l.conta.toLowerCase();
+
+  for (const l of [...restantes].sort((a, b) => a.data.localeCompare(b.data))) {
+    const candidatos = existentes.filter((e) => !usados.has(e.id) && e.tipo === l.tipo && e.valor === l.valor && (e.contaNome === null || mesmaConta(e, l)));
+
+    // 2. Já veio do mesmo banco (talvez você editou a descrição): é o mesmo, não mexe
+    const editado = candidatos.find((e) => mesmaConta(e, l) && Math.abs(diasEntre(e.data, l.data)) <= JANELA_DIAS);
+    if (editado) {
+      usados.add(editado.id);
+      repetidos++;
+      continue;
+    }
+
+    // 3. Conta que estava a pagar: o extrato mostra que foi paga. Quita a mais antiga primeiro.
+    const aPagar = candidatos
+      .filter((e) => e.contaNome === null && e.status === "a_pagar" && l.tipo === "gasto")
+      .filter((e) => {
+        const dias = diasEntre(e.vencimento ?? e.data, l.data);
+        return dias >= -PAGOU_ATE_DIAS_ANTES && dias <= PAGOU_ATE_DIAS_DEPOIS;
+      })
+      .sort((a, b) => (a.vencimento ?? a.data).localeCompare(b.vencimento ?? b.data))[0];
+    if (aPagar) {
+      usados.add(aPagar.id);
+      completar.push({ id: aPagar.id, linha: l, pagar: true, trocarDescricao: aPagar.descricaoGenerica });
+      continue;
+    }
+
+    // 4. Lançado por você perto da data do banco: completa o seu (o mais próximo)
+    const seu = candidatos
+      .filter((e) => e.contaNome === null && e.status === "confirmado" && Math.abs(diasEntre(e.data, l.data)) <= JANELA_DIAS)
+      .sort((a, b) => Math.abs(diasEntre(a.data, l.data)) - Math.abs(diasEntre(b.data, l.data)))[0];
+    if (seu) {
+      usados.add(seu.id);
+      completar.push({ id: seu.id, linha: l, pagar: false, trocarDescricao: seu.descricaoGenerica });
+      continue;
+    }
+
+    novos.push(l);
+  }
+  return { novos, repetidos, completar };
+}
