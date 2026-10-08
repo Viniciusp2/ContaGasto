@@ -3,40 +3,107 @@ import { ChevronRight, Sparkles, Info, TrendingUp, Tv } from "lucide-react";
 import { formatarCentavos } from "@/lib/dinheiro";
 import { NumeroAnimado } from "@/components/animacoes";
 
-// Destaque do Início: quanto dá pra gastar sem comprometer o que já tem destino
+// Destaque do Início: quanto dá pra gastar sem comprometer o que já tem destino.
+// Um toque abre a conta e a lista do que ainda falta pagar (pedido em 07/10/2026).
+type Pendente = { chave: string; descricao: string; valor: number; data: string; detalhe?: string };
+
 export function CartaoDisponivel({
   disponivel,
   porDia,
   diasRestantes,
   guardado,
   compromissos,
+  sobrouNoMes,
+  pendentes,
 }: {
   disponivel: number;
   porDia: number | null;
   diasRestantes: number;
   guardado: number;
   compromissos: number;
+  sobrouNoMes: number;
+  pendentes: Pendente[];
 }) {
   const semFolga = porDia === null;
+  const linha = "flex items-baseline justify-between gap-3";
   return (
-    <section className={`rounded-card p-5 shadow-suave ${semFolga ? "bg-coral" : "bg-menta"}`}>
-      <p className="flex items-center gap-2 text-sm font-semibold">
-        <Sparkles size={18} aria-hidden /> Disponível para gastar
-      </p>
-      <p className="mt-1 text-3xl font-bold tabular-nums">
-        <NumeroAnimado centavos={disponivel} />
-      </p>
-      <p className="mt-2 text-base font-semibold">
-        {semFolga
-          ? "Sem folga até o fim do mês"
-          : `Dá pra gastar ${formatarCentavos(porDia)} por dia`}
-        <span className="font-normal"> · {diasRestantes === 1 ? "último dia" : `${diasRestantes} dias`}</span>
-      </p>
-      <p className="mt-1 text-sm">
-        Já desconta {formatarCentavos(compromissos)} que ainda vai cair
-        {guardado !== 0 ? ` e ${formatarCentavos(guardado)} guardados no mês` : ""}.
-      </p>
-    </section>
+    <details className={`group rounded-card shadow-suave ${semFolga ? "bg-coral" : "bg-menta"}`}>
+      <summary className="block cursor-pointer list-none p-5 [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center justify-between gap-2 text-sm font-semibold">
+          <span className="flex items-center gap-2">
+            <Sparkles size={18} aria-hidden /> Disponível para gastar
+          </span>
+          <Info size={16} aria-label="Como é calculado" />
+        </span>
+        <span className="mt-1 block text-3xl font-bold tabular-nums">
+          <NumeroAnimado centavos={disponivel} />
+        </span>
+        <span className="mt-2 block text-base font-semibold">
+          {semFolga ? "Sem folga até o fim do mês" : `Dá pra gastar ${formatarCentavos(porDia)} por dia`}
+          <span className="font-normal"> · {diasRestantes === 1 ? "último dia" : `${diasRestantes} dias`}</span>
+        </span>
+        <span className="mt-1 block text-sm">
+          Já desconta {formatarCentavos(compromissos)} que ainda falta pagar
+          {guardado !== 0 ? ` e ${formatarCentavos(guardado)} guardados no mês` : ""}. <span className="underline">Toque pra ver.</span>
+        </span>
+      </summary>
+      <div className="mx-3 mb-3 flex flex-col gap-2 rounded-2xl bg-cartao p-4 text-sm">
+        <p className="font-semibold">Como chegamos nesse número</p>
+        <p className={linha}>
+          <span>Sobrou no mês até agora (entradas menos gastos)</span>
+          <span className="tabular-nums">{formatarCentavos(sobrouNoMes)}</span>
+        </p>
+        {guardado !== 0 && (
+          <p className={linha}>
+            <span>- Guardado nos objetivos este mês</span>
+            <span className="tabular-nums">{formatarCentavos(guardado)}</span>
+          </p>
+        )}
+        <p className={linha}>
+          <span>- O que ainda falta pagar este mês</span>
+          <span className="tabular-nums">{formatarCentavos(compromissos)}</span>
+        </p>
+        <p className={`${linha} border-t border-fundo pt-2 font-bold`}>
+          <span>= Disponível para gastar</span>
+          <span className="tabular-nums">{formatarCentavos(disponivel)}</span>
+        </p>
+        {!semFolga && (
+          <p className="text-xs text-tinta-suave">
+            Dividido pelos {diasRestantes} dia{diasRestantes === 1 ? "" : "s"} que faltam (contando hoje) dá {formatarCentavos(porDia)} por dia.
+          </p>
+        )}
+
+        {pendentes.length > 0 && (
+          <>
+            <p className="mt-2 font-semibold">O que ainda falta pagar</p>
+            <ul className="flex flex-col gap-1">
+              {pendentes.map((p) => (
+                <li key={p.chave} className={linha}>
+                  <span className="min-w-0 truncate">
+                    {p.descricao}
+                    <span className="text-xs text-tinta-suave">
+                      {" "}
+                      · {p.data.slice(8, 10)}/{p.data.slice(5, 7)}
+                      {p.detalhe ? ` · ${p.detalhe}` : ""}
+                    </span>
+                  </span>
+                  <span className="shrink-0 tabular-nums">{formatarCentavos(p.valor)}</span>
+                </li>
+              ))}
+            </ul>
+            <Link href="/pagamentos" className="flex min-h-11 items-center gap-1 font-semibold underline">
+              Ver e marcar como pago em Pagamentos <ChevronRight size={16} aria-hidden />
+            </Link>
+          </>
+        )}
+
+        <p className="rounded-2xl bg-fundo px-3 py-2 text-xs text-tinta-suave">
+          O disponível parte do que sobrou <strong>neste mês</strong>, não do saldo do banco: dinheiro que sobrou de meses
+          anteriores fica de fora, por segurança. Contas atrasadas e as que ainda vão vencer entram no &quot;falta pagar&quot;; salário
+          que ainda não caiu não entra. Quanto tem nos bancos agora está em &quot;Nas contas hoje&quot;.
+        </p>
+      </div>
+    </details>
   );
 }
 

@@ -161,6 +161,8 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
           diasRestantes={painel.diasRestantes}
           guardado={painel.guardadoMes}
           compromissos={painel.totalCompromissos}
+          sobrouNoMes={resumo.saldoReal}
+          pendentes={painel.compromissos.map((c) => ({ chave: c.chave, descricao: c.descricao, valor: c.valor, data: c.data, detalhe: c.detalhe }))}
         />
       )}
 

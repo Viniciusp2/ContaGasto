@@ -9,6 +9,10 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.5.2 (07/10/2026)
+
+- **Disponível para gastar**: um toque mostra a conta (sobrou no mês, menos o que foi guardado, menos o que ainda falta pagar) e a **lista do que ainda falta pagar**, com data e valor, e um atalho pra Pagamentos.
+
 ## 1.5.1 (07/10/2026)
 
 - Saiu o cartão **Saldo em caixa** do Início (e do relatório): o dinheiro nos bancos agora é o "Nas contas hoje", e ter dois números parecidos confundia.
