@@ -14,8 +14,8 @@ export function possoGastarPorDia(disponivel: number, hoje: string, mes: Mes) {
 }
 
 // Previsão de gasto no fim do mês: o que já saiu + o que ainda vai cair + o ritmo do dia a dia
-// (só gastos avulsos, pra um aluguel não ser multiplicado pelos dias).
-export function previsaoDoMes({
+// (só gastos avulsos, pra um aluguel não ser multiplicado pelos dias). As partes aparecem no cartão ao tocar.
+export function partesDaPrevisao({
   gastoAteHoje,
   avulsoAteHoje,
   compromissos,
@@ -29,7 +29,12 @@ export function previsaoDoMes({
   mes: Mes;
 }) {
   const diaHoje = Number(hoje.slice(8, 10));
-  const diasDepoisDeHoje = diasNoMes(mes) - diaHoje;
-  const ritmoDiario = avulsoAteHoje / diaHoje;
-  return gastoAteHoje + compromissos + Math.round(ritmoDiario * diasDepoisDeHoje);
+  const diasQueFaltam = diasNoMes(mes) - diaHoje;
+  const ritmoDiario = Math.round(avulsoAteHoje / diaHoje);
+  const diaADia = Math.round((avulsoAteHoje / diaHoje) * diasQueFaltam);
+  return { jaSaiu: gastoAteHoje, aindaVaiCair: compromissos, ritmoDiario, diasQueFaltam, diaADia, total: gastoAteHoje + compromissos + diaADia };
+}
+
+export function previsaoDoMes(entrada: Parameters<typeof partesDaPrevisao>[0]) {
+  return partesDaPrevisao(entrada).total;
 }

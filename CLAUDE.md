@@ -132,7 +132,7 @@ Limite mensal por categoria (ex. Lazer <= R$ 200). Barra de progresso: verde/men
 Empréstimo **não é renda**. Separar em dois saldos:
 
 - **Saldo real** = entradas (sem empréstimo) − gastos. É o que é seu de verdade.
-- **Saldo em caixa** = saldo real − o que você emprestou (em aberto) + o que você pegou emprestado (em aberto). É o que tem na conta hoje. *(Corrigido em 23/09/2026: a fórmula antiga tinha os sinais trocados. Pegou R$ 1.000, a conta tem +R$ 1.000.)*
+- **Saldo em caixa** = saldo real − o que você emprestou (em aberto) + o que você pegou emprestado (em aberto). É o que tem na conta hoje. **Desde 1.5.1 não aparece mais na tela** (decisão do Vinícius em 07/10/2026): o dinheiro nos bancos é o "Nas contas hoje" (4.11) e dois números parecidos confundiam. O cálculo continua em `calculos.ts`. *(Corrigido em 23/09/2026: a fórmula antiga tinha os sinais trocados. Pegou R$ 1.000, a conta tem +R$ 1.000.)*
 
 Tela própria "Empréstimos": quem te deve, a quem você deve.
 
@@ -449,6 +449,8 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Duplicados        | manual em dobro com extrato: fica o do extrato (decisão do Vinícius); apagar só depois de mostrar a lista |
 | Versões            | nova função +0.1, bug/básico +0.0.1, mínimo não muda; rodapé de Mais mostra versão e commit |
 | Saldo por banco   | você informa o saldo uma vez; o app soma os lançamentos do banco |
+| Saldo em caixa    | saiu da tela em 1.5.1 (confundia com "Nas contas hoje"); cálculo mantido |
+| Previsão do mês (tela) | um toque explica: já saiu + vai cair + dia a dia |
 | Card do Início    | "Saldo real" virou "Sobrou no mês"; "Nas contas hoje" mostra o dinheiro nos bancos |
 | Duração           | salário e VA "acabam" quando 95% foi gasto |
 | Ordem da lista    | mais novos (padrão), mais antigos, maior, menor valor |

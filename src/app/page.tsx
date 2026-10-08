@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, KeyRound, Landmark, PiggyBank, Target, Utensils, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, KeyRound, PiggyBank, Target, Utensils, Wallet } from "lucide-react";
 import { SeletorMes } from "@/components/seletor-mes";
 import {
   lancamentosParaCalculo,
@@ -13,7 +13,7 @@ import { obterAcesso } from "@/db/acesso";
 import { metasDoMes } from "@/db/metas-do-mes";
 import { BarraProgresso } from "@/components/barra-progresso";
 import { contaComoGasto, resumoDoMes, saldoVA } from "@/lib/calculos";
-import { disponivelParaGastar, possoGastarPorDia, previsaoDoMes } from "@/lib/painel";
+import { disponivelParaGastar, partesDaPrevisao, possoGastarPorDia } from "@/lib/painel";
 import { assinaturasAtivas, comprometidoProximoMes, compromissosDoMes, entradasPrevistasDoMes, guardadoNoMes } from "@/db/painel";
 import { CartaoDisponivel, CartaoPrevisao, CartoesDoProximoMes } from "@/components/painel";
 import { LinhaDoTempo } from "@/components/linha-do-tempo";
@@ -68,7 +68,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
     const totalCompromissos = compromissos.reduce((s, c) => s + c.valor, 0);
     const disponivel = disponivelParaGastar(saldoReal, guardadoMes, totalCompromissos);
     const ateHoje = lista.filter((l) => l.data <= hoje && contaComoGasto(l));
-    const previsao = previsaoDoMes({
+    const partesPrevisao = partesDaPrevisao({
       gastoAteHoje: ateHoje.reduce((s, l) => s + l.valor, 0),
       avulsoAteHoje: ateHoje.filter((l) => !l.recorrenciaId).reduce((s, l) => s + l.valor, 0),
       compromissos: totalCompromissos,
@@ -100,7 +100,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
       guardadoMes,
       disponivel,
       ...possoGastarPorDia(disponivel, hoje, mes),
-      previsao,
+      previsao: partesPrevisao,
       entradas,
       proximo,
       assinaturas,
@@ -114,13 +114,6 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
       valor: resumo.saldoReal,
       Icone: Wallet,
       cor: resumo.saldoReal < 0 ? "bg-coral" : "bg-menta",
-    },
-    {
-      rotulo: "Saldo em caixa",
-      dica: "O que tem na conta",
-      valor: resumo.saldoEmCaixa,
-      Icone: Landmark,
-      cor: "bg-lavanda",
     },
     { rotulo: "Recebido", dica: "Sem empréstimo", valor: resumo.entradas, Icone: ArrowDownCircle, cor: "bg-menta" },
     { rotulo: "Gasto", dica: "No mês", valor: resumo.gasto, Icone: ArrowUpCircle, cor: "bg-coral" },
@@ -171,9 +164,10 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {cards.map(({ rotulo, dica, valor, Icone, cor }) => (
-          <div key={rotulo} className="rounded-card bg-cartao p-4 shadow-suave">
+      {/* "Saldo em caixa" saiu em 1.5.1: o dinheiro nos bancos é o "Nas contas hoje" (evita dois números parecidos) */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        {cards.map(({ rotulo, dica, valor, Icone, cor }, i) => (
+          <div key={rotulo} className={`rounded-card bg-cartao p-4 shadow-suave ${i === 0 ? "col-span-2 lg:col-span-1" : ""}`}>
             <span className={`mb-3 inline-flex rounded-full p-2 ${cor}`}>
               <Icone size={20} aria-hidden />
             </span>
@@ -188,7 +182,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
 
       {painel && (
         <>
-          <CartaoPrevisao previsao={painel.previsao} entradas={painel.entradas} />
+          <CartaoPrevisao partes={painel.previsao} entradas={painel.entradas} />
           <LinhaDoTempo linha={painel.linha} hoje={hoje} mesTexto={mesParaTexto(mes)} />
           <CartoesDoProximoMes
             comprometido={painel.proximo.total}

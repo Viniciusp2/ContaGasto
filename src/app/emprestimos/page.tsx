@@ -40,7 +40,7 @@ export default async function Emprestimos() {
         </Link>
         <h1 className="text-2xl font-bold">Empréstimos</h1>
         <p className="text-sm text-tinta-suave">
-          Empréstimo não é renda: não muda o saldo real, só o saldo em caixa.
+          Empréstimo não é renda: não entra no que sobrou no mês.
         </p>
       </div>
 

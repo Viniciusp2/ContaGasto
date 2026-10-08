@@ -73,3 +73,10 @@ describe("recorrências num intervalo", () => {
     expect(ocorrenciasNoIntervalo(celular, null, "2026-09-30", "2026-10-31")).toEqual([]);
   });
 });
+
+import { partesDaPrevisao } from "./painel";
+
+it("previsão em partes: já saiu + ainda vai cair + dia a dia (média dos avulsos x dias que faltam)", () => {
+  const p = partesDaPrevisao({ gastoAteHoje: 120000, avulsoAteHoje: 14000, compromissos: 30000, hoje: "2026-10-07", mes: { ano: 2026, mes: 10 } });
+  expect(p).toEqual({ jaSaiu: 120000, aindaVaiCair: 30000, ritmoDiario: 2000, diasQueFaltam: 24, diaADia: 48000, total: 198000 });
+});

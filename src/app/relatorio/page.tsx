@@ -35,8 +35,7 @@ export default async function Relatorio({ searchParams }: PageProps<"/relatorio"
   const numeros = [
     ["Recebido", resumo.entradas],
     ["Gasto", resumo.gasto],
-    ["Saldo real", resumo.saldoReal],
-    ["Saldo em caixa", resumo.saldoEmCaixa],
+    ["Sobrou no mês", resumo.saldoReal],
   ] as const;
 
   return (

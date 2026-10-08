@@ -9,6 +9,11 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.5.1 (07/10/2026)
+
+- Saiu o cartão **Saldo em caixa** do Início (e do relatório): o dinheiro nos bancos agora é o "Nas contas hoje", e ter dois números parecidos confundia.
+- **Previsão de gasto no mês**: um toque mostra como ela é calculada (já saiu + contas que ainda vão cair + o ritmo do dia a dia), pra o número não assustar.
+
 ## 1.5.0 (07/10/2026)
 
 - **Nas contas hoje** (Início): quanto tem em cada banco. Informe o saldo de hoje de cada um em Mais, Categorias, formas e bancos (uma vez); daí pra frente o app soma os lançamentos de cada banco. Um toque abre Itaú, C6... O VA (Alelo) aparece à parte.
