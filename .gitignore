@@ -49,3 +49,6 @@ next-env.d.ts
 /public/*.pdf
 /public/*.csv
 /public/*.ofx
+
+# Quadro de recados entre sessões do Claude (local, ver CLAUDE.md 10.1)
+/.sessoes.md

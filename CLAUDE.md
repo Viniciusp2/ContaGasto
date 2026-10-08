@@ -391,6 +391,19 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Se faltar decisão, perguntar.** Não inventar regra de negócio.
 - **Sem travessão nos textos.** Português informal e direto.
 - **Idioma:** todo texto de UI, commit e comentário em PT-BR.
+
+### 10.1 Várias sessões do Claude ao mesmo tempo (regra do Vinícius, 07/10/2026)
+
+Pode ter mais de uma sessão do Claude mexendo nesta mesma pasta. Pra não ter conflito:
+
+1. **Antes de começar e antes de cada passo arriscado** (editar arquivo que outra pode estar usando, `git commit`/`push`, `npm run db:*`, `npm install`): rodar `ListAgents`, olhar `git status` (mudança que não é sua = outra sessão trabalhando) e ler o `.sessoes.md` na raiz.
+2. **Se outra sessão estiver trabalhando agora** (ocupada no `ListAgents`, mudança dela no `git status` ou recado com menos de 30 min no `.sessoes.md`): **pausar e esperar**. Não editar os mesmos arquivos, não commitar, não mexer no banco. Pedir aviso com `SendMessage` + `notify_when_idle` e só continuar quando ela terminar.
+3. **Deixar um mini resumo** no `.sessoes.md` (e mandar o mesmo por `SendMessage`): quem é, o que está fazendo, o que vai fazer e quais arquivos vai mexer. Atualizar ao terminar.
+4. **A sessão que está trabalhando decide:** pode ignorar o recado (se não atrapalha) ou pedir/fazer uma mudança no que a outra deixou. **Se apagar ou desfazer algo da outra, justificar** no `.sessoes.md` e na mensagem (o quê, por quê e como recolocar). A outra recoloca depois.
+5. **Commit só do que é seu:** `git add` arquivo por arquivo, nunca `git add -A` ou `git add .`. Arquivo de outra sessão nunca vai no seu commit.
+6. Cada sessão segue as mesmas regras de versão (seção 10, "Versão a cada entrega") e de banco local (um processo por vez).
+
+O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados entre sessões, não vai pro GitHub.
 - **Versão a cada entrega** (decidido em 07/10/2026): versionamento semântico `MAIOR.MENOR.CORREÇÃO`. Regra do Vinícius (07/10/2026): **implementar coisa nova sobe 0.1** (1.4 → 1.5), **bug ou coisa básica sobe 0.0.1** (1.5.0 → 1.5.1), **coisa mínima não muda o número**, só vai no envio. Mudança que exige ação do usuário sobe o MAIOR. Quando ele pedir várias coisas juntas, saem na mesma versão. A cada entrega: subir `version` no package.json, escrever no CHANGELOG.md e criar a tag `vX.Y.Z` no Git. A versão, o commit e a hora do build aparecem no rodapé de Mais (pra conferir se a Vercel já publicou).
 
 ---
@@ -447,6 +460,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Banco no lançamento | selo com sigla e cor, nunca o logo oficial |
 | Botão +           | só no Início e em Lançamentos; some ao rolar pra baixo |
 | Duplicados        | manual em dobro com extrato: fica o do extrato (decisão do Vinícius); apagar só depois de mostrar a lista |
+| Várias sessões    | ver seção 10.1: checar, pausar e esperar, deixar resumo, justificar o que apagar |
 | Versões            | nova função +0.1, bug/básico +0.0.1, mínimo não muda; rodapé de Mais mostra versão e commit |
 | Saldo por banco   | você informa o saldo uma vez; o app soma os lançamentos do banco |
 | Saldo em caixa    | saiu da tela em 1.5.1 (confundia com "Nas contas hoje"); cálculo mantido |
