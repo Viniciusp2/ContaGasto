@@ -2,12 +2,33 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { WifiOff } from "lucide-react";
+import { inscreverAparelho } from "@/app/avisos/actions";
+
+const SINCRONIZADO = "bolso-push-sincronizado";
+
+// Uma vez por dia confirma no servidor a inscrição deste aparelho (o navegador pode trocá-la sozinho)
+async function sincronizarNotificacao(reg: ServiceWorkerRegistration) {
+  if (!("PushManager" in window) || !("Notification" in window) || Notification.permission !== "granted") return;
+  const sub = await reg.pushManager.getSubscription();
+  if (!sub) return;
+  const hoje = new Date().toISOString().slice(0, 10);
+  try {
+    if (localStorage.getItem(SINCRONIZADO) === hoje) return;
+  } catch {}
+  const r = await inscreverAparelho(sub.toJSON());
+  try {
+    if (r.ok) localStorage.setItem(SINCRONIZADO, hoje);
+  } catch {}
+}
 
 // Registra o service worker (só em produção: no next dev ele atrapalharia o recarregamento)
 export function RegistrarServiceWorker() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }).catch(() => {});
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/", updateViaCache: "none" })
+      .then(sincronizarNotificacao)
+      .catch(() => {});
   }, []);
   return null;
 }

@@ -47,7 +47,25 @@ async function salvar(caminho: string, tamanho: number, escala: number, arredond
   console.log(`ok ${caminho}`);
 }
 
+// Selo da notificação (Android usa só o recorte): o bolso em branco, fundo transparente
+async function salvarSelo(caminho: string, tamanho: number) {
+  const resposta = new ImageResponse(
+    (
+      <div style={{ width: tamanho, height: tamanho, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <svg width={tamanho} height={tamanho} viewBox="0 0 100 100">
+          <circle cx="62" cy="26" r="15" fill="#fff" />
+          <path d="M14 40 h72 v22 a36 32 0 0 1 -72 0 z" fill="#fff" />
+        </svg>
+      </div>
+    ),
+    { width: tamanho, height: tamanho },
+  );
+  await writeFile(caminho, Buffer.from(await resposta.arrayBuffer()));
+  console.log(`ok ${caminho}`);
+}
+
 async function main() {
+  await salvarSelo("public/icone-aviso.png", 96);
   await salvar("public/icone-192.png", 192, 0.8, true);
   await salvar("public/icone-512.png", 512, 0.8, true);
   // Maskable: fundo até a borda e desenho dentro da área segura (80% do centro)

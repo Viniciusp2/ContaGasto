@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { ArrowUp, Check, LoaderCircle, Mic, MicOff, Sparkles, Trash2, X } from "lucide-react";
-import { conversar, salvarDoAssistente } from "@/app/assistente/actions";
-import { MAX_TEXTO, type MensagemChat, type Proposta } from "@/lib/assistente";
+import { ArrowUp, BellRing, Check, LoaderCircle, Mic, MicOff, Sparkles, Trash2, X } from "lucide-react";
+import { conversar, salvarDoAssistente, salvarLembreteDoAssistente } from "@/app/assistente/actions";
+import { MAX_TEXTO, type MensagemChat, type Proposta, type PropostaLembrete } from "@/lib/assistente";
+import { descreverRepeticao } from "@/lib/lembretes";
 import { diaCurto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
-type Mensagem = MensagemChat & { proposta?: Proposta; situacao?: "salvo" | "descartado"; erro?: boolean };
+type Mensagem = MensagemChat & { proposta?: Proposta; lembrete?: PropostaLembrete; situacao?: "salvo" | "descartado"; erro?: boolean };
 
-const SUGESTOES = ["Analisa meu mês", "Quanto posso gastar por dia?", "Onde estou gastando mais?", "Gastei 32 no iFood"];
+const SUGESTOES = ["Analisa meu mês", "Quanto posso gastar por dia?", "O que vence essa semana?", "Onde estou gastando mais?", "Gastei 32 no iFood"];
 const GUARDADO = "bolso-assistente"; // a conversa sobrevive a trocar de tela (só nesta aba)
 
 // Ditado do navegador (grátis, roda no celular). Nem todo navegador tem: aí o botão some.
@@ -117,6 +118,60 @@ function CartaoProposta({ m, aoSalvar, aoDescartar }: { m: Mensagem; aoSalvar: (
   );
 }
 
+// Lembrete proposto (1.7.3): confere e salva, igual ao lançamento
+function CartaoLembrete({ m, aoSalvar, aoDescartar }: { m: Mensagem; aoSalvar: () => Promise<string | null>; aoDescartar: () => void }) {
+  const l = m.lembrete!;
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  return (
+    <div className="mt-2 rounded-2xl border border-lavanda bg-fundo p-3">
+      <p className="flex items-center gap-2 font-semibold">
+        <BellRing size={18} aria-hidden /> {l.titulo}
+      </p>
+      <p className="mt-1 text-sm text-tinta-suave">
+        {diaCurto(l.data)}
+        {l.repetir !== "nao" && `, ${descreverRepeticao(l.repetir, l.data)}`}. O aviso chega de manhã.
+      </p>
+      {m.situacao === "salvo" ? (
+        <p className="mt-3 flex items-center gap-2 font-semibold text-positivo">
+          <Check size={18} aria-hidden /> Salvo.{" "}
+          <Link href="/avisos#lembretes" className="font-normal text-tinta underline">
+            Ver lembretes
+          </Link>
+        </p>
+      ) : m.situacao === "descartado" ? (
+        <p className="mt-3 text-sm text-tinta-suave">Descartado.</p>
+      ) : (
+        <>
+          {erro && <p className="mt-2 text-sm text-negativo">{erro}</p>}
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              disabled={salvando}
+              onClick={async () => {
+                setSalvando(true);
+                setErro(await aoSalvar());
+                setSalvando(false);
+              }}
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-menta font-semibold active:scale-95 disabled:opacity-60"
+            >
+              {salvando ? <LoaderCircle size={18} className="animate-spin" aria-hidden /> : <Check size={18} aria-hidden />}
+              Salvar
+            </button>
+            <button
+              type="button"
+              onClick={aoDescartar}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-cartao px-4 shadow-suave active:scale-95"
+            >
+              <X size={18} aria-hidden /> Descartar
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function lerGuardado(): Mensagem[] {
   try {
     return JSON.parse(sessionStorage.getItem(GUARDADO) ?? "[]");
@@ -159,7 +214,7 @@ function Conversa() {
     try {
       // Só o texto vai pro servidor: proposta e erro são coisa da tela
       const resposta = await conversar(lista.filter((m) => !m.erro).map(({ papel, texto }) => ({ papel, texto })));
-      setMensagens((atual) => [...atual, { papel: "bolso", texto: resposta.texto, proposta: resposta.proposta, erro: resposta.erro }]);
+      setMensagens((atual) => [...atual, { papel: "bolso", texto: resposta.texto, proposta: resposta.proposta, lembrete: resposta.lembrete, erro: resposta.erro }]);
     } catch {
       setMensagens((atual) => [...atual, { papel: "bolso", texto: "Sem conexão. Tenta de novo quando a internet voltar.", erro: true }]);
     }
@@ -213,6 +268,18 @@ function Conversa() {
                     aoDescartar={() => marcar(i, "descartado")}
                     aoSalvar={async () => {
                       const r = await salvarDoAssistente(m.proposta!);
+                      if (!r.ok) return r.erro;
+                      marcar(i, "salvo");
+                      return null;
+                    }}
+                  />
+                )}
+                {m.lembrete && (
+                  <CartaoLembrete
+                    m={m}
+                    aoDescartar={() => marcar(i, "descartado")}
+                    aoSalvar={async () => {
+                      const r = await salvarLembreteDoAssistente(m.lembrete!);
                       if (!r.ok) return r.erro;
                       marcar(i, "salvo");
                       return null;

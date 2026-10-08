@@ -264,6 +264,19 @@ Um chat só (Mais, Assistente) pra três coisas: **lançar falando** ("gastei 32
 - **Chave:** variável do provedor (`GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` ou `IA_CHAVE`), local no `.env.local` e na Vercel em Environment Variables. Sem ela, o assistente avisa o que falta. A API do Claude é paga à parte da assinatura do Claude.
 - A conversa fica só na aba do navegador (`sessionStorage`), não vai pro banco.
 
+### 4.16 Avisos, lembretes e notificações (Sprint 6.5, 1.7.3, pedido em 08/10/2026)
+
+Tela **Avisos** (sino no topo do Início, com o número do que é urgente ou pede atenção; também em Mais). Regras em `lib/avisos.ts` e `lib/lembretes.ts` (testadas), dados em `db/avisos.ts`, envio em `db/push.ts`.
+
+- **Agora:** o que pede atenção hoje. Contas (atrasada, vence hoje, amanhã, em até 3 dias), dia de receber (entrada fixa que cai hoje), lembretes, empréstimos com prazo (devolver e cobrar), metas em 80% ou estouradas, ritmo do mês (o dinheiro não dá até o fim do mês ou o disponível está negativo; mesma conta do Início), melhor dia de compra (dia seguinte ao fechamento do cartão), assinatura fixa que cobra amanhã, hora de guardar nos objetivos (no dia do salário fixo; sem salário fixo, dia 5; só se nada foi guardado no mês) e resumo do mês que passou (dias 1 a 3).
+- **Quanto falta:** próxima vez de cada entrada fixa (salário, VA) e contas não pagas dos próximos 30 dias, com "em X dias".
+- **Lembretes:** título, dia e repetição (uma vez, toda semana, todo mês, todo ano). Repetido conta sempre a partir do primeiro dia (31 cai no 28 em fevereiro e volta pro 31). **Feito**: o de uma vez sai da lista; o que repete pula pra próxima vez depois de hoje. O Assistente cria lembrete (`propor_lembrete`, só salva no toque) e responde o que vem pela frente (`ver_avisos`, com os dias já calculados). Lembretes entram no backup.
+- **Notificação no celular (Web Push):** liga em Avisos, por aparelho. iPhone só com o app instalado na tela de início (iOS 16.4+). As chaves VAPID nascem no banco (`config_avisos`), como o segredo da sessão; `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` têm prioridade. O assunto que vai pro serviço de push é o endereço do site, nunca o e-mail.
+- **Quando sai:** agendador da Vercel (`vercel.json`, plano grátis: uma vez por dia por tarefa, com até 59 min de folga): `/api/avisos/manha` às 8h (tudo menos o lembrete de lançar) e `/api/avisos/noite` às 20h (lançou hoje? e metas). A rota confere `CRON_SECRET` se existir, só roda no horário da vez (manhã 6h a 14h, noite depois das 18h) e responde só contagens.
+- **Sem repetir:** cada aviso tem uma chave (`avisos_enviados`, que vira o histórico "Últimas notificações", 90 dias). Conta e lembrete atrasados lembram no 1º dia e depois a cada 3; meta, uma vez por estado no mês; ritmo, uma vez por semana e só depois que as entradas fixas do mês caíram. Avisos do mesmo tipo vão juntos numa notificação (até 5 por rodada). Não chegou em nenhum aparelho: desmarca e tenta na próxima.
+- **O que mandar:** cada tipo liga e desliga em Avisos (tudo ligado por padrão).
+- **Próximos:** horário escolhido (precisa de agendador de hora em hora: Vercel paga ou externo), resumo semanal, VA acabando, última parcela, comprovantes.
+
 ### 4.11 Contas e transferências (v2)
 
 Hoje o app diz **quanto** dinheiro existe, não **onde** ele está. Na v2:
@@ -293,6 +306,10 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 - **metas** — categoria_id, limite_mensal.
 - **objetivos** — nome, emoji, valor_alvo, data_alvo. **Sem `valor_guardado`**: o saldo do objetivo é a soma dos movimentos, num lugar só (ver abaixo).
 - **movimentos_objetivo** — objetivo_id, data, valor (positivo = guardar, negativo = resgatar). É a fonte da verdade do saldo do objetivo.
+- **lembretes** — titulo, inicio, data (próxima vez), repetir (nao|semanal|mensal|anual), concluido, concluido_em, origem (voce|assistente).
+- **aparelhos_push** — endpoint (único), p256dh, auth, nome ("iPhone, Safari"), ultimo_envio, falhas.
+- **config_avisos** — user_id, tipos (jsonb: o que mandar), vapid_publica, vapid_privada.
+- **avisos_enviados** — chave (única por usuário), tipo, titulo, texto. Anti-repetição e histórico.
 - **emprestimos** — descricao, pessoa, valor, direcao (a_receber|a_pagar), data, quitado (bool), data_quitacao, prazo (nullable), perdido (bool), lancamento_id (o gasto criado ao quitar ou perder).
 
 > Regra: valores monetários em **inteiros de centavos** (evita erro de float). Formatar só na UI.
@@ -335,6 +352,7 @@ Cada cálculo com teste unitário. Nunca calcular direto no componente.
 4. **Metas:** limites por categoria com barras.
 5. **Objetivos:** as caixinhas de poupança.
 6. **Empréstimos:** a receber e a pagar.
+6b. **Avisos:** agora, quanto falta, lembretes e notificações no celular (4.16).
 7. **Resumo do ano:** por mês, trimestre, semestre, ano; gráficos. Mesmas regras do mês (sem estimado, empréstimo e VA). No ano corrente mostra até o mês atual e marca o período atual como "em andamento"; ano futuro não mostra nada. Inclui as 5 categorias onde mais foi dinheiro no ano.
 8. **Configurações:** categorias, formas de pagamento, tema, exportar, ano.
 
@@ -391,7 +409,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Sprint 6.9** (1.6.5) Fixos com CRUD completo: editar tudo (inclusive banco, dia e parcelas), apagar de vez com 3 modos, virar fixo a partir de um lançamento, assinaturas do histórico no cartão e em Fixos. Feito.
 - **Sprint 6.10** (1.6.6) Disponível e previsão com base no dinheiro dos bancos (por dia, por semana, ritmo). Feito.
 - **Sprint 6.7** (1.7.0) Assistente com IA (4.15): um chat em Mais que lança falando, analisa o mês e responde sobre o dinheiro. A IA é escolhida por variável (Gemini, Groq, OpenRouter, Claude ou qualquer compatível); Gemini grátis na fase de teste. Feito.
-- **Sprint 6.5** Notificações (conta vencendo amanhã, vence hoje, atrasada).
+- **Sprint 6.5** (1.7.3) Avisos, lembretes e notificações no celular (4.16): tela Avisos com sino no Início, lembretes (também pelo Assistente), Web Push com agendador de manhã e à noite, 11 tipos de aviso. Feito (começo; horário escolhido e resumo semanal ficam pra depois).
 - **Sprint 6.6** Comprovantes nas contas pagas (precisa do Vercel Blob ligado ao projeto).
 
 ### 🔵 Fase 5 — Nuvem (deixado pro final, de propósito)
@@ -506,6 +524,11 @@ O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados ent
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |
 | Assistente (IA)   | um chat só; o código calcula, a IA comenta; lançamento só salva no toque |
+| Notificações      | Web Push (sem app de loja); iPhone só instalado; chaves no banco |
+| Horário dos avisos | 8h e 20h pelo agendador da Vercel (plano grátis: 1x por dia cada) |
+| Aviso repetido    | atrasado lembra no 1º dia e a cada 3; meta 1x por estado no mês; ritmo 1x por semana, só depois do salário |
+| Lembrete          | título + dia + repetição; o Assistente propõe, salva no toque |
+| Versão 1.7.3      | escolhida pelo Vinícius pra notificações (a regra daria 1.8.0; a 1.8.0 fica pro parcelado do Assistente) |
 | Provedor da IA    | escolhido por `IA_PROVEDOR`; Gemini grátis na fase de teste, Claude Haiku 4.5 como opção paga |
 
 ### A confirmar

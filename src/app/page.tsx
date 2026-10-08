@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDownCircle, ArrowUpCircle, ChevronRight, HandCoins, KeyRound, PiggyBank, Target, Utensils, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Bell, ChevronRight, HandCoins, KeyRound, PiggyBank, Target, Utensils, Wallet } from "lucide-react";
 import { SeletorMes } from "@/components/seletor-mes";
 import {
   lancamentosParaCalculo,
@@ -36,6 +36,8 @@ import { ContaPagamento } from "@/components/conta-pagamento";
 import { contasPendentes } from "@/db/pagamentos";
 import { NasContas } from "@/components/nas-contas";
 import { saldosHoje, ultimaContaUsada } from "@/db/saldos";
+import { avisosDoSino } from "@/db/avisos";
+import { contarAvisos } from "@/lib/avisos";
 
 export const dynamic = "force-dynamic";
 // Os comentários do assistente (cartão do Início) chamam a IA, que pode levar uns segundos
@@ -66,6 +68,8 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   const painel = mesAtual ? await montarPainel(lancamentos, resumo.saldoReal, resumo.entradas) : null;
   // Contas atrasadas ou vencendo nos próximos 3 dias: o Paguei fica a um toque, logo no topo
   const pendentes = mesAtual ? await contasPendentes(hoje, 3) : [];
+  // Sino: o que é urgente ou pede atenção hoje (contas, metas, lembretes, empréstimos)
+  const noSino = contarAvisos(await avisosDoSino(hoje, mesAtual ? pendentes : await contasPendentes(hoje, 3)));
   // Quanto tem em cada banco hoje (só faz sentido no mês atual)
   const nasContas = mesAtual ? await saldosHoje(hoje) : null;
   const bancoPadrao = pendentes.length > 0 ? await ultimaContaUsada() : null;
@@ -150,7 +154,21 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
 
   return (
     <section className="flex flex-col gap-5">
-      <h1 className="text-2xl font-bold">Oi, Vinícius</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Oi, Vinícius</h1>
+        <Link
+          href="/avisos"
+          aria-label={noSino > 0 ? `Avisos: ${noSino} pedindo atenção` : "Avisos e lembretes"}
+          className="relative flex size-11 items-center justify-center rounded-full bg-cartao shadow-suave active:scale-90"
+        >
+          <Bell size={20} aria-hidden />
+          {noSino > 0 && (
+            <span aria-hidden className="sobre-pastel absolute -top-1 -right-1 flex min-w-5 items-center justify-center rounded-full bg-coral px-1 text-xs font-bold tabular-nums">
+              {noSino > 9 ? "9+" : noSino}
+            </span>
+          )}
+        </Link>
+      </div>
       {acesso.ligado && acesso.usandoSenhaInicial && (
         <Link href="/mais" className="flex min-h-12 items-center gap-2 rounded-card bg-limao px-4 py-2 text-sm font-semibold">
           <KeyRound size={18} aria-hidden /> Você ainda está com a senha 1234. Toque aqui pra trocar.

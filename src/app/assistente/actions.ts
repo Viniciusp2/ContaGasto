@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { buscarNoMes, opcoesDeLancamento, verMes } from "@/db/assistente";
+import { buscarNoMes, opcoesDeLancamento, verAvisos, verMes } from "@/db/assistente";
 import { buscarCategoria, buscarConta, buscarFormaPagamento } from "@/db/consultas";
-import { lancamentos } from "@/db/schema";
+import { lancamentos, lembretes } from "@/db/schema";
 import { USUARIO_PADRAO } from "@/db/usuario-padrao";
 import {
   ferramentasAssistente,
@@ -12,18 +12,21 @@ import {
   instrucoesAssistente,
   lerMesPedido,
   lerProposta,
+  lerPropostaLembrete,
   limparResposta,
   MAX_TEXTO,
   type MensagemChat,
   type Proposta,
+  type PropostaLembrete,
 } from "@/lib/assistente";
+import { conferirLembrete } from "@/lib/lembretes";
 import { criarProvedor, ErroIA, lerConfigIA, type ChamadaFerramenta, type MensagemIA } from "@/lib/ia";
 import { hojeISO } from "@/lib/datas";
 import { subtipoDaCategoria } from "@/lib/entradas";
 import { dataEfetiva } from "@/lib/recorrencias";
 import { validarLancamento } from "@/lib/validar-lancamento";
 
-export type RespostaAssistente = { texto: string; proposta?: Proposta; erro?: boolean };
+export type RespostaAssistente = { texto: string; proposta?: Proposta; lembrete?: PropostaLembrete; erro?: boolean };
 
 // Pergunta que precisa de dado: a IA pede a ferramenta, o app responde e ela escreve. 3 voltas bastam.
 const MAX_VOLTAS = 3;
@@ -48,7 +51,9 @@ async function executar(chamadas: ChamadaFerramenta[], hoje: string): Promise<Me
           ? await verMes(mes, hoje)
           : c.nome === "buscar_lancamentos"
             ? await buscarNoMes(mes, String(c.entrada.texto ?? ""), hoje)
-            : null;
+            : c.nome === "ver_avisos"
+              ? await verAvisos(hoje, Number(c.entrada.dias ?? 15))
+              : null;
       return dados
         ? { id: c.id, nome: c.nome, conteudo: JSON.stringify(dados) }
         : { id: c.id, nome: c.nome, conteudo: "Ferramenta desconhecida.", erro: true };
@@ -89,6 +94,12 @@ export async function conversar(mensagens: MensagemChat[]): Promise<RespostaAssi
         const proposta = lerProposta(pedido.entrada, opcoes, hoje);
         if (!proposta.ok) return { texto: proposta.erro, erro: true };
         return { texto: texto || "Confere e salva:", proposta: proposta.proposta };
+      }
+      const pedidoLembrete = resposta.chamadas.find((c) => c.nome === "propor_lembrete");
+      if (pedidoLembrete) {
+        const r = lerPropostaLembrete(pedidoLembrete.entrada, hoje);
+        if (!r.ok) return { texto: r.erro, erro: true };
+        return { texto: texto || "Confere e salva o lembrete:", lembrete: r.lembrete };
       }
       if (resposta.chamadas.length === 0) {
         if (!texto) console.error(`[assistente] ${ia.nome} respondeu vazio (${resposta.tokens.saida} tokens de saída)`);
@@ -150,6 +161,15 @@ export async function salvarDoAssistente(p: Proposta): Promise<{ ok: true } | { 
     status: aPagar ? "a_pagar" : "confirmado",
     vencimento: aPagar ? d.data : null,
   });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// Salva o lembrete que a IA propôs (1.7.3), depois do toque em Salvar. Mesma conferência do formulário.
+export async function salvarLembreteDoAssistente(p: PropostaLembrete): Promise<{ ok: true } | { ok: false; erro: string }> {
+  const r = conferirLembrete(p, hojeISO());
+  if (!r.ok) return r;
+  await db.insert(lembretes).values({ userId, ...r.dados, inicio: r.dados.data, origem: "assistente" });
   revalidatePath("/", "layout");
   return { ok: true };
 }

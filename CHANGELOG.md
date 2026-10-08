@@ -9,6 +9,17 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.7.3 (08/10/2026)
+
+- **Avisos** (sino no topo do Início, ou Mais, Avisos e lembretes): tudo que pede atenção num lugar só.
+  - **Agora:** conta atrasada ou vencendo, dia de receber, lembretes, empréstimo pra devolver ou cobrar, meta chegando no limite ou estourada, quando o dinheiro não deve dar até o fim do mês, melhor dia de compra no cartão, assinatura que renova amanhã, hora de guardar nos objetivos e o resumo do mês que passou.
+  - **Quanto falta:** quantos dias faltam pro salário, pro VA e pra cada conta dos próximos 30 dias.
+- **Lembretes:** "pagar o IPVA dia 15", uma vez ou repetindo (toda semana, todo mês, todo ano). Feito com um toque.
+- **Notificação no celular:** ligue em Avisos. Chega de manhã (por volta das 8h) e à noite (por volta das 20h, "lançou os gastos de hoje?"). Escolha o que receber. No iPhone, precisa instalar o Bolso na tela de início.
+- **Assistente:** "me lembra de pagar o IPVA dia 15" vira um lembrete (você confere e salva) e "quando cai o salário?" ou "o que vence essa semana?" ele responde com os dias contados.
+- Lembretes entram no backup.
+- Versão escolhida pelo Vinícius (1.7.3).
+
 ## 1.7.2 (08/10/2026)
 
 - Corrigido: com o Gemini, o Assistente (e o cartão do Início) respondia "Não consegui responder agora" nas perguntas sobre o mês. O pedido da segunda volta (depois de buscar os números) levava campos que o Gemini pode recusar; agora vai só o do padrão.

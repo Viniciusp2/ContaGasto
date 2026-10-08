@@ -337,3 +337,65 @@ export const conferenciasIgnoradas = pgTable(
   },
   (t) => [unique().on(t.userId, t.chave)],
 );
+
+// ---------- Avisos e lembretes (1.7.3, 4.16) ----------
+
+// O que você (ou o assistente) pediu pra lembrar. Repetido: "data" é a próxima vez, contada a partir de "inicio".
+export const lembretes = pgTable(
+  "lembretes",
+  {
+    id: id(),
+    userId: donoId(),
+    titulo: text("titulo").notNull(),
+    inicio: date("inicio").notNull(),
+    data: date("data").notNull(),
+    repetir: text("repetir").notNull().default("nao"), // nao | semanal | mensal | anual
+    concluido: boolean("concluido").notNull().default(false),
+    concluidoEm: date("concluido_em"),
+    origem: text("origem").notNull().default("voce"), // voce | assistente
+    ...datas(),
+  },
+  (t) => [
+    index("lembretes_usuario_data_idx").on(t.userId, t.data),
+    check("lembretes_repetir_valido", sql`${t.repetir} in ('nao', 'semanal', 'mensal', 'anual')`),
+  ],
+);
+
+// Celulares e navegadores que recebem notificação (Web Push). Um por inscrição do navegador.
+export const aparelhosPush = pgTable("aparelhos_push", {
+  id: id(),
+  userId: donoId(),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  nome: text("nome").notNull(), // "iPhone, Safari"
+  ultimoEnvio: timestamp("ultimo_envio", { withTimezone: true }),
+  falhas: integer("falhas").notNull().default(0),
+  ...datas(),
+});
+
+// Que avisos mandar e as chaves do Web Push (VAPID), criadas na primeira vez, como o segredo da sessão
+export const configAvisos = pgTable("config_avisos", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => usuarios.id, { onDelete: "cascade" }),
+  tipos: jsonb("tipos").$type<Record<string, boolean>>().notNull().default({}),
+  vapidPublica: text("vapid_publica"),
+  vapidPrivada: text("vapid_privada"),
+  ...datas(),
+});
+
+// Cada aviso que já foi pro celular: o mesmo não vai duas vezes (o agendador pode rodar de novo) e vira o histórico
+export const avisosEnviados = pgTable(
+  "avisos_enviados",
+  {
+    id: id(),
+    userId: donoId(),
+    chave: text("chave").notNull(),
+    tipo: text("tipo").notNull(),
+    titulo: text("titulo").notNull(),
+    texto: text("texto").notNull(),
+    ...datas(),
+  },
+  (t) => [unique().on(t.userId, t.chave)],
+);

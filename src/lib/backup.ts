@@ -15,9 +15,10 @@ export const TABELAS_BACKUP = [
   "emprestimos",
   "pagamentosFatura",
   "conferenciasIgnoradas",
+  "lembretes",
 ] as const;
 // Tabelas que vieram depois: backup antigo sem elas ainda vale (fica vazio)
-const TABELAS_NOVAS: readonly string[] = ["pagamentosFatura", "contas", "conferenciasIgnoradas"];
+const TABELAS_NOVAS: readonly string[] = ["pagamentosFatura", "contas", "conferenciasIgnoradas", "lembretes"];
 export type TabelaBackup = (typeof TABELAS_BACKUP)[number];
 
 export type Backup = {

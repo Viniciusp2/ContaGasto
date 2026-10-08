@@ -8,6 +8,7 @@ import {
   contas,
   emprestimos,
   formasPagamento,
+  lembretes,
   lancamentos,
   metas,
   movimentosObjetivo,
@@ -31,6 +32,7 @@ const tabelas = {
   emprestimos,
   pagamentosFatura,
   conferenciasIgnoradas,
+  lembretes,
 } satisfies Record<TabelaBackup, unknown>;
 
 export async function exportarTudo(): Promise<Backup> {

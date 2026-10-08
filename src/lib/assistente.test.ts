@@ -5,6 +5,7 @@ import {
   instrucoesAssistente,
   lerMesPedido,
   lerProposta,
+  lerPropostaLembrete,
   limparResposta,
   MAX_HISTORICO,
   type OpcoesLancamento,
@@ -100,9 +101,9 @@ describe("histórico que vai pra API", () => {
 });
 
 describe("ferramentas e instruções", () => {
-  it("as três ferramentas, com as categorias como opção", () => {
+  it("as ferramentas, com as categorias como opção", () => {
     const f = ferramentasAssistente(opcoes);
-    expect(f.map((t) => t.nome)).toEqual(["ver_mes", "buscar_lancamentos", "propor_lancamento"]);
+    expect(f.map((t) => t.nome)).toEqual(["ver_mes", "buscar_lancamentos", "propor_lancamento", "ver_avisos", "propor_lembrete"]);
     const props = f[2].parametros.properties as Record<string, { enum?: string[] }>;
     expect(props.categoria.enum).toEqual(["Alimentação", "Outros", "Salário"]);
   });
@@ -124,5 +125,20 @@ describe("ferramentas e instruções", () => {
   });
   it("resposta sem travessão", () => {
     expect(limparResposta("Mês bom — sobrou R$ 300. ")).toBe("Mês bom, sobrou R$ 300.");
+  });
+});
+
+describe("proposta de lembrete", () => {
+  it("aceita e repete só se pedirem", () => {
+    expect(lerPropostaLembrete({ titulo: "Pagar o IPVA", data: "2026-10-15", repetir: "nao" }, hoje)).toEqual({
+      ok: true,
+      lembrete: { titulo: "Pagar o IPVA", data: "2026-10-15", repetir: "nao" },
+    });
+    expect(lerPropostaLembrete({ titulo: "Diarista", data: "2026-10-10" }, hoje)).toMatchObject({ ok: true, lembrete: { repetir: "nao" } });
+  });
+  it("recusa dia passado, sem título ou repetição estranha", () => {
+    expect(lerPropostaLembrete({ titulo: "x", data: "2026-10-01", repetir: "nao" }, hoje).ok).toBe(false);
+    expect(lerPropostaLembrete({ titulo: " ", data: "2026-10-15", repetir: "nao" }, hoje).ok).toBe(false);
+    expect(lerPropostaLembrete({ titulo: "x", data: "2026-10-15", repetir: "diario" }, hoje).ok).toBe(false);
   });
 });

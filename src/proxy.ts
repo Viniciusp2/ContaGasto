@@ -13,6 +13,8 @@ const SEM_AUTENTICADOR = ["/seguranca"];
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   if (PUBLICOS.includes(pathname) || pathname.startsWith("/icone-")) return NextResponse.next();
+  // Agendador das notificações (1.7.3): não tem sessão; a rota confere o CRON_SECRET e o horário sozinha
+  if (pathname.startsWith("/api/avisos/")) return NextResponse.next();
 
   let login = await obterAcesso();
   if (!login.ligado) return NextResponse.next();

@@ -8,6 +8,9 @@ import { lancamentosVAAte, listarCategoriasAtivas, listarContas, listarFormasPag
 import { metasDoMes } from "./metas-do-mes";
 import { compromissosDoMes, gastoDiaADiaRecente, guardadoNoMes } from "./painel";
 import { saldosHoje } from "./saldos";
+import { avisosAgora, lembretesPendentes, quantoFalta } from "./avisos";
+import { textoQuantoFalta } from "@/lib/avisos";
+import { descreverRepeticao } from "@/lib/lembretes";
 import { dadosDaAnalise } from "@/lib/analise-ia";
 import type { OpcoesLancamento } from "@/lib/assistente";
 import { filtrarLancamentos } from "@/lib/busca";
@@ -178,5 +181,32 @@ export async function opcoesDeLancamento(): Promise<OpcoesLancamento> {
     categorias: cats.filter((c) => c.nome !== "Empréstimo recebido").map((c) => ({ id: c.id, nome: c.nome, tipo: c.tipo })),
     formas: formas.map((f) => ({ id: f.id, nome: f.nome, tipo: f.tipo })),
     bancos: bancos.map((b) => ({ id: b.id, nome: b.nome })),
+  };
+}
+
+// ver_avisos (1.7.3): o mesmo da tela de Avisos, com os dias que faltam já calculados
+export async function verAvisos(hoje: string, dias: number) {
+  const d = Number.isFinite(dias) ? Math.min(60, Math.max(1, Math.round(dias))) : 15;
+  const [avisos, falta, lembretes] = await Promise.all([avisosAgora(hoje), quantoFalta(hoje, d), lembretesPendentes()]);
+  return {
+    hoje,
+    pedindoAtencao: avisos.filter((a) => !a.soNoCelular).map((a) => ({ nivel: a.nivel, titulo: a.titulo, detalhe: a.texto })),
+    proximosDias: {
+      olhando: `${d} dias pra frente`,
+      itens: falta.map((i) => ({
+        o_que: i.descricao,
+        tipo: i.entrada ? "entrada (vai receber)" : "conta (vai pagar)",
+        valor: reais(i.valor),
+        dia: diaCurto(i.data),
+        quando: textoQuantoFalta(i.data, hoje),
+        ...(i.detalhe ? { obs: i.detalhe } : {}),
+      })),
+    },
+    lembretes: lembretes.map((l) => ({
+      titulo: l.titulo,
+      dia: diaCurto(l.data),
+      quando: textoQuantoFalta(l.data, hoje),
+      repete: descreverRepeticao(l.repetir, l.inicio),
+    })),
   };
 }

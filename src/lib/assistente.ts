@@ -5,6 +5,7 @@
 import { dataValida } from "./datas";
 import { MAX_CENTAVOS } from "./dinheiro";
 import { normalizar } from "./busca";
+import { conferirLembrete, REPETICOES, type DadosLembrete } from "./lembretes";
 import type { Ferramenta, MensagemIA } from "./ia/tipos";
 // Só as últimas mensagens vão pra IA: conversa longa custa mais e não ajuda
 export const MAX_HISTORICO = 10;
@@ -31,6 +32,9 @@ export type Proposta = {
   bancoNome: string | null;
 };
 
+// Lembrete que a IA propôs (1.7.3): também só salva depois do toque
+export type PropostaLembrete = DadosLembrete;
+
 export type MensagemChat = { papel: "voce" | "bolso"; texto: string };
 
 export function instrucoesAssistente(hoje: string, opcoes: OpcoesLancamento) {
@@ -38,10 +42,12 @@ export function instrucoesAssistente(hoje: string, opcoes: OpcoesLancamento) {
     opcoes.categorias.filter((c) => c.tipo === tipo).map((c) => c.nome).join(", ");
   return `Você é o assistente do Bolso, um app pessoal de controle de gastos. Quem conversa é o dono do app, pelo celular. Hoje é ${hoje}.
 
-Você faz três coisas:
+Você faz cinco coisas:
 1. Lançar gasto ou entrada quando a pessoa conta o que gastou ou recebeu ("gastei 32 no ifood", "caiu o salário de 4.500"). Use a ferramenta propor_lancamento. Ela não salva nada: a pessoa confere e toca em Salvar.
 2. Analisar o mês ("analisa meu mês", "como estou?"). Use ver_mes e comente os números.
 3. Responder perguntas sobre o dinheiro dela ("quanto gastei de mercado?", "dá pra comprar um celular de 2 mil?"). Use ver_mes ou buscar_lancamentos.
+4. Dizer o que vem pela frente ("quando cai o salário?", "o que vence essa semana?", "tenho lembrete?"). Use ver_avisos: ela já traz quantos dias faltam.
+5. Criar lembrete quando a pessoa pedir pra lembrar de algo ("me lembra de pagar o IPVA dia 15", "todo dia 10 me lembra da diarista"). Use propor_lembrete. Ela não salva nada: a pessoa confere e toca em Salvar. O aviso chega no celular de manhã, no dia.
 
 Regras:
 - Números só vêm das ferramentas, do jeito que estão escritos. Não some, não subtraia e não calcule porcentagem: se o número não veio pronto, fale sem ele ou diga que não sabe.
@@ -59,7 +65,13 @@ Pra lançar:
 - Data: hoje, a não ser que a pessoa diga outro dia ("ontem", "dia 5").
 - Forma de pagamento e banco só se a pessoa disser. Formas: ${opcoes.formas.map((f) => f.nome).join(", ") || "nenhuma"}. Bancos: ${opcoes.bancos.map((b) => b.nome).join(", ") || "nenhum"}.
 - "ja_paguei" é falso só se a pessoa disser que ainda vai pagar.
-- Vários gastos na mesma frase: proponha o primeiro e diga que manda o próximo depois.`;
+- Vários gastos na mesma frase: proponha o primeiro e diga que manda o próximo depois.
+
+Pra lembrar:
+- Título curto começando pelo que fazer ("Pagar o IPVA", "Cobrar o João").
+- Dia: o que a pessoa disser, em AAAA-MM-DD, hoje ou depois. Sem dia, pergunte antes de propor.
+- "repetir": semanal, mensal ou anual só se a pessoa disser que repete; senão "nao".
+- Contas fixas e parcelas o app já avisa sozinho: não precisa lembrete pra elas.`;
 }
 
 export function ferramentasAssistente(opcoes: OpcoesLancamento): Ferramenta[] {
@@ -103,6 +115,29 @@ export function ferramentasAssistente(opcoes: OpcoesLancamento): Ferramenta[] {
           ja_paguei: { type: "boolean" },
         },
         required: ["tipo", "valor", "descricao", "categoria", "data", "ja_paguei"],
+      },
+    },
+    {
+      nome: "ver_avisos",
+      descricao:
+        "O que pede atenção hoje (contas atrasadas ou vencendo, metas, empréstimos com prazo, lembretes), quanto falta pra cada entrada fixa cair e pra cada conta vencer, e os lembretes da pessoa. Os dias que faltam já vêm calculados.",
+      parametros: {
+        type: "object",
+        properties: { dias: { type: "number", description: "Quantos dias pra frente olhar, de 1 a 60. Use 15 se a pessoa não disser." } },
+        required: ["dias"],
+      },
+    },
+    {
+      nome: "propor_lembrete",
+      descricao: "Monta um lembrete pra pessoa conferir e salvar. Não salva sozinho. Use quando a pessoa pedir pra lembrar de algo num dia.",
+      parametros: {
+        type: "object",
+        properties: {
+          titulo: { type: "string", description: "Curto, ex.: Pagar o IPVA." },
+          data: { type: "string", description: "AAAA-MM-DD, hoje ou depois." },
+          repetir: { type: "string", enum: REPETICOES.map((r) => r.valor) },
+        },
+        required: ["titulo", "data", "repetir"],
       },
     },
   ];
@@ -156,6 +191,15 @@ export function lerProposta(
       bancoNome: banco?.nome ?? null,
     },
   };
+}
+
+// Confere o que a IA mandou em propor_lembrete: mesmas regras do formulário de lembrete
+export function lerPropostaLembrete(
+  entrada: Record<string, unknown>,
+  hoje: string,
+): { ok: true; lembrete: PropostaLembrete } | { ok: false; erro: string } {
+  const r = conferirLembrete({ titulo: entrada.titulo, data: entrada.data, repetir: entrada.repetir ?? "nao" }, hoje);
+  return r.ok ? { ok: true, lembrete: r.dados } : r;
 }
 
 // Histórico que vai pra API: só as últimas mensagens, começando por uma sua, sem texto gigante

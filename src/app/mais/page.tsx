@@ -6,10 +6,11 @@ import { FormSenha } from "@/components/form-senha";
 import { obterAcesso } from "@/db/acesso";
 import { COOKIE_TEMA, lerTema } from "@/lib/tema";
 import { textoVersao, VERSAO_ATUAL } from "@/lib/versao";
-import { Tags, CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat, SearchCheck, Sparkles, ShieldCheck } from "lucide-react";
+import { Bell, Tags, CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat, SearchCheck, Sparkles, ShieldCheck } from "lucide-react";
 
 const itens = [
   { href: "/assistente", rotulo: "Assistente", texto: "Lança falando, analisa o mês e tira dúvida", Icone: Sparkles, cor: "bg-menta" },
+  { href: "/avisos", rotulo: "Avisos e lembretes", texto: "Notificações no celular, lembretes e quanto falta", Icone: Bell, cor: "bg-coral" },
   { href: "/fixos", rotulo: "Fixos e parcelas", texto: "O que repete todo mês", Icone: Repeat, cor: "bg-lavanda" },
   { href: "/cartoes", rotulo: "Cartões", texto: "Fechamento e vencimento da fatura", Icone: CreditCard, cor: "bg-coral" },
   { href: "/objetivos", rotulo: "Objetivos", texto: "Caixinhas pra juntar dinheiro", Icone: PiggyBank, cor: "bg-limao" },

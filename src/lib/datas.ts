@@ -9,6 +9,24 @@ export function hojeISO(agora = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: FUSO }).format(agora);
 }
 
+// Hora cheia no Brasil (0 a 23): o agendador da Vercel roda em UTC
+export function horaNoBrasil(agora = new Date()): number {
+  return Number(new Intl.DateTimeFormat("en-US", { timeZone: FUSO, hour: "numeric", hourCycle: "h23" }).format(agora));
+}
+
+// "2026-10-08" + 3 dias = "2026-10-11" (negativo volta)
+export function somarDias(dataISO: string, dias: number): string {
+  const [ano, mes, dia] = dataISO.split("-").map(Number);
+  return new Date(Date.UTC(ano, mes - 1, dia + dias)).toISOString().slice(0, 10);
+}
+
+// Segunda-feira da semana da data (a semana começa na segunda)
+export function segundaDaSemana(dataISO: string): string {
+  const [ano, mes, dia] = dataISO.split("-").map(Number);
+  const diaDaSemana = new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay(); // 0 = domingo
+  return somarDias(dataISO, -((diaDaSemana + 6) % 7));
+}
+
 export function mesDe(dataISO: string): Mes {
   return { ano: Number(dataISO.slice(0, 4)), mes: Number(dataISO.slice(5, 7)) };
 }
