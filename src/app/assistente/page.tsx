@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AssistenteConversa } from "@/components/assistente-conversa";
-import { descreverIA, descreverReserva } from "@/lib/ia";
+import { descreverIA, descreverReserva, listarIAs } from "@/lib/ia";
 
 export const dynamic = "force-dynamic";
 // Uma pergunta pode precisar de 2 ou 3 chamadas à IA
@@ -20,7 +20,7 @@ export default function Assistente() {
         <h1 className="text-2xl font-bold">Assistente</h1>
         <p className="text-sm text-tinta-suave">Lança por você, analisa o mês e responde sobre o seu dinheiro.</p>
       </div>
-      <AssistenteConversa />
+      <AssistenteConversa ias={listarIAs(process.env)} automatico={ia ? `${ia}${reserva ? ` + reserva ${reserva}` : ""}` : (reserva ?? "")} />
       <p className="text-center text-xs text-tinta-suave">
         {ia || reserva
           ? `Respondendo com ${ia ?? reserva}${ia && reserva ? `; se ela falhar, ${reserva}` : ""}. Confira antes de salvar.`

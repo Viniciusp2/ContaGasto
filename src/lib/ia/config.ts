@@ -125,3 +125,27 @@ export function descreverIA(env: Env): string | null {
 export function descreverReserva(env: Env): string | null {
   return descrever(lerConfigReserva(env));
 }
+
+// Escolher a IA na mão, na tela do Assistente (pra testar e comparar). "auto" = principal + reserva.
+export const IAS_ESCOLHIVEIS: NomeProvedor[] = ["gemini", "groq", "openrouter", "claude"];
+
+export type OpcaoIA = { nome: string; descricao: string; pronta: boolean; motivo?: string };
+
+const principalDe = (env: Env) => (env.IA_PROVEDOR ?? "").trim().toLowerCase() || PROVEDOR_PADRAO;
+
+// A IA escolhida, com os ajustes (IA_CHAVE, IA_MODELO, IA_URL) só se ela for a principal
+export function lerConfigEscolhida(env: Env, nome: string): Lida {
+  return montarConfig(nome, env, nome === principalDe(env), "IA escolhida");
+}
+
+// Todas que dá pra escolher, dizendo quais estão prontas (com chave) e o que falta nas outras
+export function listarIAs(env: Env): OpcaoIA[] {
+  const nomes = [...IAS_ESCOLHIVEIS];
+  if (!nomes.includes(principalDe(env) as NomeProvedor) && principalDe(env) in PROVEDORES) nomes.push(principalDe(env) as NomeProvedor);
+  return nomes.map((nome) => {
+    const lida = lerConfigEscolhida(env, nome);
+    return lida.ok
+      ? { nome, descricao: `${lida.config.rotulo} (${lida.config.modelo})`, pronta: true }
+      : { nome, descricao: PROVEDORES[nome].rotulo, pronta: false, motivo: lida.erro };
+  });
+}

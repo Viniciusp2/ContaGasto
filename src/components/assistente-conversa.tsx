@@ -4,15 +4,17 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowUp, BellRing, Check, LoaderCircle, Mic, MicOff, Sparkles, Trash2, X } from "lucide-react";
 import { conversar, salvarDoAssistente, salvarLembreteDoAssistente } from "@/app/assistente/actions";
+import type { OpcaoIA } from "@/lib/ia/config";
 import { contextoDaProposta, MAX_TEXTO, textoParcelas, type MensagemChat, type Proposta, type PropostaLembrete } from "@/lib/assistente";
 import { descreverRepeticao } from "@/lib/lembretes";
 import { diaCurto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
-type Mensagem = MensagemChat & { proposta?: Proposta; lembrete?: PropostaLembrete; situacao?: "salvo" | "descartado"; erro?: boolean; respondidoPor?: string };
+type Mensagem = MensagemChat & { proposta?: Proposta; lembrete?: PropostaLembrete; situacao?: "salvo" | "descartado"; erro?: boolean; ia?: string; respondidoPor?: string };
 
 const SUGESTOES = ["Analisa meu mês", "Quanto posso gastar por dia?", "O que vence essa semana?", "Onde estou gastando mais?", "Gastei 32 no iFood"];
-const GUARDADO = "bolso-assistente"; // a conversa sobrevive a trocar de tela (só nesta aba)
+const GUARDADO = "bolso-assistente";
+const IA_ESCOLHIDA = "bolso-ia"; // IA escolhida no seletor (só neste aparelho) // a conversa sobrevive a trocar de tela (só nesta aba)
 
 // Ditado do navegador (grátis, roda no celular). Nem todo navegador tem: aí o botão some.
 type Reconhecimento = {
@@ -197,13 +199,26 @@ function lerGuardado(): Mensagem[] {
 const nada = () => () => {};
 
 // A conversa guardada só existe no navegador: espera a página abrir nele antes de mostrar
-export function AssistenteConversa() {
+type PropsIA = { ias: OpcaoIA[]; automatico: string };
+
+export function AssistenteConversa(props: PropsIA) {
   const noNavegador = useSyncExternalStore(nada, () => true, () => false);
-  return noNavegador ? <Conversa /> : null;
+  return noNavegador ? <Conversa {...props} /> : null;
 }
 
-function Conversa() {
+// IA escolhida antes neste aparelho; se ela não estiver mais pronta, volta pro automático
+function lerEscolha(ias: OpcaoIA[]) {
+  try {
+    const salva = localStorage.getItem(IA_ESCOLHIDA) ?? "auto";
+    return ias.some((ia) => ia.nome === salva && ia.pronta) ? salva : "auto";
+  } catch {
+    return "auto";
+  }
+}
+
+function Conversa({ ias, automatico }: PropsIA) {
   const [mensagens, setMensagens] = useState<Mensagem[]>(lerGuardado);
+  const [escolha, setEscolha] = useState(() => lerEscolha(ias));
   const [texto, setTexto] = useState("");
   const [pensando, setPensando] = useState(false);
   const [ouvindo, setOuvindo] = useState(false);
@@ -226,7 +241,6 @@ function Conversa() {
     setTexto("");
     setPensando(true);
     try {
-      // Só o texto vai pro servidor: proposta e erro são coisa da tela
       // Só o texto vai pro servidor, mais o que aconteceu com cada cartão proposto (salvo, descartado), pra IA ter o contexto
       const resposta = await conversar(
         lista
@@ -236,8 +250,9 @@ function Conversa() {
             texto,
             ...(proposta && { contexto: contextoDaProposta(proposta, situacao) }),
           })),
+        escolha,
       );
-      setMensagens((atual) => [...atual, { papel: "bolso", texto: resposta.texto, proposta: resposta.proposta, lembrete: resposta.lembrete, erro: resposta.erro, respondidoPor: resposta.respondidoPor }]);
+      setMensagens((atual) => [...atual, { papel: "bolso", texto: resposta.texto, proposta: resposta.proposta, lembrete: resposta.lembrete, erro: resposta.erro, ia: resposta.ia, respondidoPor: resposta.respondidoPor }]);
     } catch {
       setMensagens((atual) => [...atual, { papel: "bolso", texto: "Sem conexão. Tenta de novo quando a internet voltar.", erro: true }]);
     }
@@ -263,6 +278,27 @@ function Conversa() {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Escolher a IA na mão (como o seletor de modelo do Claude Code): pra testar e comparar */}
+      <label className="flex min-h-11 items-center gap-2 self-start rounded-full bg-cartao px-4 text-sm shadow-suave">
+        <span className="text-tinta-suave">IA</span>
+        <select
+          value={escolha}
+          onChange={(e) => {
+            setEscolha(e.target.value);
+            try {
+              localStorage.setItem(IA_ESCOLHIDA, e.target.value);
+            } catch {}
+          }}
+          className="max-w-60 bg-transparent font-semibold outline-none"
+        >
+          <option value="auto">Automático{automatico ? `: ${automatico}` : ""}</option>
+          {ias.map((ia) => (
+            <option key={ia.nome} value={ia.nome} disabled={!ia.pronta}>
+              {ia.pronta ? ia.descricao : `${ia.descricao} (sem chave)`}
+            </option>
+          ))}
+        </select>
+      </label>
       {mensagens.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-card bg-cartao p-6 text-center shadow-suave">
           <span className="rounded-full bg-lavanda p-4">
@@ -285,7 +321,11 @@ function Conversa() {
                 }
               >
                 {m.papel === "voce" ? <p className="whitespace-pre-wrap">{m.texto}</p> : <TextoBolso texto={m.texto} />}
-                {m.respondidoPor && <p className="mt-1 text-xs text-tinta-suave">Respondido pela IA reserva ({m.respondidoPor})</p>}
+                {m.papel === "bolso" && (m.respondidoPor || m.ia) && (
+                  <p className="mt-1 text-xs text-tinta-suave">
+                    {m.respondidoPor ? `Respondido pela IA reserva (${m.respondidoPor})` : `por ${m.ia}`}
+                  </p>
+                )}
                 {m.proposta && (
                   <CartaoProposta
                     m={m}

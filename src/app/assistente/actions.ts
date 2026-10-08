@@ -21,7 +21,7 @@ import {
   type PropostaLembrete,
 } from "@/lib/assistente";
 import { conferirLembrete } from "@/lib/lembretes";
-import { criarProvedor, ErroIA, lerConfigIA, lerConfigReserva, type ChamadaFerramenta, type MensagemIA, type ProvedorIA } from "@/lib/ia";
+import { criarProvedor, ErroIA, lerConfigEscolhida, lerConfigIA, lerConfigReserva, type ChamadaFerramenta, type MensagemIA, type ProvedorIA } from "@/lib/ia";
 import { hojeISO } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 import { simularParcelamento, taxaAnual } from "@/lib/financas";
@@ -29,8 +29,15 @@ import { subtipoDaCategoria } from "@/lib/entradas";
 import { dataEfetiva } from "@/lib/recorrencias";
 import { validarLancamento } from "@/lib/validar-lancamento";
 
-// respondidoPor: só quando quem respondeu foi a IA reserva (a principal falhou)
-export type RespostaAssistente = { texto: string; proposta?: Proposta; lembrete?: PropostaLembrete; erro?: boolean; respondidoPor?: string };
+// ia: qual IA respondeu ("Groq (openai/gpt-oss-120b)"). respondidoPor: só quando foi a reserva (a principal falhou).
+export type RespostaAssistente = {
+  texto: string;
+  proposta?: Proposta;
+  lembrete?: PropostaLembrete;
+  erro?: boolean;
+  ia?: string;
+  respondidoPor?: string;
+};
 
 // Pergunta que precisa de dado: a IA pede a ferramenta, o app responde e ela escreve. 3 voltas bastam.
 const MAX_VOLTAS = 3;
@@ -143,7 +150,9 @@ function mensagemDeErro(erro: unknown) {
   return ERROS_IA[erro.tipo] + codigo;
 }
 
-export async function conversar(mensagens: MensagemChat[]): Promise<RespostaAssistente> {
+// escolha: "auto" (principal e, se falhar, a reserva) ou o nome de uma IA escolhida na tela (só ela responde)
+export async function conversar(mensagens: MensagemChat[], escolha = "auto"): Promise<RespostaAssistente> {
+  if (escolha !== "auto") return conversarCom(mensagens, escolha);
   const lida = lerConfigIA(process.env);
   const reserva = lerConfigReserva(process.env);
   // Sem a principal mas com a reserva configurada, a reserva assume sozinha
@@ -160,7 +169,7 @@ export async function conversar(mensagens: MensagemChat[]): Promise<RespostaAssi
   let erroPrincipal: unknown = null;
   if (lida.ok) {
     try {
-      return await responder(criarProvedor(lida.config), historico, hoje, opcoes);
+      return { ...(await responder(criarProvedor(lida.config), historico, hoje, opcoes)), ia: `${lida.config.rotulo} (${lida.config.modelo})` };
     } catch (erro) {
       console.error(`[assistente] ${lida.config.nome} falhou${reserva?.ok ? `, tentando a reserva (${reserva.config.nome})` : ""}`, erro);
       erroPrincipal = erro;
@@ -171,7 +180,7 @@ export async function conversar(mensagens: MensagemChat[]): Promise<RespostaAssi
   // A pergunta recomeça do zero na reserva: chamada de uma IA não vai pra outra (cada uma tem o seu jeito)
   try {
     const resposta = await responder(criarProvedor(reserva.config), historico, hoje, opcoes);
-    return { ...resposta, respondidoPor: reserva.config.rotulo };
+    return { ...resposta, ia: `${reserva.config.rotulo} (${reserva.config.modelo})`, respondidoPor: reserva.config.rotulo };
   } catch (erro) {
     console.error(`[assistente] a reserva ${reserva.config.nome} também falhou`, erro);
     return { texto: `${mensagemDeErro(erroPrincipal ?? erro)} A IA reserva também não respondeu.`, erro: true };
@@ -179,6 +188,24 @@ export async function conversar(mensagens: MensagemChat[]): Promise<RespostaAssi
 }
 
 const userId = USUARIO_PADRAO.id;
+
+// Só a IA escolhida responde, sem reserva: é pra testar e comparar uma de cada vez
+async function conversarCom(mensagens: MensagemChat[], nome: string): Promise<RespostaAssistente> {
+  const lida = lerConfigEscolhida(process.env, nome);
+  if (!lida.ok) return { texto: `Essa IA não está pronta: ${lida.erro}`, erro: true };
+  const historico = historicoParaApi(mensagens);
+  const ultima = historico.at(-1);
+  if (!ultima || ultima.papel !== "usuario") return { texto: "Manda uma mensagem pra começar.", erro: true };
+  if (ultima.texto.length > MAX_TEXTO) return { texto: `Mensagem grande demais. Escreve em até ${MAX_TEXTO} letras.`, erro: true };
+  const ia = `${lida.config.rotulo} (${lida.config.modelo})`;
+  try {
+    const resposta = await responder(criarProvedor(lida.config), historico, hojeISO(), await opcoesDeLancamento());
+    return { ...resposta, ia };
+  } catch (erro) {
+    console.error(`[assistente] ${nome} (escolhida) falhou`, erro);
+    return { texto: mensagemDeErro(erro), erro: true, ia };
+  }
+}
 
 // Salva o lançamento que a IA propôs, depois do toque em Salvar. Mesma validação e mesmas regras
 // do formulário (crédito segue a fatura, gasto ainda não pago fica a pagar, VA não é entrada).

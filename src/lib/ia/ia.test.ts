@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { lerRespostaAnthropic, mensagensAnthropic } from "./anthropic";
 import { lerRespostaCompativel, montarPedidoCompativel, provedorCompativel } from "./compativel";
-import { descreverIA, descreverReserva, lerConfigIA, lerConfigReserva, type ConfigIA } from "./config";
+import { descreverIA, descreverReserva, lerConfigEscolhida, lerConfigIA, lerConfigReserva, listarIAs, type ConfigIA } from "./config";
 import { ErroIA, tipoDoStatus, type PedidoIA } from "./tipos";
 
 describe("configuração da IA", () => {
@@ -172,5 +172,32 @@ describe("IA reserva", () => {
   it("descreve a reserva pra tela", () => {
     expect(descreverReserva({ GEMINI_API_KEY: "g", IA_RESERVA: "groq", GROQ_API_KEY: "q" })).toBe("Groq (openai/gpt-oss-120b)");
     expect(descreverReserva({ GEMINI_API_KEY: "g" })).toBeNull();
+  });
+});
+
+describe("escolher a IA na tela", () => {
+  const env = { GEMINI_API_KEY: "g", OPENROUTER_API_KEY: "o", IA_MODELO: "gemini-teste" };
+
+  it("lista as quatro, dizendo quais têm chave", () => {
+    const lista = listarIAs(env);
+    expect(lista.map((i) => [i.nome, i.pronta])).toEqual([
+      ["gemini", true],
+      ["groq", false],
+      ["openrouter", true],
+      ["claude", false],
+    ]);
+    expect(lista[0].descricao).toBe("Google Gemini (gemini-teste)"); // IA_MODELO vale pra principal
+    expect(lista[1]).toMatchObject({ descricao: "Groq", motivo: "Falta a chave da IA (GROQ_API_KEY)." });
+  });
+
+  it("a escolhida que não é a principal usa só a chave própria e o modelo padrão", () => {
+    expect(lerConfigEscolhida(env, "openrouter")).toMatchObject({ ok: true, config: { chave: "o", modelo: "openrouter/free" } });
+    expect(lerConfigEscolhida(env, "groq")).toMatchObject({ ok: false });
+    expect(lerConfigEscolhida(env, "inventada")).toMatchObject({ ok: false });
+  });
+
+  it("principal compatível aparece na lista", () => {
+    const lista = listarIAs({ IA_PROVEDOR: "compativel", IA_URL: "https://x/v1", IA_MODELO: "m", IA_CHAVE: "k" });
+    expect(lista.at(-1)).toMatchObject({ nome: "compativel", pronta: true, descricao: "IA compatível (m)" });
   });
 });
