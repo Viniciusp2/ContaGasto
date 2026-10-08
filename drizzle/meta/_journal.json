@@ -99,6 +99,13 @@
       "when": 1791469058666,
       "tag": "0013_avisos",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791480903085,
+      "tag": "0014_logs",
+      "breakpoints": true
     }
   ]
 }

@@ -35,10 +35,13 @@ export function montarPedidoCompativel(config: ConfigIA, pedido: PedidoIA) {
   return {
     model: config.modelo,
     messages: mensagens,
-    tools: pedido.ferramentas.map((f) => ({
-      type: "function",
-      function: { name: f.nome, description: f.descricao, parameters: f.parametros },
-    })),
+    // Lista vazia alguns provedores recusam: sem ferramenta, o campo nem vai
+    ...(pedido.ferramentas.length > 0 && {
+      tools: pedido.ferramentas.map((f) => ({
+        type: "function",
+        function: { name: f.nome, description: f.descricao, parameters: f.parametros },
+      })),
+    }),
     [config.campoMaxTokens ?? "max_tokens"]: pedido.maxTokens,
     ...config.extras,
   };

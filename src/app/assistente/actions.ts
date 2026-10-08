@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { buscarNoMes, opcoesDeLancamento, verAvisos, verMes } from "@/db/assistente";
 import { buscarCategoria, buscarConta, buscarFormaPagamento } from "@/db/consultas";
+import { registrar } from "@/db/logs";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { lancamentos, lembretes, recorrencias } from "@/db/schema";
 import { USUARIO_PADRAO } from "@/db/usuario-padrao";
@@ -21,7 +22,7 @@ import {
   type PropostaLembrete,
 } from "@/lib/assistente";
 import { conferirLembrete } from "@/lib/lembretes";
-import { criarProvedor, ErroIA, lerConfigEscolhida, lerConfigIA, lerConfigReserva, type ChamadaFerramenta, type MensagemIA, type ProvedorIA } from "@/lib/ia";
+import { criarProvedor, ErroIA, type ConfigIA, lerConfigEscolhida, lerConfigIA, lerConfigReserva, type ChamadaFerramenta, type MensagemIA, type ProvedorIA } from "@/lib/ia";
 import { hojeISO } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 import { simularParcelamento, taxaAnual } from "@/lib/financas";
@@ -106,16 +107,20 @@ async function responder(
   historico: MensagemIA[],
   hoje: string,
   opcoes: Awaited<ReturnType<typeof opcoesDeLancamento>>,
+  estat: Estatistica,
 ): Promise<RespostaAssistente> {
   const conversa: MensagemIA[] = [...historico];
   for (let volta = 0; volta < MAX_VOLTAS; volta++) {
+    estat.voltas = volta + 1;
     const resposta = await ia.conversar({
       sistema: instrucoesAssistente(hoje, opcoes),
       mensagens: conversa,
       ferramentas: ferramentasAssistente(opcoes),
       maxTokens: MAX_TOKENS,
     });
-    console.info(`[assistente] ${ia.nome}/${ia.modelo}: ${resposta.tokens.entrada} tokens de entrada, ${resposta.tokens.saida} de saída`);
+    estat.tokensEntrada += resposta.tokens.entrada;
+    estat.tokensSaida += resposta.tokens.saida;
+    estat.ferramentas.push(...resposta.chamadas.map((c) => c.nome));
     if (resposta.recusou) return { texto: "Essa eu não consigo responder.", erro: true };
     const texto = limparResposta(resposta.texto);
 
@@ -141,6 +146,49 @@ async function responder(
     conversa.push({ papel: "assistente", texto: resposta.texto, chamadas: resposta.chamadas }, await executar(resposta.chamadas, hoje));
   }
   return { texto: "Essa ficou complicada. Tenta perguntar de um jeito mais direto.", erro: true };
+}
+
+type Estatistica = { voltas: number; tokensEntrada: number; tokensSaida: number; ferramentas: string[] };
+
+// Responde com uma IA e grava no log da área Dev: quem respondeu, tempo, voltas, ferramentas e tokens (ou o erro)
+async function responderComLog(
+  config: ConfigIA,
+  historico: MensagemIA[],
+  hoje: string,
+  opcoes: Awaited<ReturnType<typeof opcoesDeLancamento>>,
+  modo: "principal" | "reserva" | "escolhida",
+): Promise<RespostaAssistente> {
+  const estat: Estatistica = { voltas: 0, tokensEntrada: 0, tokensSaida: 0, ferramentas: [] };
+  const inicio = Date.now();
+  const ultima = historico.at(-1);
+  const base = {
+    ia: config.nome,
+    modelo: config.modelo,
+    modo,
+    pergunta: ultima?.papel === "usuario" ? ultima.texto.slice(0, 200) : "",
+  };
+  try {
+    const resposta = await responder(criarProvedor(config), historico, hoje, opcoes, estat);
+    const resultado = resposta.proposta ? "lançamento proposto" : resposta.lembrete ? "lembrete proposto" : resposta.erro ? "sem resposta útil" : "texto";
+    await registrar(resposta.erro ? "aviso" : "info", "assistente", `${config.rotulo} respondeu em ${((Date.now() - inicio) / 1000).toFixed(1)}s (${resultado})`, {
+      ...base,
+      ...estat,
+      ms: Date.now() - inicio,
+      resultado,
+      ...(resposta.erro && { texto: resposta.texto }),
+    });
+    return { ...resposta, ia: `${config.rotulo} (${config.modelo})` };
+  } catch (erro) {
+    await registrar("erro", "assistente", `${config.rotulo} falhou${erro instanceof ErroIA && erro.status ? ` (código ${erro.status})` : ""}`, {
+      ...base,
+      ...estat,
+      ms: Date.now() - inicio,
+      tipo: erro instanceof ErroIA ? erro.tipo : "inesperado",
+      status: erro instanceof ErroIA ? erro.status : undefined,
+      erro: (erro as Error).message,
+    });
+    throw erro;
+  }
 }
 
 function mensagemDeErro(erro: unknown) {
@@ -169,7 +217,7 @@ export async function conversar(mensagens: MensagemChat[], escolha = "auto"): Pr
   let erroPrincipal: unknown = null;
   if (lida.ok) {
     try {
-      return { ...(await responder(criarProvedor(lida.config), historico, hoje, opcoes)), ia: `${lida.config.rotulo} (${lida.config.modelo})` };
+      return await responderComLog(lida.config, historico, hoje, opcoes, "principal");
     } catch (erro) {
       console.error(`[assistente] ${lida.config.nome} falhou${reserva?.ok ? `, tentando a reserva (${reserva.config.nome})` : ""}`, erro);
       erroPrincipal = erro;
@@ -179,8 +227,8 @@ export async function conversar(mensagens: MensagemChat[], escolha = "auto"): Pr
 
   // A pergunta recomeça do zero na reserva: chamada de uma IA não vai pra outra (cada uma tem o seu jeito)
   try {
-    const resposta = await responder(criarProvedor(reserva.config), historico, hoje, opcoes);
-    return { ...resposta, ia: `${reserva.config.rotulo} (${reserva.config.modelo})`, respondidoPor: reserva.config.rotulo };
+    const resposta = await responderComLog(reserva.config, historico, hoje, opcoes, "reserva");
+    return { ...resposta, respondidoPor: reserva.config.rotulo };
   } catch (erro) {
     console.error(`[assistente] a reserva ${reserva.config.nome} também falhou`, erro);
     return { texto: `${mensagemDeErro(erroPrincipal ?? erro)} A IA reserva também não respondeu.`, erro: true };
@@ -199,8 +247,7 @@ async function conversarCom(mensagens: MensagemChat[], nome: string): Promise<Re
   if (ultima.texto.length > MAX_TEXTO) return { texto: `Mensagem grande demais. Escreve em até ${MAX_TEXTO} letras.`, erro: true };
   const ia = `${lida.config.rotulo} (${lida.config.modelo})`;
   try {
-    const resposta = await responder(criarProvedor(lida.config), historico, hojeISO(), await opcoesDeLancamento());
-    return { ...resposta, ia };
+    return await responderComLog(lida.config, historico, hojeISO(), await opcoesDeLancamento(), "escolhida");
   } catch (erro) {
     console.error(`[assistente] ${nome} (escolhida) falhou`, erro);
     return { texto: mensagemDeErro(erro), erro: true, ia };

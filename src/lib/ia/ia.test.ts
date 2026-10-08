@@ -66,7 +66,7 @@ describe("formato OpenAI (Gemini, Groq, OpenRouter...)", () => {
     const corpo = montarPedidoCompativel(gemini, pedido);
     expect(corpo).toMatchObject({ model: "gemini-3.8-flash", max_completion_tokens: 1024, reasoning_effort: "low" });
     expect(corpo.messages[0]).toEqual({ role: "system", content: "regras" });
-    expect(corpo.tools[0]).toEqual({ type: "function", function: { name: "ver_mes", description: "números do mês", parameters: { type: "object", properties: {} } } });
+    expect(corpo.tools?.[0]).toEqual({ type: "function", function: { name: "ver_mes", description: "números do mês", parameters: { type: "object", properties: {} } } });
   });
 
   it("devolve a chamada original (com a assinatura do Gemini) e o resultado como role tool", () => {
@@ -199,5 +199,13 @@ describe("escolher a IA na tela", () => {
   it("principal compatível aparece na lista", () => {
     const lista = listarIAs({ IA_PROVEDOR: "compativel", IA_URL: "https://x/v1", IA_MODELO: "m", IA_CHAVE: "k" });
     expect(lista.at(-1)).toMatchObject({ nome: "compativel", pronta: true, descricao: "IA compatível (m)" });
+  });
+});
+
+describe("pedido sem ferramentas", () => {
+  it("não manda a lista vazia (alguns provedores recusam)", () => {
+    const config = lerConfigIA({ GEMINI_API_KEY: "g" });
+    const corpo = montarPedidoCompativel((config.ok ? config.config : null) as ConfigIA, { ...pedido, ferramentas: [] });
+    expect("tools" in corpo).toBe(false);
   });
 });

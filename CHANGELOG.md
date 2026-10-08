@@ -9,6 +9,15 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.10.0 (08/10/2026)
+
+- **Área Dev** (Mais, Dev), só sua:
+  - **Diagnóstico:** versão no ar, ambiente, banco, quais IAs estão prontas, com botão **Testar** em cada uma (mostra o tempo ou o erro), e quais variáveis existem (só o nome, nunca o valor). Avisa quando uma variável está com o nome parecido mas errado (ex.: `OPENROUTER_KEY` em vez de `OPENROUTER_API_KEY`).
+  - **Logs:** cada pergunta ao assistente (qual IA, tempo, voltas, ferramentas, tokens) e cada erro ficam gravados, com filtro por nível e origem. Somem sozinhos depois de 30 dias.
+  - **Dados:** quantos registros tem cada tabela e os últimos de cada uma, só leitura. Tabela com senha ou chave mostra só a contagem.
+  - **Copiar diagnóstico pro Claude:** copia um resumo sem nenhuma chave pra colar na conversa.
+- **Escolher a IA** no Assistente virou uma faixa de botões (Automático, Gemini, Groq, OpenRouter, Claude), com bolinha verde em quem tem chave, e cada resposta diz qual IA respondeu.
+
 ## 1.9.0 (08/10/2026)
 
 - **IA reserva:** quando a IA principal falha (acabou o limite grátis do dia, está fora do ar ou a chave foi recusada), o assistente faz a mesma pergunta pra outra IA sozinho. A resposta da reserva aparece com a etiqueta "Respondido pela IA reserva". Liga com as variáveis `IA_RESERVA=groq` e `GROQ_API_KEY` na Vercel (chave grátis em console.groq.com).

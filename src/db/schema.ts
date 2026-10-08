@@ -399,3 +399,22 @@ export const avisosEnviados = pgTable(
   },
   (t) => [unique().on(t.userId, t.chave)],
 );
+
+// Registro do que acontece no app (área Dev): chamadas da IA, erros, testes. Fica fora do backup e
+// some sozinho depois de 30 dias. Nunca guarda senha, chave ou segredo.
+export const logs = pgTable(
+  "logs",
+  {
+    id: id(),
+    userId: donoId(),
+    nivel: text("nivel").notNull().default("info"), // info | aviso | erro
+    origem: text("origem").notNull(), // assistente, ia, dev...
+    mensagem: text("mensagem").notNull(),
+    detalhe: jsonb("detalhe"),
+    ...datas(),
+  },
+  (t) => [
+    index("logs_usuario_criado_idx").on(t.userId, t.createdAt),
+    check("logs_nivel_valido", sql`${t.nivel} in ('info', 'aviso', 'erro')`),
+  ],
+);

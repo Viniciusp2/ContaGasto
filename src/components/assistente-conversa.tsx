@@ -279,26 +279,39 @@ function Conversa({ ias, automatico }: PropsIA) {
   return (
     <div className="flex flex-col gap-3">
       {/* Escolher a IA na mão (como o seletor de modelo do Claude Code): pra testar e comparar */}
-      <label className="flex min-h-11 items-center gap-2 self-start rounded-full bg-cartao px-4 text-sm shadow-suave">
-        <span className="text-tinta-suave">IA</span>
-        <select
-          value={escolha}
-          onChange={(e) => {
-            setEscolha(e.target.value);
-            try {
-              localStorage.setItem(IA_ESCOLHIDA, e.target.value);
-            } catch {}
-          }}
-          className="max-w-60 bg-transparent font-semibold outline-none"
-        >
-          <option value="auto">Automático{automatico ? `: ${automatico}` : ""}</option>
-          {ias.map((ia) => (
-            <option key={ia.nome} value={ia.nome} disabled={!ia.pronta}>
-              {ia.pronta ? ia.descricao : `${ia.descricao} (sem chave)`}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div role="radiogroup" aria-label="Qual IA responde" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        {[{ nome: "auto", descricao: "Automático", pronta: true, motivo: automatico }, ...ias].map((ia) => {
+          const ativa = escolha === ia.nome;
+          const nomeCurto = ia.nome === "auto" ? "Automático" : ia.descricao.replace(/ \(.*\)$/, "");
+          return (
+            <button
+              key={ia.nome}
+              type="button"
+              role="radio"
+              aria-checked={ativa}
+              disabled={!ia.pronta}
+              title={ia.nome === "auto" ? automatico : ia.pronta ? ia.descricao : ia.motivo}
+              onClick={() => {
+                setEscolha(ia.nome);
+                try {
+                  localStorage.setItem(IA_ESCOLHIDA, ia.nome);
+                } catch {}
+              }}
+              className={`flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors active:scale-95 disabled:opacity-45 ${
+                ativa ? "bg-lavanda" : "bg-cartao shadow-suave"
+              }`}
+            >
+              {ia.nome === "auto" ? (
+                <Sparkles size={16} aria-hidden />
+              ) : (
+                <span className={`size-2 rounded-full ${ia.pronta ? "bg-positivo" : "bg-tinta-suave"}`} aria-hidden />
+              )}
+              {nomeCurto}
+              {!ia.pronta && <span className="font-normal text-tinta-suave">sem chave</span>}
+            </button>
+          );
+        })}
+      </div>
       {mensagens.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-card bg-cartao p-6 text-center shadow-suave">
           <span className="rounded-full bg-lavanda p-4">

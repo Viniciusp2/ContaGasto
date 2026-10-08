@@ -6,7 +6,7 @@ import { FormSenha } from "@/components/form-senha";
 import { obterAcesso } from "@/db/acesso";
 import { COOKIE_TEMA, lerTema } from "@/lib/tema";
 import { textoVersao, VERSAO_ATUAL } from "@/lib/versao";
-import { Bell, Tags, CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat, SearchCheck, Sparkles, ShieldCheck } from "lucide-react";
+import { Bell, Tags, CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat, SearchCheck, Sparkles, ShieldCheck, SquareTerminal } from "lucide-react";
 
 const itens = [
   { href: "/assistente", rotulo: "Assistente", texto: "Lança falando, analisa o mês e tira dúvida", Icone: Sparkles, cor: "bg-menta" },
@@ -19,6 +19,7 @@ const itens = [
   { href: "/exportar", rotulo: "Exportar e backup", texto: "Excel, relatório em PDF e backup", Icone: Download, cor: "bg-limao" },
   { href: "/conferir", rotulo: "Conferir", texto: "Achar erros, repetidos e por que não bate com o banco", Icone: SearchCheck, cor: "bg-limao" },
   { href: "/seguranca", rotulo: "Segurança", texto: "Autenticador em dois fatores pra entrar", Icone: ShieldCheck, cor: "bg-menta" },
+  { href: "/dev", rotulo: "Dev", texto: "Diagnóstico, logs e dados (só você)", Icone: SquareTerminal, cor: "bg-lavanda" },
   { href: "/configuracoes", rotulo: "Categorias, formas e bancos", texto: "Criar, editar e desativar", Icone: Tags, cor: "bg-lavanda" },
   { href: "/emprestimos", rotulo: "Empréstimos", texto: "Quem te deve e a quem você deve", Icone: HandCoins, cor: "bg-menta" },
 ];
