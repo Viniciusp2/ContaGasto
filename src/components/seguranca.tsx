@@ -125,7 +125,7 @@ export function NovosCodigos() {
   return (
     <form action={gerar} className="flex flex-col gap-2">
       <label className="text-sm font-semibold">
-        Código do app
+        Código de 6 dígitos do app autenticador
         <input name="codigo" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required className={campo} />
       </label>
       <Erro texto={estado.erro} />
