@@ -5,6 +5,7 @@ import { BotaoSair } from "@/components/botao-sair";
 import { FormSenha } from "@/components/form-senha";
 import { obterAcesso } from "@/db/acesso";
 import { COOKIE_TEMA, lerTema } from "@/lib/tema";
+import { textoVersao, VERSAO_ATUAL } from "@/lib/versao";
 import { Tags, CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat } from "lucide-react";
 
 const itens = [
@@ -45,6 +46,7 @@ export default async function Mais() {
       <SeletorTema atual={tema} />
       <FormSenha usandoSenhaInicial={acesso.usandoSenhaInicial} />
       {acesso.ligado && <BotaoSair />}
+      <p className="mt-4 text-center text-xs text-tinta-suave tabular-nums">{textoVersao(VERSAO_ATUAL)}</p>
     </section>
   );
 }

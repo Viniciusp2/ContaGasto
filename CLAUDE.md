@@ -389,6 +389,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Se faltar decisão, perguntar.** Não inventar regra de negócio.
 - **Sem travessão nos textos.** Português informal e direto.
 - **Idioma:** todo texto de UI, commit e comentário em PT-BR.
+- **Versão a cada entrega** (decidido em 07/10/2026): versionamento semântico `MAIOR.MENOR.CORREÇÃO`. Função nova sobe o MENOR, conserto sobe a CORREÇÃO, mudança que exige ação do usuário sobe o MAIOR. A cada entrega: subir `version` no package.json, escrever no CHANGELOG.md e criar a tag `vX.Y.Z` no Git. A versão, o commit e a hora do build aparecem no rodapé de Mais (pra conferir se a Vercel já publicou).
 
 ---
 
@@ -442,6 +443,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Fatura paga       | só controle; gastos do cartão já contam no vencimento |
 | Importar extrato | só adiciona, pula repetido; transferência entre contas suas e cofrinho ficam de fora |
 | Banco no lançamento | selo com sigla e cor, nunca o logo oficial |
+| Versões            | semântica, começando em 1.2.1; rodapé de Mais mostra versão e commit |
 | Migrations no deploy | `vercel-build` roda db:migrate antes do build |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |

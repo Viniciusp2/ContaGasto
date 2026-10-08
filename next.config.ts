@@ -1,6 +1,24 @@
+import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import type { NextConfig } from "next";
 
+// Versão do package.json + commit + hora do build, pro rodapé de Mais (dá pra ver se a versão nova já está no ar)
+const { version } = JSON.parse(readFileSync("./package.json", "utf8")) as { version: string };
+function commitAtual() {
+  if (process.env.VERCEL_GIT_COMMIT_SHA) return process.env.VERCEL_GIT_COMMIT_SHA;
+  try {
+    return execSync("git rev-parse HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+  } catch {
+    return "";
+  }
+}
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_BOLSO_VERSAO: version,
+    NEXT_PUBLIC_BOLSO_COMMIT: commitAtual(),
+    NEXT_PUBLIC_BOLSO_GERADO_EM: new Date().toISOString(),
+  },
   // PGlite carrega WASM, então fica fora do bundle do servidor
   serverExternalPackages: ["@electric-sql/pglite"],
   // Libera abrir o next dev pelo celular na rede de casa (só IPs de rede local)
