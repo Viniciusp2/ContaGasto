@@ -207,6 +207,10 @@ export const lancamentos = pgTable(
     // Só no salário, só pra consulta: bruto e descontos. O valor é o líquido (4.2).
     holerite: jsonb("holerite").$type<Holerite>(),
     obs: text("obs"),
+    // Conta negociada (1.10.3): "negociando" (ainda conversando) ou "acordo" (fechou; data e valor já são os novos)
+    negociacao: text("negociacao"),
+    negociacaoObs: text("negociacao_obs"),
+    negociacaoEm: date("negociacao_em"),
     ...datas(),
   },
   (t) => [

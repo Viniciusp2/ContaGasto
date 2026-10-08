@@ -30,6 +30,9 @@ export type ContaDoMes = {
   automatico: boolean; // débito automático: já nasce paga
   contaId?: string | null; // banco de onde sai (do lançamento ou do fixo): o Paguei já vem com ele
   estimado: boolean; // valor ainda é a média (luz, água)
+  tipoConta?: string | null; // luz, aluguel... (pra urgência; conta solta adivinha pela descrição)
+  negociacao?: string | null; // "negociando" | "acordo" (1.10.3, só em lançamento)
+  negociacaoObs?: string | null;
 };
 
 // "recorrência-competência" das ocorrências que já viraram lançamento (inclusive as pagas adiantado)
@@ -116,6 +119,9 @@ export async function contasDoMes(mes: Mes, hoje: string): Promise<ContaDoMes[]>
       pagoEm: paga ? l.data : undefined,
       automatico: Boolean(r?.rec.pagamentoAutomatico),
       estimado: l.status === "estimado",
+      tipoConta: r?.rec.tipoConta ?? null,
+      negociacao: l.negociacao,
+      negociacaoObs: l.negociacaoObs,
     });
   }
 
@@ -151,6 +157,7 @@ export async function contasDoMes(mes: Mes, hoje: string): Promise<ContaDoMes[]>
           paga: false,
           automatico: r.rec.pagamentoAutomatico,
           estimado: variavel,
+          tipoConta: r.rec.tipoConta,
         });
       }
     }
@@ -197,6 +204,7 @@ export async function contasDoMes(mes: Mes, hoje: string): Promise<ContaDoMes[]>
         descricao: `Fatura ${c.nome}`,
         icone: "CreditCard",
         tipoRotulo: "Cartão",
+        tipoConta: "cartao",
         duracao: c.diaVencimento ? undefined : "configure o vencimento em Cartões",
         valor: total,
         vencimento,

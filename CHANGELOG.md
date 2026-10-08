@@ -9,6 +9,12 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.10.3 (08/10/2026)
+
+- **Urgência das contas** em Pagamentos: as contas a pagar ficam em grupos, **Urgente** (atrasada, vence hoje ou amanhã), **Logo** (até 7 dias) e **Com calma**, e dentro de cada grupo vem primeiro a que custa mais caro atrasar (cartão, aluguel, luz/água/gás, financiamento, imposto...). Cada conta diz o porquê, ex.: "atrasada 3 dias, risco de corte".
+- **Negociar:** em cada conta a pagar, marque **Negociando** (ainda conversando: vai pro grupo Negociando, no fim) ou **Acordo fechado**, com nova data e novo valor (opcionais) e uma observação. Com data nova, a conta passa a vencer nela. "Tirar negociação" desfaz a marca.
+- Conta em débito automático fica num grupo à parte (sai sozinha).
+
 ## 1.10.2 (08/10/2026)
 
 - O cartão do Assistente no Início não chama mais a IA a cada vez que a página abre ou atualiza: mostra o último comentário guardado ("Feito hoje às 09:12") e só pede um novo quando você toca em atualizar. Economiza o limite grátis da IA.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resumoPagamentos, situacaoConta, statusAoGerar, textoVencimento, tipoContaValido } from "./contas";
+import { resumoPagamentos, situacaoConta, statusAoGerar, textoVencimento, tipoContaValido, ordenarPorUrgencia, tipoDaConta, urgenciaConta } from "./contas";
 
 describe("statusAoGerar", () => {
   const base = { variavel: false, tipo: "gasto" as const, formaTipo: "pix", automatico: false };
@@ -89,5 +89,53 @@ describe("o que entra em Pagamentos", () => {
   it("compra do dia a dia fica fora", () => {
     expect(ehContaDoMes(base)).toBe(false);
     expect(ehContaDoMes({ ...base, categoriaNome: "Casa", descricao: "Lavanderia" })).toBe(false);
+  });
+});
+
+describe("urgência das contas (1.10.3)", () => {
+  const hoje = "2026-10-08";
+  const conta = (descricao: string, vencimento: string, extra = {}) => ({ descricao, vencimento, paga: false, automatico: false, ...extra });
+
+  it("nível pelo prazo: atrasada, hoje e amanhã são urgentes; até 7 dias é logo; depois, com calma", () => {
+    expect(urgenciaConta(conta("Luz", "2026-10-01", { tipoConta: "luz" }), hoje)?.nivel).toBe("urgente");
+    expect(urgenciaConta(conta("Luz", "2026-10-09", { tipoConta: "luz" }), hoje)?.nivel).toBe("urgente");
+    expect(urgenciaConta(conta("Luz", "2026-10-15", { tipoConta: "luz" }), hoje)?.nivel).toBe("logo");
+    expect(urgenciaConta(conta("Luz", "2026-10-16", { tipoConta: "luz" }), hoje)?.nivel).toBe("calma");
+  });
+
+  it("motivo junta o prazo e o risco (no com calma, só o prazo)", () => {
+    expect(urgenciaConta(conta("Luz", "2026-10-05", { tipoConta: "luz" }), hoje)?.motivo).toBe("atrasada 3 dias, risco de corte");
+    expect(urgenciaConta(conta("Luz", "2026-10-30", { tipoConta: "luz" }), hoje)?.motivo).toBe("vence em 22 dias");
+  });
+
+  it("paga ou débito automático não tem urgência", () => {
+    expect(urgenciaConta(conta("Luz", "2026-10-01", { paga: true }), hoje)).toBeNull();
+    expect(urgenciaConta(conta("Luz", "2026-10-01", { automatico: true }), hoje)).toBeNull();
+  });
+
+  it("negociando sai do topo; acordo vale pela data nova", () => {
+    expect(urgenciaConta(conta("Aluguel", "2026-09-10", { negociacao: "negociando" }), hoje)?.nivel).toBe("negociando");
+    const acordo = urgenciaConta(conta("Aluguel", "2026-10-20", { negociacao: "acordo", tipoConta: "aluguel" }), hoje);
+    expect(acordo).toMatchObject({ nivel: "calma", motivo: "acordo: vence em 12 dias" });
+  });
+
+  it("conta sem tipo: adivinha pela descrição", () => {
+    expect(tipoDaConta(null, "Conta de energia Enel")).toBe("luz");
+    expect(tipoDaConta(null, "Fatura Nubank")).toBe("cartao");
+    expect(tipoDaConta(null, "Vivo Fibra")).toBe("internet");
+    expect(tipoDaConta(null, "Netflix")).toBe("assinatura");
+    expect(tipoDaConta(null, "Boi gordo")).toBe("outra");
+    expect(tipoDaConta("agua", "qualquer")).toBe("agua");
+  });
+
+  it("ordem: urgente primeiro, depois o que pesa mais, depois quem vence antes", () => {
+    const lista = [
+      conta("Netflix", "2026-10-07", { tipoConta: "assinatura" }),
+      conta("Internet", "2026-10-12", { tipoConta: "internet" }),
+      conta("Aluguel", "2026-10-08", { tipoConta: "aluguel" }),
+      conta("Cartão", "2026-10-09", { tipoConta: "cartao" }),
+      conta("Escola", "2026-09-20", { tipoConta: "escola", negociacao: "negociando" }),
+    ].map((c) => ({ ...c, urgencia: urgenciaConta(c, hoje)! }));
+    expect(ordenarPorUrgencia(lista).map((c) => c.descricao)).toEqual(["Cartão", "Aluguel", "Netflix", "Internet", "Escola"]);
   });
 });

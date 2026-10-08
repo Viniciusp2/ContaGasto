@@ -6,7 +6,7 @@ import { SeletorMes } from "@/components/seletor-mes";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { contasDoMes } from "@/db/pagamentos";
 import { saldosHoje, ultimaContaUsada } from "@/db/saldos";
-import { resumoPagamentos } from "@/lib/contas";
+import { ordenarPorUrgencia, ORDEM_URGENCIA, resumoPagamentos, ROTULO_URGENCIA, urgenciaConta } from "@/lib/contas";
 import { hojeISO, intervaloDoMes, lerMes } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
@@ -23,11 +23,22 @@ export default async function Pagamentos({ searchParams }: PageProps<"/pagamento
   const resumo = resumoPagamentos(contas);
   const { inicio } = intervaloDoMes(mes);
 
-  // Atrasadas primeiro (inclusive de meses anteriores), depois o que falta e por último o que já foi
-  const atrasadas = contas.filter((c) => !c.paga && !c.automatico && c.vencimento < hoje);
-  const aPagar = contas.filter((c) => !c.paga && !atrasadas.includes(c));
+  // A pagar em ordem de urgência (1.10.3): urgente, logo, com calma e, por último, as em negociação.
+  // Débito automático sai sozinho: fica no fim, sem urgência.
+  const atrasadas = contas.filter((c) => !c.paga && !c.automatico && c.vencimento < hoje && c.negociacao !== "negociando");
+  const pendentes = ordenarPorUrgencia(
+    contas.filter((c) => !c.paga && !c.automatico).map((c) => ({ ...c, urgencia: urgenciaConta(c, hoje)! })),
+  );
+  const grupos = ORDEM_URGENCIA.map((nivel) => ({ nivel, contas: pendentes.filter((c) => c.urgencia.nivel === nivel) })).filter((g) => g.contas.length > 0);
+  const automaticas = contas.filter((c) => !c.paga && c.automatico);
   const pagas = contas.filter((c) => c.paga);
   const deMesesAntes = atrasadas.filter((c) => c.vencimento < inicio);
+  const dicaGrupo = {
+    urgente: "Atrasadas ou vencendo hoje e amanhã. Primeiro as que custam mais caro se atrasar.",
+    logo: "Vencem nos próximos 7 dias.",
+    calma: "Vencem depois disso.",
+    negociando: "Em negociação: combine a data e o valor e marque o acordo.",
+  } as const;
 
   return (
     <section className="flex flex-col gap-4">
@@ -79,27 +90,33 @@ export default async function Pagamentos({ searchParams }: PageProps<"/pagamento
         </div>
       )}
 
-      {atrasadas.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="font-semibold">Atrasadas</h2>
-          {deMesesAntes.length > 0 && (
-            <p className="rounded-2xl bg-coral px-3 py-2 text-sm">
-              Tem {deMesesAntes.length} conta{deMesesAntes.length > 1 ? "s" : ""} de meses anteriores sem pagar. Elas continuam aqui até você pagar.
-            </p>
-          )}
+      {deMesesAntes.length > 0 && (
+        <p className="rounded-2xl bg-coral px-3 py-2 text-sm">
+          Tem {deMesesAntes.length} conta{deMesesAntes.length > 1 ? "s" : ""} de meses anteriores sem pagar. Elas continuam aqui até você pagar.
+        </p>
+      )}
+
+      {grupos.map((g) => (
+        <section key={g.nivel} className="flex flex-col gap-2" aria-labelledby={`grupo-${g.nivel}`}>
+          <div>
+            <h2 id={`grupo-${g.nivel}`} className="font-semibold">
+              {ROTULO_URGENCIA[g.nivel]} ({g.contas.length})
+            </h2>
+            <p className="text-xs text-tinta-suave">{dicaGrupo[g.nivel]}</p>
+          </div>
           <ul className="flex flex-col gap-2">
-            {atrasadas.map((c) => (
-              <ContaPagamento key={c.chave} conta={c} hoje={hoje} bancos={bancos} bancoPadrao={bancoPadrao} />
+            {g.contas.map((c) => (
+              <ContaPagamento key={c.chave} conta={c} hoje={hoje} bancos={bancos} bancoPadrao={bancoPadrao} urgencia={c.urgencia} />
             ))}
           </ul>
         </section>
-      )}
+      ))}
 
-      {aPagar.length > 0 && (
+      {automaticas.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="font-semibold">A pagar</h2>
+          <h2 className="font-semibold">Débito automático</h2>
           <ul className="flex flex-col gap-2">
-            {aPagar.map((c) => (
+            {automaticas.map((c) => (
               <ContaPagamento key={c.chave} conta={c} hoje={hoje} bancos={bancos} bancoPadrao={bancoPadrao} />
             ))}
           </ul>

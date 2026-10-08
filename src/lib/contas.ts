@@ -112,3 +112,85 @@ export function ehContaDoMes(l: {
   if (l.formaTipo === "boleto") return true;
   return /aluguel/i.test(l.descricao);
 }
+
+// Urgência e prioridade (1.10.3, pedido do Vinícius): o que pagar primeiro.
+// Nível pelo prazo; dentro do nível, pesa o que acontece se atrasar.
+export type NivelUrgencia = "urgente" | "logo" | "calma" | "negociando";
+export const ORDEM_URGENCIA: NivelUrgencia[] = ["urgente", "logo", "calma", "negociando"];
+export const ROTULO_URGENCIA: Record<NivelUrgencia, string> = {
+  urgente: "Urgente",
+  logo: "Logo",
+  calma: "Com calma",
+  negociando: "Negociando",
+};
+
+// Quanto pesa atrasar cada tipo de conta (maior = pagar antes) e o risco, pra mostrar o porquê
+export const PESO_TIPO: Record<TipoConta, { peso: number; risco: string }> = {
+  cartao: { peso: 7, risco: "juros do rotativo, os mais altos" },
+  aluguel: { peso: 6, risco: "multa e risco de despejo" },
+  condominio: { peso: 5, risco: "multa e juros" },
+  luz: { peso: 5, risco: "risco de corte" },
+  agua: { peso: 5, risco: "risco de corte" },
+  gas: { peso: 5, risco: "risco de corte" },
+  financiamento: { peso: 4, risco: "juros e nome sujo" },
+  emprestimo: { peso: 4, risco: "juros e nome sujo" },
+  imposto: { peso: 4, risco: "multa e juros" },
+  escola: { peso: 3, risco: "multa" },
+  saude: { peso: 3, risco: "pode perder a cobertura" },
+  seguro: { peso: 3, risco: "pode perder a cobertura" },
+  internet: { peso: 2, risco: "risco de corte" },
+  telefone: { peso: 2, risco: "risco de corte" },
+  assinatura: { peso: 1, risco: "no máximo cancela" },
+  outra: { peso: 2, risco: "" },
+};
+
+// Conta solta (sem fixo) não tem tipo: adivinha pela descrição
+const PISTAS: [RegExp, TipoConta][] = [
+  [/fatura|cart[aã]o/i, "cartao"],
+  [/aluguel/i, "aluguel"],
+  [/condom[ií]nio/i, "condominio"],
+  [/\bluz\b|energia|enel|cemig|light|copel|celpe|coelba/i, "luz"],
+  [/[aá]gua|sabesp|cedae|saneamento/i, "agua"],
+  [/\bg[aá]s\b|comg[aá]s/i, "gas"],
+  [/financiamento|presta[cç][aã]o do carro/i, "financiamento"],
+  [/empr[eé]stimo/i, "emprestimo"],
+  [/iptu|ipva|imposto|das\b|darf/i, "imposto"],
+  [/escola|faculdade|curso|mensalidade/i, "escola"],
+  [/plano de sa[uú]de|unimed|amil|bradesco sa[uú]de/i, "saude"],
+  [/seguro/i, "seguro"],
+  [/internet|fibra|vivo fibra|claro net/i, "internet"],
+  [/telefone|celular|\bvivo\b|\bclaro\b|\btim\b|\boi\b/i, "telefone"],
+  [/netflix|spotify|assinatura|prime video|disney|youtube|\bhbo\b/i, "assinatura"],
+];
+
+export function tipoDaConta(tipoConta: string | null | undefined, descricao: string): TipoConta {
+  if (tipoConta && tipoContaValido(tipoConta)) return tipoConta;
+  return PISTAS.find(([re]) => re.test(descricao))?.[1] ?? "outra";
+}
+
+export type Urgencia = { nivel: NivelUrgencia; peso: number; motivo: string };
+
+// Conta paga ou de débito automático não tem urgência (null)
+export function urgenciaConta(
+  c: { paga: boolean; automatico: boolean; vencimento: string; descricao: string; tipoConta?: string | null; negociacao?: string | null },
+  hoje: string,
+): Urgencia | null {
+  if (c.paga || c.automatico) return null;
+  const tipo = tipoDaConta(c.tipoConta, c.descricao);
+  const { peso, risco } = PESO_TIPO[tipo];
+  if (c.negociacao === "negociando") return { nivel: "negociando", peso, motivo: "em negociação, combine a data e o valor" };
+  const dias = diasAtePrazo(c.vencimento, hoje);
+  const nivel: NivelUrgencia = dias <= 1 ? "urgente" : dias <= 7 ? "logo" : "calma";
+  const prazo = c.negociacao === "acordo" ? `acordo: ${textoVencimento(c.vencimento, hoje)}` : textoVencimento(c.vencimento, hoje);
+  return { nivel, peso, motivo: risco && nivel !== "calma" ? `${prazo}, ${risco}` : prazo };
+}
+
+// Ordem de pagar: nível (urgente primeiro), depois o peso, depois quem vence antes
+export function ordenarPorUrgencia<T extends { vencimento: string; urgencia: Urgencia }>(contas: T[]): T[] {
+  return [...contas].sort(
+    (a, b) =>
+      ORDEM_URGENCIA.indexOf(a.urgencia.nivel) - ORDEM_URGENCIA.indexOf(b.urgencia.nivel) ||
+      b.urgencia.peso - a.urgencia.peso ||
+      a.vencimento.localeCompare(b.vencimento),
+  );
+}

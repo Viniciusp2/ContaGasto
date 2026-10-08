@@ -150,3 +150,49 @@ export async function desfazerPagamento(_: EstadoPagamento, fd: FormData): Promi
   await db.update(lancamentos).set({ status: "a_pagar", data: vencimento, vencimento }).where(eq(lancamentos.id, id));
   return pronto();
 }
+
+// Negociar (1.10.3): "negociando" só marca; "acordo" pode trocar a data (a conta passa a vencer nela,
+// mesmo em outro mês) e o valor. Só pra conta que já é lançamento e ainda não foi paga.
+export async function negociar(_: EstadoPagamento, fd: FormData): Promise<EstadoPagamento> {
+  const id = String(fd.get("lancamentoId") ?? "");
+  if (!ehUuid(id)) return { erro: "Essa conta ainda não chegou: dá pra negociar quando ela aparecer como a pagar." };
+  const situacao = String(fd.get("situacao") ?? "");
+  if (situacao !== "negociando" && situacao !== "acordo") return { erro: "Escolha: negociando ou acordo fechado." };
+  const obs = String(fd.get("obs") ?? "").trim().slice(0, 300) || null;
+
+  const novaData = String(fd.get("novaData") ?? "");
+  if (novaData && !dataValida(novaData)) return { erro: "Data do acordo inválida." };
+  const textoValor = String(fd.get("novoValor") ?? "");
+  const novoValor = textoValor ? Number(textoValor) : null;
+  if (novoValor !== null && (!Number.isInteger(novoValor) || novoValor <= 0 || novoValor > MAX_CENTAVOS)) return { erro: "Valor do acordo inválido." };
+
+  const [l] = await db.select().from(lancamentos).where(and(eq(lancamentos.id, id), eq(lancamentos.userId, userId)));
+  if (!l) return { erro: "Conta não encontrada." };
+  if (l.status === "confirmado") return { erro: "Essa conta já está paga." };
+
+  const acordo = situacao === "acordo";
+  await db
+    .update(lancamentos)
+    .set({
+      negociacao: situacao,
+      negociacaoObs: obs,
+      negociacaoEm: hojeISO(),
+      // Acordo com data nova: a conta passa a vencer nela (a pagar fica na data do vencimento)
+      ...(acordo && novaData && { vencimento: novaData, data: novaData }),
+      ...(acordo && novoValor && { valor: novoValor, status: "a_pagar" as const }),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(lancamentos.id, id), eq(lancamentos.userId, userId)));
+  return pronto();
+}
+
+// Tira a marca de negociação (a data e o valor de um acordo ficam como estão)
+export async function desfazerNegociacao(_: EstadoPagamento, fd: FormData): Promise<EstadoPagamento> {
+  const id = String(fd.get("lancamentoId") ?? "");
+  if (!ehUuid(id)) return { erro: "Conta não encontrada." };
+  await db
+    .update(lancamentos)
+    .set({ negociacao: null, negociacaoObs: null, negociacaoEm: null, updatedAt: new Date() })
+    .where(and(eq(lancamentos.id, id), eq(lancamentos.userId, userId)));
+  return pronto();
+}

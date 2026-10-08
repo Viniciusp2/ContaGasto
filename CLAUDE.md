@@ -247,6 +247,8 @@ Aba própria na barra de baixo. Lista as contas do mês: o que já pagou, o que 
 - **Pagar adiantado:** conta que ainda vai vencer já pode ser paga; vira lançamento da competência dela e o gerador não duplica.
 - **Contas soltas (1.6.0):** gasto já pago que é conta de verdade (categorias Contas, Educação, Assinaturas, Pagamento de empréstimo, pago com boleto ou descrição com aluguel) também aparece em Pagamentos como paga, mesmo sem ser fixo (ex.: o que veio do extrato).
 - **Paguei escolhe o banco (1.6.7):** o pagamento grava de qual banco saiu (padrão: banco da conta ou do fixo, senão o último usado, senão o único; o do VA fica de fora), senão o "Nas contas hoje" não desconta.
+- **Urgência (1.10.3, pedido do Vinícius):** contas a pagar agrupadas em Urgente (atrasada, hoje ou amanhã), Logo (até 7 dias), Com calma (depois) e Negociando (no fim). Dentro do grupo, pesa o que acontece se atrasar (`PESO_TIPO` em `lib/contas.ts`: cartão 7, aluguel 6, condomínio/luz/água/gás 5, financiamento/empréstimo/imposto 4, escola/saúde/seguro 3, internet/telefone/outra 2, assinatura 1) e depois quem vence antes. Conta sem fixo tem o tipo adivinhado pela descrição. Mostra o motivo ("atrasada 3 dias, risco de corte").
+- **Negociar (1.10.3):** só em conta que já é lançamento e não foi paga (`lancamentos.negociacao`, `negociacao_obs`, `negociacao_em`, migration 0015). "Negociando" só marca e manda pro grupo Negociando. "Acordo" pode trocar a data (vencimento e data viram a nova, mesmo em outro mês) e o valor. Continua contando no disponível como a pagar. "Tirar negociação" limpa a marca e mantém data e valor.
 - **Fácil de achar:** aba Pagamentos, bloco "Contas pra pagar" no topo do Início (atrasadas e as que vencem em até 3 dias, com Paguei a um toque) e etiqueta "a pagar" na lista de lançamentos.
 - **Próximos:** notificações (conta vencendo, atrasada) e comprovantes (foto ou PDF, no Vercel Blob).
 
@@ -537,6 +539,8 @@ O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados ent
 | Lembrete          | título + dia + repetição; o Assistente propõe, salva no toque |
 | Versão 1.7.3      | escolhida pelo Vinícius pra notificações (a regra daria 1.8.0; a 1.8.0 fica pro parcelado do Assistente) |
 | Provedor da IA    | escolhido por `IA_PROVEDOR`; Gemini grátis na fase de teste, Claude Haiku 4.5 como opção paga |
+| Urgência das contas | Urgente/Logo/Com calma/Negociando; peso pelo custo de atrasar (cartão > aluguel > luz...) |
+| Negociar conta    | negociando ou acordo (data e valor novos opcionais); só em lançamento a pagar |
 | Área Dev          | `/dev` só leitura + logs + testar IA; nunca mostra valor de chave; editar só pelas telas |
 | IA reserva        | `IA_RESERVA=groq`: entra quando a principal falha; pergunta recomeça do zero nela |
 | Juros no assistente | conta feita pelo app (Price e taxa uma vez); a parcela que vale é a do cronograma da loja |

@@ -1,14 +1,101 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Check, LoaderCircle, Undo2 } from "lucide-react";
-import { desfazerPagamento, pagar, type EstadoPagamento } from "@/app/pagamentos/actions";
+import { Check, Handshake, LoaderCircle, Undo2 } from "lucide-react";
+import { desfazerNegociacao, desfazerPagamento, negociar, pagar, type EstadoPagamento } from "@/app/pagamentos/actions";
 import { IconeCategoria } from "@/components/icone-categoria";
 import { SeloConta } from "@/components/selo-conta";
 import type { ContaDoMes } from "@/db/pagamentos";
-import { situacaoConta, textoVencimento } from "@/lib/contas";
+import { ROTULO_URGENCIA, situacaoConta, textoVencimento, type NivelUrgencia, type Urgencia } from "@/lib/contas";
 import { diaCurto } from "@/lib/datas";
 import { centavosDeDigitos, formatarCentavos } from "@/lib/dinheiro";
+
+// Cor da etiqueta de urgência (pastel com texto escuro, como as outras pílulas)
+const corUrgencia: Record<NivelUrgencia, string> = {
+  urgente: "bg-coral",
+  logo: "bg-limao",
+  calma: "bg-fundo",
+  negociando: "bg-lavanda",
+};
+
+// Negociar (1.10.3): negociando ainda, ou acordo fechado com data e valor novos (opcionais)
+function FormNegociar({ conta, hoje, aoFechar }: { conta: ContaDoMes; hoje: string; aoFechar: () => void }) {
+  const [situacao, setSituacao] = useState(conta.negociacao === "acordo" ? "acordo" : "negociando");
+  const [valor, setValor] = useState(0);
+  const [estado, acao, salvando] = useActionState(async (a: EstadoPagamento, fd: FormData) => {
+    const r = await negociar(a, fd);
+    if (r.ok) aoFechar();
+    return r;
+  }, {});
+  return (
+    <form action={acao} className="mt-3 flex flex-col gap-2 rounded-2xl bg-fundo p-3">
+      <input type="hidden" name="lancamentoId" value={conta.lancamentoId} />
+      <input type="hidden" name="situacao" value={situacao} />
+      <div role="radiogroup" aria-label="Como está a negociação" className="grid grid-cols-2 gap-2">
+        {(["negociando", "acordo"] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            role="radio"
+            aria-checked={situacao === s}
+            onClick={() => setSituacao(s)}
+            className={`min-h-11 rounded-full text-sm font-semibold ${situacao === s ? "bg-lavanda" : "bg-cartao"}`}
+          >
+            {s === "negociando" ? "Negociando" : "Acordo fechado"}
+          </button>
+        ))}
+      </div>
+      {situacao === "acordo" && (
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-xs font-semibold">
+            Nova data (opcional)
+            <input
+              type="date"
+              name="novaData"
+              min={hoje}
+              className="mt-1 min-h-11 w-full rounded-2xl bg-cartao px-3 text-base font-normal outline-none focus:ring-2 focus:ring-lavanda"
+            />
+          </label>
+          <label className="text-xs font-semibold">
+            Novo valor (opcional)
+            <input
+              inputMode="numeric"
+              value={valor ? formatarCentavos(valor) : ""}
+              placeholder={formatarCentavos(conta.valor)}
+              onChange={(e) => setValor(centavosDeDigitos(e.target.value))}
+              className="mt-1 min-h-11 w-full rounded-2xl bg-cartao px-3 text-base font-bold tabular-nums outline-none focus:ring-2 focus:ring-lavanda"
+            />
+          </label>
+          {valor > 0 && <input type="hidden" name="novoValor" value={valor} />}
+        </div>
+      )}
+      <label className="text-xs font-semibold">
+        Observação (opcional)
+        <input
+          name="obs"
+          defaultValue={conta.negociacaoObs ?? ""}
+          maxLength={300}
+          placeholder={situacao === "acordo" ? "ex.: sem juros, 2x no boleto" : "ex.: liguei, vão retornar"}
+          className="mt-1 min-h-11 w-full rounded-2xl bg-cartao px-3 text-base font-normal outline-none focus:ring-2 focus:ring-lavanda"
+        />
+      </label>
+      {estado.erro && (
+        <p role="alert" className="rounded-2xl bg-coral px-3 py-2 text-sm font-semibold">
+          {estado.erro}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button type="submit" disabled={salvando} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-lavanda font-semibold disabled:opacity-50">
+          {salvando ? <LoaderCircle size={18} className="animate-spin" aria-hidden /> : <Handshake size={18} aria-hidden />}
+          Salvar negociação
+        </button>
+        <button type="button" onClick={aoFechar} className="min-h-11 rounded-2xl px-3 text-sm text-tinta-suave underline">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
 
 const pilula = {
   paga: "bg-menta",
@@ -38,14 +125,19 @@ export function ContaPagamento({
   compacta = false,
   bancos = [],
   bancoPadrao = null,
+  urgencia = null,
 }: {
   conta: ContaDoMes;
   hoje: string;
   compacta?: boolean;
   bancos?: Banco[]; // bancos de onde a conta pode ter saído (sem o do VA)
   bancoPadrao?: string | null; // último banco usado
+  urgencia?: Urgencia | null; // quanto é urgente pagar (1.10.3); só nas contas a pagar
 }) {
   const [detalhes, setDetalhes] = useState(false);
+  const [negociandoAberto, setNegociandoAberto] = useState(false);
+  const [estadoTirar, acaoTirar, tirando] = useActionState(desfazerNegociacao, {});
+  const podeNegociar = conta.origem === "lancamento" && !conta.paga && !conta.automatico;
   // Banco já marcado: o da conta (ou do fixo), senão o último usado, senão o único que existir (conserto 1.6.7)
   const sugerido = [conta.contaId, bancoPadrao].find((id) => id && bancos.some((b) => b.id === id)) ?? (bancos.length === 1 ? bancos[0].id : "");
   const [bancoId, setBancoId] = useState(sugerido ?? "");
@@ -100,6 +192,25 @@ export function ContaPagamento({
           </span>
         </span>
       </div>
+
+      {(urgencia || (conta.negociacao && !conta.paga)) && !compacta && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          {urgencia && (
+            <span className={`sobre-pastel rounded-full px-2 py-0.5 font-semibold text-tinta ${corUrgencia[urgencia.nivel]}`}>
+              {ROTULO_URGENCIA[urgencia.nivel]}
+            </span>
+          )}
+          {urgencia && <span className="text-tinta-suave">{urgencia.motivo}</span>}
+          {conta.negociacao === "acordo" && (
+            <span className="flex items-center gap-1 font-semibold">
+              <Handshake size={14} aria-hidden /> acordo fechado
+            </span>
+          )}
+          {conta.negociacaoObs && <span className="w-full text-tinta-suave">&ldquo;{conta.negociacaoObs}&rdquo;</span>}
+        </div>
+      )}
+
+      {negociandoAberto && podeNegociar && <FormNegociar conta={conta} hoje={hoje} aoFechar={() => setNegociandoAberto(false)} />}
 
       {!conta.paga && !conta.automatico && (
         <form action={acaoPagar} className="mt-3 flex flex-col gap-2">
@@ -167,6 +278,15 @@ export function ContaPagamento({
                 Outro dia
               </button>
             )}
+            {podeNegociar && !compacta && !negociandoAberto && (
+              <button
+                type="button"
+                onClick={() => setNegociandoAberto(true)}
+                className="flex min-h-11 items-center gap-1 rounded-2xl px-3 text-sm text-tinta-suave underline"
+              >
+                <Handshake size={14} aria-hidden /> Negociar
+              </button>
+            )}
           </div>
         </form>
       )}
@@ -180,9 +300,18 @@ export function ContaPagamento({
         </form>
       )}
 
-      {erro && (
+      {conta.negociacao && podeNegociar && !compacta && (
+        <form action={acaoTirar} className="mt-1 flex justify-end">
+          <input type="hidden" name="lancamentoId" value={conta.lancamentoId} />
+          <button type="submit" disabled={tirando} className="min-h-11 px-2 text-sm text-tinta-suave underline">
+            Tirar negociação
+          </button>
+        </form>
+      )}
+
+      {(erro || estadoTirar.erro) && (
         <p role="alert" className="mt-2 rounded-2xl bg-coral px-3 py-2 text-sm font-semibold">
-          {erro}
+          {erro ?? estadoTirar.erro}
         </p>
       )}
     </li>
