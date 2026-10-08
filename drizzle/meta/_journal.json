@@ -71,6 +71,13 @@
       "when": 1791421205725,
       "tag": "0009_saldo_das_contas",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791424455362,
+      "tag": "0010_conferir",
+      "breakpoints": true
     }
   ]
 }

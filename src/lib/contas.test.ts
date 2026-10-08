@@ -70,3 +70,24 @@ describe("duracaoConta", () => {
     expect(mesCurto("2026-01-05")).toBe("jan/2026");
   });
 });
+
+import { ehContaDoMes } from "./contas";
+
+describe("o que entra em Pagamentos", () => {
+  const base = { recorrenciaId: null, status: "confirmado", categoriaNome: "Comida", formaTipo: "debito", descricao: "Dalvi" };
+  it("fixo e a pagar sempre entram", () => {
+    expect(ehContaDoMes({ ...base, recorrenciaId: "r1" })).toBe(true);
+    expect(ehContaDoMes({ ...base, status: "a_pagar" })).toBe(true);
+  });
+  it("conta solta (luz, faculdade, assinatura, boleto, aluguel) entra como paga", () => {
+    expect(ehContaDoMes({ ...base, categoriaNome: "Contas", descricao: "Vivo" })).toBe(true);
+    expect(ehContaDoMes({ ...base, categoriaNome: "Educação", descricao: "Universidade" })).toBe(true);
+    expect(ehContaDoMes({ ...base, categoriaNome: "Assinaturas", descricao: "Netflix" })).toBe(true);
+    expect(ehContaDoMes({ ...base, formaTipo: "boleto" })).toBe(true);
+    expect(ehContaDoMes({ ...base, categoriaNome: "Casa", descricao: "Aluguel" })).toBe(true);
+  });
+  it("compra do dia a dia fica fora", () => {
+    expect(ehContaDoMes(base)).toBe(false);
+    expect(ehContaDoMes({ ...base, categoriaNome: "Casa", descricao: "Lavanderia" })).toBe(false);
+  });
+});

@@ -315,3 +315,15 @@ export const pagamentosFatura = pgTable(
   },
   (t) => [unique().on(t.formaPagamentoId, t.competencia)],
 );
+
+// Conferir: pares de "possível repetido" que você disse que estão certos (não aparecem mais)
+export const conferenciasIgnoradas = pgTable(
+  "conferencias_ignoradas",
+  {
+    id: id(),
+    userId: donoId(),
+    chave: text("chave").notNull(),
+    ...datas(),
+  },
+  (t) => [unique().on(t.userId, t.chave)],
+);

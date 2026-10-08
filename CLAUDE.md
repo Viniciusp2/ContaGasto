@@ -243,6 +243,7 @@ Aba própria na barra de baixo. Lista as contas do mês: o que já pagou, o que 
 - **Tipo da conta:** aluguel, condomínio, luz, água, gás, internet, telefone, cartão, financiamento, empréstimo, escola, plano de saúde, seguro, assinatura, imposto, outra (`recorrencias.tipo_conta`, ícone lucide). Mostra também quanto tempo falta: "parcela 4/10, termina em mar/2027", "até dez/2026" ou "todo mês".
 - **Fatura do cartão** aparece como conta: soma dos gastos no crédito que vencem no mês + parcelas e fixos do cartão que ainda vão cair. Marcar a fatura como paga é **só controle** (`pagamentos_fatura`): os gastos do cartão já contam no vencimento.
 - **Pagar adiantado:** conta que ainda vai vencer já pode ser paga; vira lançamento da competência dela e o gerador não duplica.
+- **Contas soltas (1.6.0):** gasto já pago que é conta de verdade (categorias Contas, Educação, Assinaturas, Pagamento de empréstimo, pago com boleto ou descrição com aluguel) também aparece em Pagamentos como paga, mesmo sem ser fixo (ex.: o que veio do extrato).
 - **Fácil de achar:** aba Pagamentos, bloco "Contas pra pagar" no topo do Início (atrasadas e as que vencem em até 3 dias, com Paguei a um toque) e etiqueta "a pagar" na lista de lançamentos.
 - **Próximos:** notificações (conta vencendo, atrasada) e comprovantes (foto ou PDF, no Vercel Blob).
 
@@ -369,6 +370,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Sprint 6.2** Importar lançamentos + bancos com selo (4.11, começo). Feito: Mais, Exportar e backup, **Importar lançamentos** recebe um JSON `{app: "bolso", tipo: "importacao", lancamentos: [...]}` (data, descricao, valor em centavos, tipo, categoria e forma pelo nome, conta = banco, obs). Só adiciona, nunca apaga; o que já existe (mesmo dia, valor, tipo e descrição) fica de fora, então importar duas vezes não duplica. Categoria que não existe vira Outros; banco que não existe é criado com o selo dele. **Conciliação (1.3.0, pedido do Vinícius):** o que já está no app manda. Linha do extrato com mesmo tipo e valor até 4 dias de um lançamento seu (sem banco) completa o seu: ganha banco, forma, observação e a descrição se estava em branco (igual ao nome da categoria); data, valor e categoria ficam. Conta a pagar com o mesmo valor, de 7 dias antes até 45 dias depois do vencimento, vira paga no dia do banco, a mais antiga primeiro. Lançamento do mesmo banco perto da data conta como já importado (respeita edição). Banco diferente nunca casa. Extrato em PDF não é lido pelo app: o Claude converte e confere antes (saldo do dia ou total do mês batendo).
 - **Sprint 6.3** Resumo do ano com análise e Arrumar duplicados (1.4.0). Feito.
 - **Sprint 6.4** (1.5.0) Mapa de calor do mês e do ano com dias do salário e do VA, quanto tempo cada um dura, ritmo do mês, comparação com o mês passado, por banco, sobra por mês, totais do dia na lista, ordenar lançamentos e saldo em cada banco. Feito.
+- **Sprint 6.8** (1.6.0) Conferir: curadoria de erros em Mais (por que o disponível difere do banco, bate com o banco, atrasadas sem pagamento, a pagar que parece paga, possíveis repetidos, sem banco) + Pagamentos conta as contas soltas já pagas. Feito.
 - **Sprint 6.5** Notificações (conta vencendo amanhã, vence hoje, atrasada).
 - **Sprint 6.6** Comprovantes nas contas pagas (precisa do Vercel Blob ligado ao projeto).
 
@@ -461,6 +463,8 @@ O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados ent
 | Botão +           | só no Início e em Lançamentos; some ao rolar pra baixo |
 | Duplicados        | manual em dobro com extrato: fica o do extrato (decisão do Vinícius); apagar só depois de mostrar a lista |
 | Várias sessões    | ver seção 10.1: checar, pausar e esperar, deixar resumo, justificar o que apagar |
+| Conferir          | só mostra e sugere; apaga ou junta só com toque seu; repetido = pelo menos um lançado à mão, mesmo valor, até 1 dia |
+| Pagamentos (o que entra) | fixos, a pagar e contas soltas pagas: categorias Contas, Educação, Assinaturas, Pagamento de empréstimo, boleto ou aluguel |
 | Versões            | nova função +0.1, bug/básico +0.0.1, mínimo não muda; rodapé de Mais mostra versão e commit |
 | Saldo por banco   | você informa o saldo uma vez; o app soma os lançamentos do banco |
 | Saldo em caixa    | saiu da tela em 1.5.1 (confundia com "Nas contas hoje"); cálculo mantido |

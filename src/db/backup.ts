@@ -4,6 +4,7 @@ import { TABELAS_BACKUP, VERSAO_BACKUP, prepararLinha, type Backup, type TabelaB
 import { db } from ".";
 import {
   categorias,
+  conferenciasIgnoradas,
   contas,
   emprestimos,
   formasPagamento,
@@ -29,6 +30,7 @@ const tabelas = {
   movimentosObjetivo,
   emprestimos,
   pagamentosFatura,
+  conferenciasIgnoradas,
 } satisfies Record<TabelaBackup, unknown>;
 
 export async function exportarTudo(): Promise<Backup> {

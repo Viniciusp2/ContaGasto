@@ -1,6 +1,6 @@
 // Pagamentos do mês (Sprint 6.1): junta as contas do mês, pagas ou não, as atrasadas e as faturas do cartão.
 import { and, between, eq, gte, inArray, isNotNull, or, sql } from "drizzle-orm";
-import { dadosTipoConta, duracaoConta } from "@/lib/contas";
+import { dadosTipoConta, duracaoConta, ehContaDoMes } from "@/lib/contas";
 import { intervaloDoMes, mesParaTexto, type Mes } from "@/lib/datas";
 import { mediaEstimada, ocorrencia, ocorrenciasNoIntervalo } from "@/lib/recorrencias";
 import { db } from ".";
@@ -64,7 +64,8 @@ export async function contasDoMes(mes: Mes, hoje: string): Promise<ContaDoMes[]>
   const porId = new Map(recs.map((r) => [r.rec.id, r]));
   const contas: ContaDoMes[] = [];
 
-  // 1. Lançamentos que são conta: gerados por fixo, ou gasto avulso "a pagar". Crédito vai na fatura; VA fica de fora.
+  // 1. Lançamentos que são conta: gerados por fixo, "a pagar", ou conta solta já paga (luz, faculdade, assinatura,
+  // boleto, aluguel: regra em ehContaDoMes). Crédito vai na fatura; VA fica de fora.
   // No mês atual entram também as não pagas de meses anteriores (o aluguel atrasado continua aqui até pagar),
   // e em qualquer mês as atrasadas que foram pagas nele (pagou dois aluguéis esse mês: os dois aparecem).
   const venc = sql`coalesce(${lancamentos.vencimento}, ${lancamentos.data})`;
@@ -73,6 +74,7 @@ export async function contasDoMes(mes: Mes, hoje: string): Promise<ContaDoMes[]>
       l: lancamentos,
       categoriaIcone: categorias.icone,
       categoriaCor: categorias.cor,
+      categoriaNome: categorias.nome,
       formaTipo: formasPagamento.tipo,
     })
     .from(lancamentos)
@@ -82,7 +84,6 @@ export async function contasDoMes(mes: Mes, hoje: string): Promise<ContaDoMes[]>
       and(
         eq(lancamentos.userId, userId),
         eq(lancamentos.tipo, "gasto"),
-        or(isNotNull(lancamentos.recorrenciaId), eq(lancamentos.status, "a_pagar")),
         or(
           sql`${venc} between ${inicio} and ${fim}`,
           mesAtual ? and(sql`${venc} < ${inicio}`, inArray(lancamentos.status, ["a_pagar", "estimado"])) : sql`false`,
@@ -91,8 +92,9 @@ export async function contasDoMes(mes: Mes, hoje: string): Promise<ContaDoMes[]>
       ),
     );
 
-  for (const { l, categoriaIcone, categoriaCor, formaTipo } of linhas) {
+  for (const { l, categoriaIcone, categoriaCor, categoriaNome, formaTipo } of linhas) {
     if (formaTipo === "credito" || formaTipo === "beneficio") continue;
+    if (!ehContaDoMes({ ...l, categoriaNome, formaTipo })) continue;
     const r = l.recorrenciaId ? porId.get(l.recorrenciaId) : undefined;
     const paga = l.status === "confirmado";
     contas.push({
@@ -102,6 +104,7 @@ export async function contasDoMes(mes: Mes, hoje: string): Promise<ContaDoMes[]>
       recorrenciaId: l.recorrenciaId ?? undefined,
       descricao: l.descricao,
       ...visualDaConta(r, categoriaIcone, categoriaCor),
+      ...(r ? {} : { tipoRotulo: categoriaNome }),
       duracao: r
         ? duracaoConta({ temporaria: r.rec.tipo === "temporaria", parcela: l.parcela, totalParcelas: r.rec.totalParcelas, ultimaData: ultimaData(r) })
         : undefined,

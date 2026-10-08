@@ -95,3 +95,20 @@ export function duracaoConta(r: {
   }
   return r.ultimaData ? `até ${mesCurto(r.ultimaData)}` : "todo mês";
 }
+
+// O que conta como "conta do mês" em Pagamentos (revisto em 07/10/2026): além dos fixos e do que está a pagar,
+// os gastos soltos que são conta de verdade (vieram do extrato ou foram lançados à mão). Compra do dia a dia fica fora.
+export const CATEGORIAS_DE_CONTA = ["Contas", "Educação", "Assinaturas", "Pagamento de empréstimo"];
+
+export function ehContaDoMes(l: {
+  recorrenciaId: string | null;
+  status: string;
+  categoriaNome: string;
+  formaTipo: string | null;
+  descricao: string;
+}) {
+  if (l.recorrenciaId || l.status !== "confirmado") return true;
+  if (CATEGORIAS_DE_CONTA.includes(l.categoriaNome)) return true;
+  if (l.formaTipo === "boleto") return true;
+  return /aluguel/i.test(l.descricao);
+}

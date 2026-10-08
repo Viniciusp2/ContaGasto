@@ -9,6 +9,11 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.6.0 (07/10/2026)
+
+- **Conferir** (Mais): caça o que pode fazer os números não baterem. Explica a diferença entre o Disponível e o que tem no banco (dinheiro de antes do mês + o que falta pagar + guardado), compara cada banco com o saldo que você digita do app do banco (e acerta se quiser), mostra contas atrasadas sem pagamento achado, contas a pagar que parecem já pagas (junta as duas com um toque), possíveis repetidos (apagar um ou "está certo, são dois") e lançamentos sem banco. Nada é apagado sem você mandar.
+- **Pagamentos** agora conta também as contas pagas que entraram soltas (luz, Vivo, faculdade, assinaturas, boleto, aluguel), não só os fixos. "Já paguei" mostra o que de fato foi pago.
+
 ## 1.5.2 (07/10/2026)
 
 - **Disponível para gastar**: um toque mostra a conta (sobrou no mês, menos o que foi guardado, menos o que ainda falta pagar) e a **lista do que ainda falta pagar**, com data e valor, e um atalho pra Pagamentos.
