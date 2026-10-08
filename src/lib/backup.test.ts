@@ -61,3 +61,8 @@ describe("backup antigo", () => {
     if (r.ok) expect(r.backup.dados.pagamentosFatura).toEqual([]);
   });
 });
+
+it("arquivo de importação em Restaurar diz onde usar", () => {
+  const r = lerBackup(JSON.stringify({ app: "bolso", tipo: "importacao", lancamentos: [] }));
+  expect(r).toEqual({ ok: false, erro: "Esse arquivo é de importação de lançamentos: use Importar lançamentos, logo acima. Nada foi mudado." });
+});

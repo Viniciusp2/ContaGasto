@@ -40,6 +40,10 @@ export function lerBackup(texto: string): { ok: true; backup: Backup; linhas: nu
   }
   const b = json as Partial<Backup>;
   if (!b || b.app !== "bolso") return { ok: false, erro: "Esse arquivo não é um backup do Bolso." };
+  // Arquivo de importação colocado no lugar errado: diz onde usar (e nada muda)
+  if ((b as { tipo?: unknown }).tipo === "importacao") {
+    return { ok: false, erro: "Esse arquivo é de importação de lançamentos: use Importar lançamentos, logo acima. Nada foi mudado." };
+  }
   if (b.versao !== VERSAO_BACKUP) return { ok: false, erro: `Backup da versão ${b.versao}, esse app lê a versão ${VERSAO_BACKUP}.` };
   if (!b.dados || typeof b.dados !== "object") return { ok: false, erro: "Backup sem dados." };
 

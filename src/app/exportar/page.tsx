@@ -51,6 +51,16 @@ export default function Exportar() {
 
       <section className="flex flex-col gap-3 rounded-card bg-cartao p-4 shadow-suave">
         <h2 className="flex items-center gap-2 font-semibold">
+          <FileInput size={20} aria-hidden /> Importar lançamentos
+        </h2>
+        <p className="text-sm text-tinta-suave">
+          Pra trazer um extrato do banco já convertido. Só adiciona: não apaga nada, e o que já está no app fica de fora.
+        </p>
+        <ImportarLancamentos />
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-card bg-cartao p-4 shadow-suave">
+        <h2 className="flex items-center gap-2 font-semibold">
           <DatabaseBackup size={20} aria-hidden /> Backup
         </h2>
         <p className="text-sm text-tinta-suave">
@@ -60,16 +70,6 @@ export default function Exportar() {
           Baixar backup
         </a>
         <RestaurarBackup />
-      </section>
-
-      <section className="flex flex-col gap-3 rounded-card bg-cartao p-4 shadow-suave">
-        <h2 className="flex items-center gap-2 font-semibold">
-          <FileInput size={20} aria-hidden /> Importar lançamentos
-        </h2>
-        <p className="text-sm text-tinta-suave">
-          Pra trazer um extrato do banco já convertido. Só adiciona: não apaga nada, e o que já está no app fica de fora.
-        </p>
-        <ImportarLancamentos />
       </section>
     </section>
   );

@@ -8,6 +8,11 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.2.2 (07/10/2026)
+
+- **Importar lançamentos** subiu pra antes do Backup, na tela Exportar e backup.
+- Arquivo de importação colocado em "Restaurar um backup" agora diz onde usar (e nada é mudado).
+
 ## 1.2.1 (07/10/2026)
 
 - Os nomes das abas da barra de baixo não encostam mais um no outro no celular.
