@@ -6,7 +6,7 @@ import { FormSenha } from "@/components/form-senha";
 import { obterAcesso } from "@/db/acesso";
 import { COOKIE_TEMA, lerTema } from "@/lib/tema";
 import { textoVersao, VERSAO_ATUAL } from "@/lib/versao";
-import { Tags, CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat, SearchCheck, Sparkles } from "lucide-react";
+import { Tags, CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat, SearchCheck, Sparkles, ShieldCheck } from "lucide-react";
 
 const itens = [
   { href: "/assistente", rotulo: "Assistente", texto: "Lança falando, analisa o mês e tira dúvida", Icone: Sparkles, cor: "bg-menta" },
@@ -17,6 +17,7 @@ const itens = [
   { href: "/resumo", rotulo: "Resumo do ano", texto: "Mês, trimestre, semestre e ano", Icone: CalendarRange, cor: "bg-lavanda" },
   { href: "/exportar", rotulo: "Exportar e backup", texto: "Excel, relatório em PDF e backup", Icone: Download, cor: "bg-limao" },
   { href: "/conferir", rotulo: "Conferir", texto: "Achar erros, repetidos e por que não bate com o banco", Icone: SearchCheck, cor: "bg-limao" },
+  { href: "/seguranca", rotulo: "Segurança", texto: "Autenticador em dois fatores pra entrar", Icone: ShieldCheck, cor: "bg-menta" },
   { href: "/configuracoes", rotulo: "Categorias, formas e bancos", texto: "Criar, editar e desativar", Icone: Tags, cor: "bg-lavanda" },
   { href: "/emprestimos", rotulo: "Empréstimos", texto: "Quem te deve e a quem você deve", Icone: HandCoins, cor: "bg-menta" },
 ];
@@ -46,7 +47,7 @@ export default async function Mais() {
         </Link>
       ))}
       <SeletorTema atual={tema} />
-      <FormSenha usandoSenhaInicial={acesso.usandoSenhaInicial} />
+      <FormSenha usandoSenhaInicial={acesso.usandoSenhaInicial} pedirCodigo={acesso.totpAtivo} />
       {acesso.ligado && <BotaoSair />}
       <p className="mt-4 text-center text-xs text-tinta-suave tabular-nums">{textoVersao(VERSAO_ATUAL)}</p>
     </section>

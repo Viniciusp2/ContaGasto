@@ -24,6 +24,8 @@ import {
   guardadoNoMes,
 } from "@/db/painel";
 import { CartaoPlano, CartaoRitmo } from "@/components/plano";
+import { AssistenteInicio } from "@/components/assistente-inicio";
+import { descreverIA } from "@/lib/ia";
 import { CartaoDisponivel, CartaoPrevisao, CartoesDoProximoMes } from "@/components/painel";
 import { LinhaDoTempo } from "@/components/linha-do-tempo";
 import { montarLinhaDoTempo } from "@/lib/linha-do-tempo";
@@ -36,6 +38,8 @@ import { NasContas } from "@/components/nas-contas";
 import { saldosHoje, ultimaContaUsada } from "@/db/saldos";
 
 export const dynamic = "force-dynamic";
+// Os comentários do assistente (cartão do Início) chamam a IA, que pode levar uns segundos
+export const maxDuration = 60;
 
 export default async function Inicio({ searchParams }: PageProps<"/">) {
   await gerarRecorrencias(); // fixos e parcelas que chegaram viram lançamento
@@ -153,6 +157,8 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
         </Link>
       )}
       <SeletorMes mes={mes} href={(m) => `/?mes=${m}`} />
+
+      {mesAtual && <AssistenteInicio hoje={hoje} ligado={descreverIA(process.env) !== null} />}
 
       {pendentes.length > 0 && (
         <section aria-labelledby="contas-pagar" className="flex flex-col gap-2">

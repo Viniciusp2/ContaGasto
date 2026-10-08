@@ -6,17 +6,19 @@ import { trocarSenha, type EstadoSenha } from "@/app/entrar/actions";
 
 const campo = "mt-1 min-h-11 w-full rounded-2xl bg-fundo px-4 outline-none focus:ring-2 focus:ring-lavanda";
 
-export function FormSenha({ usandoSenhaInicial }: { usandoSenhaInicial: boolean }) {
+export function FormSenha({ usandoSenhaInicial, pedirCodigo = false }: { usandoSenhaInicial: boolean; pedirCodigo?: boolean }) {
   // Campos controlados: um erro não apaga o que foi digitado; sucesso limpa
   const [atual, setAtual] = useState("");
   const [nova, setNova] = useState("");
   const [confirmacao, setConfirmacao] = useState("");
+  const [codigo, setCodigo] = useState("");
   const [estado, acao, salvando] = useActionState(async (anterior: EstadoSenha, fd: FormData) => {
     const r = await trocarSenha(anterior, fd);
     if (r.ok) {
       setAtual("");
       setNova("");
       setConfirmacao("");
+      setCodigo("");
     }
     return r;
   }, {});
@@ -35,6 +37,21 @@ export function FormSenha({ usandoSenhaInicial }: { usandoSenhaInicial: boolean 
         Senha atual
         <input name="atual" type="password" autoComplete="current-password" required value={atual} onChange={(e) => setAtual(e.target.value)} className={campo} />
       </label>
+      {pedirCodigo && (
+        <label className="text-sm font-semibold">
+          Código do app autenticador
+          <input
+            name="codigo"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={9}
+            required
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            className={`${campo} tracking-widest`}
+          />
+        </label>
+      )}
       <label className="text-sm font-semibold">
         Senha nova
         <input name="nova" type="password" autoComplete="new-password" required minLength={4} value={nova} onChange={(e) => setNova(e.target.value)} className={campo} />

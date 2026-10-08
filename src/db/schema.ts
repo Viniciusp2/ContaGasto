@@ -298,6 +298,14 @@ export const acesso = pgTable("acesso", {
     .references(() => usuarios.id, { onDelete: "cascade" }),
   senhaHash: text("senha_hash"), // null = ainda na senha inicial (1234)
   segredoSessao: text("segredo_sessao").notNull(),
+  // Dois fatores (1.8.0): segredo do app autenticador, só vale depois de confirmado com um código
+  totpSegredo: text("totp_segredo"),
+  totpPendente: text("totp_pendente"), // gerado na ativação, esperando o primeiro código
+  totpUltimoPasso: integer("totp_ultimo_passo"), // o mesmo código não entra duas vezes
+  codigosRecuperacao: jsonb("codigos_recuperacao").$type<string[]>(), // só os hashes
+  // Trava contra força bruta (senha ou código)
+  errosSeguidos: integer("erros_seguidos").notNull().default(0),
+  bloqueadoAte: timestamp("bloqueado_ate", { withTimezone: true }),
   ...datas(),
 });
 

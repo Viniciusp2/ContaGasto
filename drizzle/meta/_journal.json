@@ -85,6 +85,13 @@
       "when": 1791425746871,
       "tag": "0011_fixo_com_banco",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791466000879,
+      "tag": "0012_dois_fatores",
+      "breakpoints": true
     }
   ]
 }

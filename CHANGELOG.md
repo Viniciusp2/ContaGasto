@@ -9,6 +9,14 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.7.1 (08/10/2026)
+
+- **Autenticação em dois fatores** (Mais, Segurança): além da senha, um código de 6 dígitos do app autenticador (Google Authenticator, Microsoft Authenticator, Authy). Liga lendo um QR code. No site é obrigatório: até ligar, só a tela Segurança abre. Ao ligar, os outros aparelhos saem e entram de novo com o código.
+- **8 códigos de recuperação** (celular perdido), cada um vale uma vez; dá pra gerar novos.
+- Trava contra força bruta: 5 erros seguidos (senha ou código) bloqueiam o login por 15 minutos. O mesmo código não vale duas vezes.
+- Trocar a senha e desligar o autenticador também pedem o código.
+- **Assistente no Início**: cartão no topo com comentários curtos sobre o mês (o que chama atenção, um alerta, uma dica), guardados no aparelho até o dia seguinte; botão pra pedir novos e atalho pra conversar ou lançar falando. Precisa da chave da IA configurada.
+
 ## 1.7.0 (08/10/2026)
 
 - **Assistente** (Mais, Assistente): um chat com IA que faz três coisas.
