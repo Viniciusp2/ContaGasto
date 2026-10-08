@@ -9,6 +9,13 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.8.0 (08/10/2026)
+
+- **Assistente lança parcelado:** "parcelei no AliExpress, 3x de 51,08 a partir de 20/10" monta o cartão com as parcelas, o total e a data da 1ª. Ao salvar, vai pra Fixos e parcelas, e cada parcela vira conta a pagar no mês dela (no cartão de crédito, segue a fatura).
+- **Simula juros:** "comprei 124,58 em 3x com 23% ao mês, quanto fica?" mostra parcela, total e juros nas duas formas mais comuns de cobrar (Tabela Price e taxa aplicada uma vez) e quanto a taxa dá ao ano. A conta é do app, não da IA.
+- **Lembra do que propôs:** o assistente sabe se você salvou ou descartou o cartão. Se pedir pra mudar algo já salvo, ele avisa pra editar ou apagar o antigo, pra não contar duas vezes.
+- **Conhece o app e finanças:** como o Bolso conta (fatura do cartão, a pagar, estimado, VA, empréstimo, disponível, metas e objetivos) e explica juros, rotativo, parcelamento e reserva de emergência, sem empurrar produto.
+
 ## 1.7.3 (08/10/2026)
 
 - **Avisos** (sino no topo do Início, ou Mais, Avisos e lembretes): tudo que pede atenção num lugar só.

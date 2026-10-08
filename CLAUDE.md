@@ -263,6 +263,10 @@ Um chat só (Mais, Assistente) pra três coisas: **lançar falando** ("gastei 32
 - **Privacidade:** plano grátis do Gemini pode usar o que é enviado pra melhorar os produtos do Google. Bom pra teste com dado inventado; com dado de verdade em produção, preferir plano pago (Claude ou Gemini pago).
 - **Chave:** variável do provedor (`GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` ou `IA_CHAVE`), local no `.env.local` e na Vercel em Environment Variables. Sem ela, o assistente avisa o que falta. A API do Claude é paga à parte da assinatura do Claude.
 - A conversa fica só na aba do navegador (`sessionStorage`), não vai pro banco.
+- **Parcelado (1.8.0):** `propor_lancamento` aceita `parcelas` (2 a 72): `valor` é o de cada parcela e `data` a da 1ª. Salvar cria a mesma recorrência temporária do formulário. Se a pessoa só souber o total e a taxa, a IA usa `simular_parcelamento` e pede o valor real da parcela antes de propor.
+- **Simular parcelamento (1.8.0):** `lib/financas.ts` calcula as duas leituras comuns (Tabela Price e taxa aplicada uma vez) e a taxa ao ano. Loja e financeira nem sempre dizem qual usam; o valor que vale é o do cronograma delas.
+- **Contexto do cartão (1.8.0):** cada resposta com cartão volta pra IA com um resumo "[Cartão: ...; a pessoa salvou/descartou]", pra ela saber o que já foi feito e não lançar duas vezes.
+- **Instruções (1.8.0):** seções de conversa (completar o que foi dito, perguntar só o dado que falta, ler texto colado de banco), como o app conta e finanças do dia a dia (juros, rotativo, reserva), sem recomendar produto, investimento ou imposto.
 
 ### 4.16 Avisos, lembretes e notificações (Sprint 6.5, 1.7.3, pedido em 08/10/2026)
 
@@ -408,7 +412,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Sprint 6.8** (1.6.0) Conferir: curadoria de erros em Mais (por que o disponível difere do banco, bate com o banco, atrasadas sem pagamento, a pagar que parece paga, possíveis repetidos, sem banco) + Pagamentos conta as contas soltas já pagas. Feito.
 - **Sprint 6.9** (1.6.5) Fixos com CRUD completo: editar tudo (inclusive banco, dia e parcelas), apagar de vez com 3 modos, virar fixo a partir de um lançamento, assinaturas do histórico no cartão e em Fixos. Feito.
 - **Sprint 6.10** (1.6.6) Disponível e previsão com base no dinheiro dos bancos (por dia, por semana, ritmo). Feito.
-- **Sprint 6.7** (1.7.0) Assistente com IA (4.15): um chat em Mais que lança falando, analisa o mês e responde sobre o dinheiro. A IA é escolhida por variável (Gemini, Groq, OpenRouter, Claude ou qualquer compatível); Gemini grátis na fase de teste. Feito.
+- **Sprint 6.7** (1.7.0) Assistente com IA (4.15): um chat em Mais que lança falando, analisa o mês e responde sobre o dinheiro. A IA é escolhida por variável (Gemini, Groq, OpenRouter, Claude ou qualquer compatível); Gemini grátis na fase de teste. Feito. **1.8.0:** parcelado, simulação de juros, contexto do cartão salvo e instruções de finanças.
 - **Sprint 6.5** (1.7.3) Avisos, lembretes e notificações no celular (4.16): tela Avisos com sino no Início, lembretes (também pelo Assistente), Web Push com agendador de manhã e à noite, 11 tipos de aviso. Feito (começo; horário escolhido e resumo semanal ficam pra depois).
 - **Sprint 6.6** Comprovantes nas contas pagas (precisa do Vercel Blob ligado ao projeto).
 
@@ -530,6 +534,7 @@ O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados ent
 | Lembrete          | título + dia + repetição; o Assistente propõe, salva no toque |
 | Versão 1.7.3      | escolhida pelo Vinícius pra notificações (a regra daria 1.8.0; a 1.8.0 fica pro parcelado do Assistente) |
 | Provedor da IA    | escolhido por `IA_PROVEDOR`; Gemini grátis na fase de teste, Claude Haiku 4.5 como opção paga |
+| Juros no assistente | conta feita pelo app (Price e taxa uma vez); a parcela que vale é a do cronograma da loja |
 
 ### A confirmar
 
