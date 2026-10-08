@@ -98,3 +98,37 @@ describe("mapa de calor", () => {
     expect(mapaDeCalor([l("2026-09-05", "entrada", 5000)], set).dias.every((d) => d.nivel === 0)).toBe(true);
   });
 });
+
+import { comparacaoCategorias, porBanco, ritmoDoMes } from "./graficos";
+
+describe("análises novas do mês", () => {
+  const g = (data: string, valor: number, extra = {}) => ({ data, valor, tipo: "gasto" as const, status: "confirmado" as const, subtipoEntrada: null, formaTipo: null, ...extra });
+
+  it("ritmo: acumulado deste mês até hoje x mês passado inteiro", () => {
+    const r = ritmoDoMes([g("2026-10-01", 100), g("2026-10-03", 50)], [g("2026-09-02", 70), g("2026-09-30", 30)], { ano: 2026, mes: 10 }, { ano: 2026, mes: 9 }, 3);
+    expect(r).toHaveLength(31);
+    expect(r.slice(0, 4)).toEqual([
+      { dia: 1, atual: 100, anterior: 0 },
+      { dia: 2, atual: 100, anterior: 70 },
+      { dia: 3, atual: 150, anterior: 70 },
+      { dia: 4, atual: null, anterior: 70 },
+    ]);
+    expect(r[29]).toEqual({ dia: 30, atual: null, anterior: 100 });
+    expect(r[30]).toEqual({ dia: 31, atual: null, anterior: null });
+  });
+
+  it("categorias que mais mudaram, maior diferença primeiro", () => {
+    const r = comparacaoCategorias(new Map([["a", 500], ["b", 100]]), new Map([["a", 200], ["b", 400], ["c", 50]]), new Map([["a", "Mercado"], ["b", "Comida"], ["c", "Lazer"]]));
+    expect(r.map((c) => [c.nome, c.diferenca])).toEqual([["Comida", -300], ["Mercado", 300], ["Lazer", -50]]);
+  });
+
+  it("por banco inclui o VA (Alelo) e deixa de fora o que não é de verdade", () => {
+    const r = porBanco([
+      { ...g("2026-10-01", 300), contaNome: "Itaú" },
+      { ...g("2026-10-01", 100, { formaTipo: "beneficio" }), contaNome: "Alelo" },
+      { ...g("2026-10-02", 999, { status: "a_pagar" }), contaNome: "C6" },
+      { ...g("2026-10-02", 100), contaNome: null },
+    ]);
+    expect(r.map((b) => [b.nome, b.valor, b.fracao])).toEqual([["Itaú", 300, 0.6], ["Alelo", 100, 0.2], ["Sem banco", 100, 0.2]]);
+  });
+});

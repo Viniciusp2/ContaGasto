@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { Plus, Receipt, Search } from "lucide-react";
+import { CalendarRange, Plus, Receipt, Search } from "lucide-react";
 import { historicoContasVariaveis, listarLancamentosDoMes } from "@/db/consultas";
 import { comparacaoComMedia } from "@/lib/recorrencias";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { ItemLancamentoLinha } from "@/components/item-lancamento";
 import { SeletorMes } from "@/components/seletor-mes";
 import { diaCurto, lerMes, mesParaTexto } from "@/lib/datas";
-import { filtrarLancamentos } from "@/lib/busca";
+import { filtrarLancamentos, lerOrdem, ORDENS, ordenarLancamentos, type Ordem } from "@/lib/busca";
+import { totaisDoDia } from "@/lib/calculos";
 import { formatarCentavos, textoDiferencaMedia } from "@/lib/dinheiro";
 
 // Lê o banco a cada acesso: o que o usuário lançou precisa aparecer na hora
@@ -26,6 +27,8 @@ export default async function Lancamentos({ searchParams }: PageProps<"/lancamen
   const tipo = params.tipo === "gasto" || params.tipo === "entrada" ? params.tipo : undefined;
 
   const busca = typeof params.q === "string" ? params.q.slice(0, 80) : "";
+  const ordem = lerOrdem(typeof params.ordem === "string" ? params.ordem : undefined);
+  const porValor = ordem === "maior" || ordem === "menor";
 
   const todos = await listarLancamentosDoMes(mes);
 
@@ -42,12 +45,13 @@ export default async function Lancamentos({ searchParams }: PageProps<"/lancamen
   const totalGastos = itens.filter((i) => i.tipo === "gasto" && i.status === "confirmado").reduce((s, i) => s + i.valor, 0);
   const totalEntradas = itens.filter((i) => i.tipo === "entrada" && i.status === "confirmado").reduce((s, i) => s + i.valor, 0);
 
-  const hrefFiltro = (mesTexto: string, t?: string) =>
-    `/lancamentos?mes=${mesTexto}${t ? `&tipo=${t}` : ""}${busca ? `&q=${encodeURIComponent(busca)}` : ""}`;
+  const hrefFiltro = (mesTexto: string, t?: string, o: Ordem = ordem) =>
+    `/lancamentos?mes=${mesTexto}${t ? `&tipo=${t}` : ""}${busca ? `&q=${encodeURIComponent(busca)}` : ""}${o !== "recentes" ? `&ordem=${o}` : ""}`;
 
-  // Agrupa por dia (a lista já vem ordenada do mais novo pro mais velho)
+  // Por data: agrupa por dia (mais novos ou mais antigos primeiro). Por valor: uma lista só, com o dia em cada linha.
+  const ordenados = ordenarLancamentos(itens, ordem);
   const dias: { data: string; itens: typeof itens }[] = [];
-  for (const item of itens) {
+  for (const item of porValor ? [] : ordenados) {
     const ultimo = dias.at(-1);
     if (ultimo?.data === item.data) ultimo.itens.push(item);
     else dias.push({ data: item.data, itens: [item] });
@@ -57,6 +61,12 @@ export default async function Lancamentos({ searchParams }: PageProps<"/lancamen
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">Lançamentos</h1>
       <SeletorMes mes={mes} href={(m) => hrefFiltro(m, tipo)} />
+      <Link
+        href={`/resumo?ano=${mes.ano}`}
+        className="flex min-h-11 items-center justify-center gap-2 self-center rounded-full bg-cartao px-4 text-sm font-semibold shadow-suave"
+      >
+        <CalendarRange size={16} aria-hidden /> Ver o ano de {mes.ano}
+      </Link>
 
       <div className="flex gap-2" role="group" aria-label="Filtrar por tipo">
         {filtros.map((f) => (
@@ -73,10 +83,25 @@ export default async function Lancamentos({ searchParams }: PageProps<"/lancamen
         ))}
       </div>
 
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Ordenar">
+        {ORDENS.map((o) => (
+          <Link
+            key={o.valor}
+            href={hrefFiltro(textoMes, tipo, o.valor)}
+            aria-current={ordem === o.valor ? "true" : undefined}
+            scroll={false}
+            className={`flex min-h-11 items-center rounded-full px-3 text-xs ${ordem === o.valor ? "bg-lavanda font-semibold" : "bg-cartao"}`}
+          >
+            {o.rotulo}
+          </Link>
+        ))}
+      </div>
+
       {/* Busca: formulário comum (GET), funciona até sem JavaScript */}
       <form role="search" action="/lancamentos" className="flex gap-2">
         <input type="hidden" name="mes" value={textoMes} />
         {tipo && <input type="hidden" name="tipo" value={tipo} />}
+        {ordem !== "recentes" && <input type="hidden" name="ordem" value={ordem} />}
         <label htmlFor="busca" className="sr-only">
           Buscar no mês
         </label>
@@ -100,13 +125,13 @@ export default async function Lancamentos({ searchParams }: PageProps<"/lancamen
             {totalGastos > 0 && <> · gastou <strong className="tabular-nums">{formatarCentavos(totalGastos)}</strong></>}
             {totalEntradas > 0 && <> · entrou <strong className="tabular-nums">{formatarCentavos(totalEntradas)}</strong></>}
           </span>
-          <Link href={`/lancamentos?mes=${textoMes}${tipo ? `&tipo=${tipo}` : ""}`} className="inline-flex min-h-11 items-center font-semibold underline">
+          <Link href={hrefFiltro(textoMes, tipo).replace(/&q=[^&]*/, "")} className="inline-flex min-h-11 items-center font-semibold underline">
             Limpar busca
           </Link>
         </p>
       )}
 
-      {dias.length === 0 ? (
+      {ordenados.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-card bg-cartao p-8 text-center shadow-suave">
           <span className="rounded-full bg-lavanda p-4">
             <Receipt size={28} aria-hidden />
@@ -119,10 +144,36 @@ export default async function Lancamentos({ searchParams }: PageProps<"/lancamen
             <Plus size={18} aria-hidden /> Lançar agora
           </Link>
         </div>
+      ) : porValor ? (
+        <ul className="flex flex-col gap-2">
+          {ordenados.map((item) => (
+            <ItemLancamentoLinha key={item.id} item={item} comparacao={comparacoes.get(item.id)} mostrarData />
+          ))}
+        </ul>
       ) : (
         dias.map((dia) => (
           <div key={dia.data}>
-            <h3 className="mb-2 text-sm font-semibold text-tinta-suave capitalize">{diaCurto(dia.data)}</h3>
+            {/* Como no extrato: do lado da data, quanto entrou (verde) e quanto saiu (vermelho) no dia */}
+            {(() => {
+              const t = totaisDoDia(dia.itens);
+              return (
+                <h3 className="mb-2 flex items-baseline justify-between gap-2 text-sm font-semibold">
+                  <span className="text-tinta-suave capitalize">{diaCurto(dia.data)}</span>
+                  <span className="flex gap-3 tabular-nums">
+                    {t.entrou > 0 && (
+                      <span className="text-positivo">
+                        <span className="sr-only">entrou </span>+ {formatarCentavos(t.entrou)}
+                      </span>
+                    )}
+                    {t.saiu > 0 && (
+                      <span className="text-negativo">
+                        <span className="sr-only">saiu </span>- {formatarCentavos(t.saiu)}
+                      </span>
+                    )}
+                  </span>
+                </h3>
+              );
+            })()}
             <ul className="flex flex-col gap-2">
               {dia.itens.map((item) => (
                 <ItemLancamentoLinha key={item.id} item={item} comparacao={comparacoes.get(item.id)} />

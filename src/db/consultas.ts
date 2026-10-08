@@ -276,9 +276,11 @@ export function lancamentosDoAno(ano: number) {
       status: lancamentos.status,
       formaTipo: formasPagamento.tipo,
       categoriaId: lancamentos.categoriaId,
+      contaNome: contas.nome,
     })
     .from(lancamentos)
     .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
+    .leftJoin(contas, eq(lancamentos.contaId, contas.id))
     .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, `${ano}-01-01`, `${ano}-12-31`)));
 }
 
@@ -302,9 +304,11 @@ export function lancamentosParaGraficos(mes: Mes) {
       categoriaId: lancamentos.categoriaId,
       formaTipo: formasPagamento.tipo,
       formaNome: formasPagamento.nome,
+      contaNome: contas.nome,
     })
     .from(lancamentos)
     .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
+    .leftJoin(contas, eq(lancamentos.contaId, contas.id))
     .where(and(eq(lancamentos.userId, userId), between(lancamentos.data, inicio, fim)));
 }
 

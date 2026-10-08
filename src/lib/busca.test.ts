@@ -36,3 +36,24 @@ describe("busca", () => {
     expect(filtrarLancamentos(lista, "   ")).toHaveLength(3);
   });
 });
+
+import { lerOrdem, ordenarLancamentos } from "./busca";
+
+describe("ordenar lançamentos", () => {
+  const lista = [
+    { id: "c", data: "2026-10-07", valor: 2200 },
+    { id: "b", data: "2026-10-06", valor: 196679 },
+    { id: "a", data: "2026-10-01", valor: 990 },
+  ];
+  it("mais novos (como vem), mais antigos, maior e menor valor", () => {
+    expect(ordenarLancamentos(lista, "recentes").map((l) => l.id)).toEqual(["c", "b", "a"]);
+    expect(ordenarLancamentos(lista, "antigos").map((l) => l.id)).toEqual(["a", "b", "c"]);
+    expect(ordenarLancamentos(lista, "maior").map((l) => l.id)).toEqual(["b", "c", "a"]);
+    expect(ordenarLancamentos(lista, "menor").map((l) => l.id)).toEqual(["a", "c", "b"]);
+  });
+  it("ordem desconhecida vira a padrão", () => {
+    expect(lerOrdem("xyz")).toBe("recentes");
+    expect(lerOrdem(undefined)).toBe("recentes");
+    expect(lerOrdem("maior")).toBe("maior");
+  });
+});

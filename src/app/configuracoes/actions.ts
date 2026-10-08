@@ -12,6 +12,8 @@ import {
 } from "@/db/schema";
 import { USUARIO_PADRAO } from "@/db/usuario-padrao";
 import { seloDoBanco } from "@/lib/bancos";
+import { hojeISO } from "@/lib/datas";
+import { MAX_CENTAVOS } from "@/lib/dinheiro";
 import {
   categoriaProtegida,
   validarCategoria,
@@ -193,6 +195,24 @@ export async function apagarConta(_: EstadoConfig, fd: FormData): Promise<Estado
   const [uso] = await db.select({ n: count() }).from(lancamentos).where(and(eq(lancamentos.contaId, id), eq(lancamentos.userId, userId)));
   if (uso.n > 0) return { erro: `Esse banco tem ${uso.n} lançamento(s), então fica, pra não perder o histórico.` };
   await db.delete(contas).where(and(eq(contas.id, id), eq(contas.userId, userId)));
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// Saldo que o banco mostra hoje, em centavos (o campo já monta o valor enquanto você digita).
+// "negativo" = conta no vermelho (cheque especial).
+export async function salvarSaldoConta(_: EstadoConfig, fd: FormData): Promise<EstadoConfig> {
+  const id = String(fd.get("id") ?? "");
+  if (!ehUuid(id)) return { erro: "Banco não encontrado." };
+  const centavos = Number(fd.get("saldo"));
+  if (!Number.isInteger(centavos) || centavos < 0 || centavos > MAX_CENTAVOS) return { erro: "Saldo inválido." };
+  const saldo = fd.get("negativo") === "sim" ? -centavos : centavos;
+  const feitos = await db
+    .update(contas)
+    .set({ saldoBase: saldo, saldoBaseEm: hojeISO() })
+    .where(and(eq(contas.id, id), eq(contas.userId, userId)))
+    .returning({ id: contas.id });
+  if (feitos.length === 0) return { erro: "Banco não encontrado." };
   revalidatePath("/", "layout");
   return { ok: true };
 }

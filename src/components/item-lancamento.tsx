@@ -5,12 +5,14 @@ import type { ItemLancamento } from "@/db/consultas";
 import { diaCurto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
-export function ItemLancamentoLinha({ item, comparacao }: { item: ItemLancamento; comparacao?: string }) {
+export function ItemLancamentoLinha({ item, comparacao, mostrarData = false }: { item: ItemLancamento; comparacao?: string; mostrarData?: boolean }) {
   const estimado = item.status === "estimado";
   const aPagar = item.status === "a_pagar";
   const entrada = item.tipo === "entrada";
 
   const detalhes = [
+    // Na lista por valor não tem cabeçalho de dia: o dia vai na linha
+    mostrarData ? diaCurto(item.data) : null,
     item.categoriaNome,
     item.formaNome,
     item.parcela && item.totalParcelas ? `parcela ${item.parcela}/${item.totalParcelas}` : null,

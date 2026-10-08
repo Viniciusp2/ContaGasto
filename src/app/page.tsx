@@ -23,6 +23,8 @@ import { formatarCentavos } from "@/lib/dinheiro";
 import { NumeroAnimado } from "@/components/animacoes";
 import { ContaPagamento } from "@/components/conta-pagamento";
 import { contasPendentes } from "@/db/pagamentos";
+import { NasContas } from "@/components/nas-contas";
+import { saldosHoje } from "@/db/saldos";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +53,8 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   const painel = mesAtual ? await montarPainel(lancamentos, resumo.saldoReal, resumo.entradas) : null;
   // Contas atrasadas ou vencendo nos próximos 3 dias: o Paguei fica a um toque, logo no topo
   const pendentes = mesAtual ? await contasPendentes(hoje, 3) : [];
+  // Quanto tem em cada banco hoje (só faz sentido no mês atual)
+  const nasContas = mesAtual ? await saldosHoje(hoje) : null;
 
   async function montarPainel(lista: typeof lancamentos, saldoReal: number, entradas: number) {
     const [compromissos, guardadoMes, proximo, assinaturas, entradasPrevistas, doMes] = await Promise.all([
@@ -105,8 +109,8 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
 
   const cards = [
     {
-      rotulo: "Saldo real",
-      dica: "Entradas menos gastos",
+      rotulo: "Sobrou no mês",
+      dica: "Entradas menos gastos do mês",
       valor: resumo.saldoReal,
       Icone: Wallet,
       cor: resumo.saldoReal < 0 ? "bg-coral" : "bg-menta",
@@ -154,6 +158,8 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
           )}
         </section>
       )}
+
+      {nasContas && <NasContas {...nasContas} />}
 
       {painel && (
         <CartaoDisponivel

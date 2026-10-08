@@ -53,6 +53,7 @@ export function FormLancamento({
   categorias,
   formas,
   contas = [],
+  contaPadrao = null,
   hoje,
   inicial,
   modoConta = false,
@@ -60,6 +61,7 @@ export function FormLancamento({
   categorias: Categoria[];
   formas: Forma[];
   contas?: Conta[];
+  contaPadrao?: string | null; // banco do último lançamento: já vem marcado pra o saldo do banco não ficar pra trás
   hoje: string;
   inicial?: LancamentoInicial;
   modoConta?: boolean; // aberto pela tela Pagamentos: começa como "todo mês" e volta pra lá
@@ -69,7 +71,7 @@ export function FormLancamento({
   const [centavos, setCentavos] = useState(inicial?.valor ?? 0);
   const [categoriaId, setCategoriaId] = useState(inicial?.categoriaId ?? "");
   const [formaId, setFormaId] = useState(inicial?.formaPagamentoId ?? "");
-  const [contaId, setContaId] = useState(inicial?.contaId ?? "");
+  const [contaId, setContaId] = useState(inicial ? (inicial.contaId ?? "") : (contaPadrao ?? ""));
   // Controlados: o React 19 limpa campos soltos depois da action, e um erro não pode apagar o que foi digitado
   const [data, setData] = useState(inicial?.data ?? hoje);
   const [descricao, setDescricao] = useState(inicial?.descricao ?? "");

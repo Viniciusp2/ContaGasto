@@ -5,8 +5,20 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 - **MAIOR** (2.0.0): muda algo grande que exige ação sua (ex.: dados que precisam ser refeitos).
 - **MENOR** (1.3.0): função nova.
 - **CORREÇÃO** (1.2.2): conserto ou ajuste pequeno.
+- Mudança mínima (texto, detalhe visual) não muda o número: só vai no envio.
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
+
+## 1.5.0 (07/10/2026)
+
+- **Nas contas hoje** (Início): quanto tem em cada banco. Informe o saldo de hoje de cada um em Mais, Categorias, formas e bancos (uma vez); daí pra frente o app soma os lançamentos de cada banco. Um toque abre Itaú, C6... O VA (Alelo) aparece à parte.
+- O cartão "Saldo real" agora se chama **Sobrou no mês** (é o que ele sempre mostrou: entradas menos gastos do mês, não o dinheiro no banco).
+- Ao lançar, o banco já vem marcado com o último que você usou.
+- **Lançamentos:** do lado da data, quanto entrou (verde) e quanto saiu (vermelho) no dia, como no extrato; **ordenar** por mais novos, mais antigos, maior ou menor valor; botão **Ver o ano**.
+- **Mapa de calor** do mês e do ano com os dias do **salário** (verde) e do **VA** (verde tracejado), e **quanto tempo cada um leva pra acabar** (salário em média, VA em média, mês a mês).
+- **Gráficos do mês:** ritmo do mês (gasto acumulado x mês passado), o que mais mudou em relação ao mês passado e por banco.
+- **Resumo do ano:** mapa de calor do ano, quanto sobrou em cada mês e por banco no ano.
+- Botão Ver o ano também em Gráficos.
 
 ## 1.4.0 (07/10/2026)
 

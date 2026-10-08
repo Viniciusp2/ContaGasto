@@ -1,6 +1,6 @@
 "use client";
 
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, LabelList, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { COR_GRAFICO } from "@/lib/cores-grafico";
 import { formatarCentavos } from "@/lib/dinheiro";
 
@@ -145,6 +145,117 @@ export function GraficoMeses({ meses, emAndamento }: { meses: { mes: number; rot
         </ResponsiveContainer>
       </div>
       <VerEmTabela linhas={meses.map((m) => [m.rotulo + (m.mes === emAndamento ? " (em andamento)" : ""), formatarCentavos(m.gasto)])} />
+    </>
+  );
+}
+
+// Ritmo do mês: duas linhas no mesmo eixo (este mês x mês passado). Legenda sempre; o mês passado é tracejado,
+// então a diferença não depende só da cor.
+export function GraficoRitmo({ pontos }: { pontos: { dia: number; atual: number | null; anterior: number | null }[] }) {
+  const ultimoAtual = [...pontos].reverse().find((p) => p.atual !== null);
+  const mesmoDiaAnterior = ultimoAtual ? pontos[ultimoAtual.dia - 1]?.anterior : null;
+  return (
+    <>
+      <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-tinta-suave">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-0.5 w-5 rounded" style={{ backgroundColor: COR_GRAFICO.gasto }} aria-hidden /> este mês
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-5 border-t-2 border-dashed" style={{ borderColor: COR_GRAFICO.neutro }} aria-hidden /> mês passado
+        </span>
+      </div>
+      <div
+        className="h-52"
+        role="img"
+        aria-label={
+          ultimoAtual
+            ? `Até o dia ${ultimoAtual.dia}, você gastou ${formatarCentavos(ultimoAtual.atual!)} este mês${mesmoDiaAnterior !== null && mesmoDiaAnterior !== undefined ? ` e ${formatarCentavos(mesmoDiaAnterior)} no mesmo dia do mês passado` : ""}`
+            : "Ritmo do mês"
+        }
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={pontos} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} accessibilityLayer={false}>
+            <CartesianGrid vertical={false} />
+            <XAxis dataKey="dia" tick={EIXO} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={16} />
+            <YAxis tickFormatter={eixoReais} tick={EIXO} axisLine={false} tickLine={false} width={70} />
+            <Tooltip
+              cursor={{ strokeWidth: 1 }}
+              content={({ active, payload, label }) =>
+                active && payload?.length ? (
+                  <div className="rounded-2xl bg-cartao px-3 py-2 text-sm shadow-suave">
+                    <p className="text-tinta-suave">Até o dia {label}</p>
+                    {payload.map((p) =>
+                      p.value === null || p.value === undefined ? null : (
+                        <p key={String(p.dataKey)} className="tabular-nums">
+                          {p.dataKey === "atual" ? "Este mês" : "Mês passado"}: <strong>{formatarCentavos(Number(p.value))}</strong>
+                        </p>
+                      ),
+                    )}
+                  </div>
+                ) : null
+              }
+            />
+            <Line type="monotone" dataKey="anterior" stroke={COR_GRAFICO.neutro} strokeWidth={2} strokeDasharray="5 4" dot={false} connectNulls={false} animationDuration={700} />
+            <Line type="monotone" dataKey="atual" stroke={COR_GRAFICO.gasto} strokeWidth={2} dot={false} activeDot={{ r: 5 }} connectNulls={false} animationDuration={900} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <VerEmTabela
+        linhas={pontos
+          .filter((p) => p.atual !== null || p.anterior !== null)
+          .map((p) => [`Dia ${p.dia}`, `${p.atual !== null ? formatarCentavos(p.atual) : "-"} / ${p.anterior !== null ? formatarCentavos(p.anterior) : "-"}`])}
+      />
+    </>
+  );
+}
+
+// Barras pra direita e pra esquerda do zero (mais/menos). "positivoEhBom": sobra positiva é boa (verde);
+// gasto que subiu é ruim (coral). O sinal + / - vai escrito no valor, então a cor nunca é a única pista.
+export function GraficoDivergente({
+  itens,
+  positivoEhBom,
+  descricao,
+}: {
+  itens: { rotulo: string; valor: number }[];
+  positivoEhBom: boolean;
+  descricao: string;
+}) {
+  const cor = (v: number) => ((v >= 0) === positivoEhBom ? COR_GRAFICO.positivo : COR_GRAFICO.gasto);
+  const sinal = (v: number) => `${v > 0 ? "+" : v < 0 ? "-" : ""}${eixoReais(Math.abs(v))}`;
+  return (
+    <>
+      <div style={{ height: Math.max(120, itens.length * 34 + 24) }} role="img" aria-label={descricao}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={itens} layout="vertical" margin={{ top: 4, right: 56, left: 0, bottom: 4 }} accessibilityLayer={false}>
+            <XAxis type="number" hide domain={["dataMin", "dataMax"]} />
+            <YAxis type="category" dataKey="rotulo" tick={EIXO} axisLine={false} tickLine={false} width={96} />
+            <ReferenceLine x={0} />
+            <Tooltip
+              cursor
+              content={({ active, payload, label }) => <DicaValor active={active} payload={payload} rotulo={String(label)} />}
+            />
+            <Bar dataKey="valor" radius={4} maxBarSize={20} animationDuration={700}>
+              {itens.map((i) => (
+                <Cell key={i.rotulo} fill={cor(i.valor)} />
+              ))}
+              <LabelList
+                dataKey="valor"
+                content={({ x, y, width, height, value }) => {
+                  const v = Number(value);
+                  const fim = Number(x) + Number(width);
+                  const direita = Math.max(Number(x), fim);
+                  return (
+                    <text x={direita + 6} y={Number(y) + Number(height) / 2} dominantBaseline="middle" fontSize={11} fontWeight={700} fill="var(--tinta)">
+                      {sinal(v)}
+                    </text>
+                  );
+                }}
+              />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <VerEmTabela linhas={itens.map((i) => [i.rotulo, `${i.valor > 0 ? "+" : ""}${formatarCentavos(i.valor)}`])} />
     </>
   );
 }

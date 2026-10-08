@@ -167,3 +167,15 @@ export function contaComoGasto(l: LancamentoCalculo): boolean {
 export function contaComoEntrada(l: LancamentoCalculo): boolean {
   return l.status === "confirmado" && l.tipo === "entrada" && l.subtipoEntrada !== "emprestimo" && !entradaDeVA(l);
 }
+
+// Quanto entrou e quanto saiu num dia da lista (como no extrato do banco). Só o que já é de verdade (confirmado).
+export function totaisDoDia(itens: { tipo: "gasto" | "entrada"; valor: number; status: string }[]) {
+  let entrou = 0,
+    saiu = 0;
+  for (const i of itens) {
+    if (i.status !== "confirmado") continue;
+    if (i.tipo === "entrada") entrou += i.valor;
+    else saiu += i.valor;
+  }
+  return { entrou, saiu };
+}

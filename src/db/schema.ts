@@ -121,6 +121,9 @@ export const contas = pgTable(
     sigla: text("sigla").notNull(),
     cor: text("cor").notNull(), // fundo do selo
     corTexto: text("cor_texto").notNull(), // texto do selo, escolhido pelo contraste
+    // Saldo que você informou (o que o banco mostrava no fim desse dia). Daí pra frente o app soma os lançamentos.
+    saldoBase: integer("saldo_base"),
+    saldoBaseEm: date("saldo_base_em"),
     ...datas(),
   },
   (t) => [unique().on(t.userId, t.nome)],

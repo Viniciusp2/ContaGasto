@@ -135,3 +135,16 @@ describe("resumoDoMes", () => {
     });
   });
 });
+
+import { totaisDoDia } from "./calculos";
+
+it("totais do dia: entrou e saiu, sem o que ainda é estimado ou a pagar", () => {
+  expect(
+    totaisDoDia([
+      { tipo: "entrada", valor: 196679, status: "confirmado" },
+      { tipo: "gasto", valor: 990, status: "confirmado" },
+      { tipo: "gasto", valor: 5190, status: "a_pagar" },
+      { tipo: "gasto", valor: 800, status: "confirmado" },
+    ]),
+  ).toEqual({ entrou: 196679, saiu: 1790 });
+});

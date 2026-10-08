@@ -12,6 +12,7 @@
   --tinta-suave: #6b5a72;
   --cartao: #ffffff;
   --negativo: #b3261e;
+  --positivo: #126b51; /* texto verde (entrou), contraste 5.8 no fundo */
   /* Barras de meta e objetivo */
   --barra-ok: #8dffdb;
   --barra-atencao: #ffac81;
@@ -36,6 +37,7 @@
     --tinta-suave: #c2b3c9;
     --cartao: #2a2130;
     --negativo: #ff8a80;
+    --positivo: #5fd3a6;
     --barra-ok: #2bae87;
     --barra-atencao: #e8763f;
     --barra-estourou: #ff6b5e;
@@ -56,6 +58,7 @@
   --tinta-suave: #c2b3c9;
   --cartao: #2a2130;
   --negativo: #ff8a80;
+  --positivo: #5fd3a6;
   --barra-ok: #2bae87;
   --barra-atencao: #e8763f;
   --barra-estourou: #ff6b5e;
@@ -75,6 +78,7 @@
   --color-tinta-suave: var(--tinta-suave);
   --color-cartao: var(--cartao);
   --color-negativo: var(--negativo);
+  --color-positivo: var(--positivo);
   --font-sans: var(--font-inter);
   --radius-card: 1.25rem;
   --shadow-suave: 0 4px 20px -6px rgb(58 46 63 / 0.15);

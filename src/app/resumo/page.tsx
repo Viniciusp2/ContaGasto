@@ -1,12 +1,17 @@
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Flame, Hourglass, Sparkles } from "lucide-react";
 import { BarraProgresso } from "@/components/barra-progresso";
-import { GraficoMeses, GraficoSemana } from "@/components/graficos";
+import { BarrasRanking } from "@/components/barras-ranking";
+import { GraficoDivergente, GraficoMeses, GraficoSemana } from "@/components/graficos";
 import { IconeCategoria } from "@/components/icone-categoria";
+import { MapaDoAno } from "@/components/mapa-ano";
+import { QuantoDura } from "@/components/quanto-dura";
 import { lancamentosDoAno, listarTodasCategorias } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { diasCorridos, diasQueMaisGastou, distribuicao, gastoPorMes, padroesDoAno } from "@/lib/analise-ano";
 import { gastoPorCategoria, resumoPorPeriodo, type Periodo } from "@/lib/calculos";
+import { diasDeEntrada, mapaDoAno, quantoDura } from "@/lib/duracao";
+import { porBanco } from "@/lib/graficos";
 import { diaCurto, hojeISO } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
@@ -57,6 +62,15 @@ export default async function Resumo({ searchParams }: PageProps<"/resumo">) {
     ["Segunda a sexta", dist.total - dist.fimDeSemana],
   ];
   const cartao = "rounded-card bg-cartao p-4 shadow-suave";
+  // Mapa do ano com os dias do salário e do VA, e quanto tempo cada um dura
+  const marcados = Object.fromEntries(diasDeEntrada(doPeriodo));
+  const mapa = ateMes > 0 ? mapaDoAno(doPeriodo, ano, ateMes) : [];
+  const referencia = mesAtual ? hoje : `${ano}-12-31`;
+  const duraSalario = quantoDura(doPeriodo, "salario", referencia);
+  const duraVA = quantoDura(doPeriodo, "va", referencia);
+  // Sobrou (ou faltou) em cada mês e de qual banco saiu o dinheiro
+  const sobras = meses.filter((m) => m.gasto > 0 || m.entradas > 0).map((m) => ({ rotulo: m.rotulo + (m.mes === mesAtual ? "*" : ""), valor: m.entradas - m.gasto }));
+  const bancosAno = porBanco(doPeriodo);
 
   const href = (a: number, p: Periodo) => `/resumo?ano=${a}&periodo=${p}`;
   const botao = "flex size-11 items-center justify-center rounded-full bg-cartao shadow-suave active:scale-90";
@@ -108,6 +122,45 @@ export default async function Resumo({ searchParams }: PageProps<"/resumo">) {
                   {mesAtual ? `, ${meses.at(-1)?.rotulo} ainda em andamento` : ""}
                 </p>
                 <GraficoMeses meses={meses} emAndamento={mesAtual} />
+              </section>
+
+              {(duraSalario.ciclos.length > 0 || duraVA.ciclos.length > 0) && (
+                <section className={cartao}>
+                  <h2 className="mb-3 flex items-center gap-2 font-bold">
+                    <Hourglass size={18} aria-hidden /> Quanto tempo leva pra gastar tudo
+                  </h2>
+                  <QuantoDura salario={duraSalario} va={duraVA} />
+                </section>
+              )}
+
+              {sobras.length > 0 && (
+                <section className={cartao}>
+                  <h2 className="font-bold">Sobrou em cada mês</h2>
+                  <p className="mb-2 text-sm text-tinta-suave">
+                    Entradas menos gastos: verde quando sobrou, vermelho quando faltou{mesAtual ? " (* mês em andamento)" : ""}
+                  </p>
+                  <GraficoDivergente
+                    itens={sobras}
+                    positivoEhBom
+                    descricao={`Quanto sobrou em cada mês: ${sobras.map((x) => `${x.rotulo} ${formatarCentavos(x.valor)}`).join(", ")}`}
+                  />
+                </section>
+              )}
+
+              {bancosAno.length > 1 && (
+                <section className={cartao}>
+                  <h2 className="font-bold">Por banco no ano</h2>
+                  <p className="mb-3 text-sm text-tinta-suave">De onde saiu o dinheiro (inclui o que foi pago com o VA)</p>
+                  <BarrasRanking itens={bancosAno} estado="dado" mostrarPorcentagem />
+                </section>
+              )}
+
+              <section className={cartao}>
+                <h2 className="flex items-center gap-2 font-bold">
+                  <Flame size={18} aria-hidden /> Mapa de calor do ano
+                </h2>
+                <p className="mb-3 text-sm text-tinta-suave">Cada quadrinho é um dia; quanto mais escuro, mais você gastou</p>
+                <MapaDoAno meses={mapa} hoje={hoje} marcados={marcados} />
               </section>
 
               {padroes.length > 0 && (

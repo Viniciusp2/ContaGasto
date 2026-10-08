@@ -254,7 +254,7 @@ Hoje o app diz **quanto** dinheiro existe, não **onde** ele está. Na v2:
 - **Transferência entre contas** é um tipo próprio de movimentação, **nunca** gasto + entrada. Sai de uma conta e entra na outra sem mexer em saldo real, gasto ou entrada do mês.
 - Melhora empréstimos e objetivos, que passam a apontar pra uma conta.
 - Vem **antes** das notificações na fila da v2.
-- **Começo feito em 07/10/2026 (Sprint 6.2):** tabela `contas` (nome, sigla, cor, cor_texto) e `lancamentos.conta_id` opcional. Cada lançamento mostra um **selo** com a sigla e a cor do banco (Itaú laranja, C6 preto, Alelo verde...). **Não é o logo oficial** (marca dos bancos; o app só usa ícone próprio). Cores dos selos testadas com contraste >= 4.5:1. Banco é escolhido no formulário (opcional) e gerenciado em Mais, Categorias, formas e bancos (apaga só se não tiver lançamento). Falta: saldo por conta e transferência.
+- **Começo feito em 07/10/2026 (Sprint 6.2):** tabela `contas` (nome, sigla, cor, cor_texto) e `lancamentos.conta_id` opcional. Cada lançamento mostra um **selo** com a sigla e a cor do banco (Itaú laranja, C6 preto, Alelo verde...). **Não é o logo oficial** (marca dos bancos; o app só usa ícone próprio). Cores dos selos testadas com contraste >= 4.5:1. Banco é escolhido no formulário (opcional) e gerenciado em Mais, Categorias, formas e bancos (apaga só se não tiver lançamento). **Saldo por banco (1.5.0):** `contas.saldo_base` + `saldo_base_em` (o que o banco mostrava no fim desse dia); saldo hoje = base + entradas − gastos confirmados daquele banco depois desse dia e até hoje. Banco do VA (a maioria dos movimentos é VA) fica fora do total. Lançamento sem banco não entra; por isso o formulário já vem com o último banco usado. Falta: transferência entre seus bancos (hoje Pix entre contas suas fica fora, então depois de uma transferência é preciso acertar o saldo).
 
 ### 4.12 Histórico de alterações (v2)
 
@@ -368,7 +368,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Sprint 6.1** Pagamentos do mês (4.14): aba Pagamentos, paguei ou não, atrasadas que seguem pro mês seguinte, tipo da conta, fatura do cartão, aviso no Início. Feito. A Vercel aplica as migrations sozinha a cada deploy (`vercel-build` = `db:migrate` + `next build`).
 - **Sprint 6.2** Importar lançamentos + bancos com selo (4.11, começo). Feito: Mais, Exportar e backup, **Importar lançamentos** recebe um JSON `{app: "bolso", tipo: "importacao", lancamentos: [...]}` (data, descricao, valor em centavos, tipo, categoria e forma pelo nome, conta = banco, obs). Só adiciona, nunca apaga; o que já existe (mesmo dia, valor, tipo e descrição) fica de fora, então importar duas vezes não duplica. Categoria que não existe vira Outros; banco que não existe é criado com o selo dele. **Conciliação (1.3.0, pedido do Vinícius):** o que já está no app manda. Linha do extrato com mesmo tipo e valor até 4 dias de um lançamento seu (sem banco) completa o seu: ganha banco, forma, observação e a descrição se estava em branco (igual ao nome da categoria); data, valor e categoria ficam. Conta a pagar com o mesmo valor, de 7 dias antes até 45 dias depois do vencimento, vira paga no dia do banco, a mais antiga primeiro. Lançamento do mesmo banco perto da data conta como já importado (respeita edição). Banco diferente nunca casa. Extrato em PDF não é lido pelo app: o Claude converte e confere antes (saldo do dia ou total do mês batendo).
 - **Sprint 6.3** Resumo do ano com análise e Arrumar duplicados (1.4.0). Feito.
-- **Sprint 6.4** Mapa de calor com dias do salário e do VA, e quanto tempo cada um dura.
+- **Sprint 6.4** (1.5.0) Mapa de calor do mês e do ano com dias do salário e do VA, quanto tempo cada um dura, ritmo do mês, comparação com o mês passado, por banco, sobra por mês, totais do dia na lista, ordenar lançamentos e saldo em cada banco. Feito.
 - **Sprint 6.5** Notificações (conta vencendo amanhã, vence hoje, atrasada).
 - **Sprint 6.6** Comprovantes nas contas pagas (precisa do Vercel Blob ligado ao projeto).
 
@@ -391,7 +391,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Se faltar decisão, perguntar.** Não inventar regra de negócio.
 - **Sem travessão nos textos.** Português informal e direto.
 - **Idioma:** todo texto de UI, commit e comentário em PT-BR.
-- **Versão a cada entrega** (decidido em 07/10/2026): versionamento semântico `MAIOR.MENOR.CORREÇÃO`. Função nova sobe o MENOR, conserto sobe a CORREÇÃO, mudança que exige ação do usuário sobe o MAIOR. A cada entrega: subir `version` no package.json, escrever no CHANGELOG.md e criar a tag `vX.Y.Z` no Git. A versão, o commit e a hora do build aparecem no rodapé de Mais (pra conferir se a Vercel já publicou).
+- **Versão a cada entrega** (decidido em 07/10/2026): versionamento semântico `MAIOR.MENOR.CORREÇÃO`. Regra do Vinícius (07/10/2026): **implementar coisa nova sobe 0.1** (1.4 → 1.5), **bug ou coisa básica sobe 0.0.1** (1.5.0 → 1.5.1), **coisa mínima não muda o número**, só vai no envio. Mudança que exige ação do usuário sobe o MAIOR. Quando ele pedir várias coisas juntas, saem na mesma versão. A cada entrega: subir `version` no package.json, escrever no CHANGELOG.md e criar a tag `vX.Y.Z` no Git. A versão, o commit e a hora do build aparecem no rodapé de Mais (pra conferir se a Vercel já publicou).
 
 ---
 
@@ -447,7 +447,11 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 | Banco no lançamento | selo com sigla e cor, nunca o logo oficial |
 | Botão +           | só no Início e em Lançamentos; some ao rolar pra baixo |
 | Duplicados        | manual em dobro com extrato: fica o do extrato (decisão do Vinícius); apagar só depois de mostrar a lista |
-| Versões            | semântica, começando em 1.2.1; rodapé de Mais mostra versão e commit |
+| Versões            | nova função +0.1, bug/básico +0.0.1, mínimo não muda; rodapé de Mais mostra versão e commit |
+| Saldo por banco   | você informa o saldo uma vez; o app soma os lançamentos do banco |
+| Card do Início    | "Saldo real" virou "Sobrou no mês"; "Nas contas hoje" mostra o dinheiro nos bancos |
+| Duração           | salário e VA "acabam" quando 95% foi gasto |
+| Ordem da lista    | mais novos (padrão), mais antigos, maior, menor valor |
 | Migrations no deploy | `vercel-build` roda db:migrate antes do build |
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
@@ -463,7 +467,8 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 
 ## 12. Glossário rápido
 
-- **Saldo real:** o que é seu (entradas − gastos, sem empréstimo).
+- **Saldo real:** o que é seu (entradas − gastos do mês, sem empréstimo). Na tela do Início se chama **Sobrou no mês** (desde 1.5.0), pra não confundir com o dinheiro no banco.
+- **Nas contas hoje:** quanto tem em cada banco: saldo informado + lançamentos daquele banco depois do dia informado (4.11).
 - **Saldo em caixa:** o que tem na conta (saldo real − o que você emprestou + o que você pegou emprestado).
 - **Comprometido:** fixos + parcelas que ainda vão cair.
 - **Objetivo:** meta de poupança (caixinha).

@@ -75,3 +75,47 @@ export function mapaDeCalor(lancamentos: Lanc[], mes: Mes) {
   const vazias = new Date(Date.UTC(mes.ano, mes.mes - 1, 1)).getUTCDay();
   return { dias, vazias, maior };
 }
+
+// Ritmo do mês: gasto acumulado dia a dia, este mês x mês passado (mesmo dia do mês lado a lado).
+// O mês atual para em "ateDia" (hoje); o passado vai até o fim dele.
+export function ritmoDoMes(atual: Lanc[], anterior: Lanc[], mes: Mes, mesAnterior: Mes, ateDia = diasNoMes(mes)) {
+  const acumular = (lista: Lanc[], dias: number) => {
+    const porDia = new Array(dias + 1).fill(0);
+    for (const l of lista) if (contaComoGasto(l)) porDia[Number(l.data.slice(8, 10))] += l.valor;
+    let soma = 0;
+    return porDia.map((v) => (soma += v));
+  };
+  const a = acumular(atual, diasNoMes(mes));
+  const p = acumular(anterior, diasNoMes(mesAnterior));
+  const total = Math.max(diasNoMes(mes), diasNoMes(mesAnterior));
+  return Array.from({ length: total }, (_, i) => ({
+    dia: i + 1,
+    atual: i + 1 <= ateDia && i + 1 <= diasNoMes(mes) ? a[i + 1] : null,
+    anterior: i + 1 <= diasNoMes(mesAnterior) ? p[i + 1] : null,
+  }));
+}
+
+// Categorias que mais mudaram em relação ao mês passado (positivo = gastou mais)
+export function comparacaoCategorias(atual: Map<string, number>, anterior: Map<string, number>, nomes: Map<string, string>, quantos = 6) {
+  const ids = new Set([...atual.keys(), ...anterior.keys()]);
+  return [...ids]
+    .map((id) => ({ nome: nomes.get(id) ?? "Categoria", atual: atual.get(id) ?? 0, anterior: anterior.get(id) ?? 0 }))
+    .map((c) => ({ ...c, diferenca: c.atual - c.anterior }))
+    .filter((c) => c.diferenca !== 0)
+    .sort((a, b) => Math.abs(b.diferenca) - Math.abs(a.diferenca) || a.nome.localeCompare(b.nome))
+    .slice(0, quantos);
+}
+
+// De qual banco saiu o dinheiro. Aqui o que foi pago com o VA entra (é o banco "Alelo"); estimado e a pagar não.
+export function porBanco(lancamentos: (Lanc & { contaNome: string | null })[]) {
+  const mapa = new Map<string, number>();
+  for (const l of lancamentos) {
+    if (l.tipo !== "gasto" || l.status !== "confirmado") continue;
+    const nome = l.contaNome ?? "Sem banco";
+    mapa.set(nome, (mapa.get(nome) ?? 0) + l.valor);
+  }
+  const total = [...mapa.values()].reduce((s, v) => s + v, 0);
+  return [...mapa.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([nome, valor]) => ({ nome, valor, fracao: total > 0 ? valor / total : 0 }));
+}

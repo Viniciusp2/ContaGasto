@@ -9,7 +9,9 @@ import { IconeCategoria } from "@/components/icone-categoria";
 import { db } from "@/db";
 import { listarContas, listarFormasPagamento } from "@/db/consultas";
 import { categorias } from "@/db/schema";
+import { saldosHoje } from "@/db/saldos";
 import { USUARIO_PADRAO } from "@/db/usuario-padrao";
+import { hojeISO } from "@/lib/datas";
 import { TIPOS_FORMA, categoriaProtegida } from "@/lib/categorias";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +30,7 @@ export default async function Configuracoes() {
     .orderBy(asc(categorias.createdAt), asc(categorias.nome));
   const formas = await listarFormasPagamento();
   const bancos = await listarContas();
+  const saldos = await saldosHoje(hojeISO());
 
   return (
     <section className="flex flex-col gap-4">
@@ -87,11 +90,17 @@ export default async function Configuracoes() {
       <section className="flex flex-col gap-2 rounded-card bg-cartao p-4 shadow-suave">
         <h2 className="font-semibold">Bancos</h2>
         <p className="text-xs text-tinta-suave">
-          Aparecem como um selo com a sigla e a cor do banco em cada lançamento. Banco com lançamento não pode ser apagado.
+          Aparecem como um selo com a sigla e a cor do banco em cada lançamento. Informe o saldo de hoje de cada um uma vez: daí
+          pra frente o app soma os lançamentos daquele banco e mostra em Início, &quot;Nas contas hoje&quot;. Banco com lançamento não pode ser apagado.
         </p>
         <ul className="flex flex-col divide-y divide-fundo">
           {bancos.map((b) => (
-            <LinhaConta key={b.id} conta={{ id: b.id, nome: b.nome, sigla: b.sigla, cor: b.cor, corTexto: b.corTexto }} />
+            <LinhaConta
+              key={b.id}
+              conta={{ id: b.id, nome: b.nome, sigla: b.sigla, cor: b.cor, corTexto: b.corTexto }}
+              saldoAtual={saldos.linhas.find((l) => l.id === b.id)?.saldo ?? null}
+              saldoInformadoEm={b.saldoBaseEm}
+            />
           ))}
         </ul>
         <NovaConta />
