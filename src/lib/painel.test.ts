@@ -98,3 +98,40 @@ it("assinaturas do histórico: a mais recente de cada, sem as que já são fixo 
   );
   expect(r.map((a) => a.id)).toEqual(["s1", "n2"]);
 });
+
+import { entraNoDiaADia, planoAteFimDoMes } from "./painel";
+
+describe("plano até o fim do mês (base: dinheiro nos bancos)", () => {
+  const mes = { ano: 2026, mes: 10 };
+
+  it("livre = banco - falta pagar - objetivos; por dia e por semana até o dia 31", () => {
+    const p = planoAteFimDoMes({ nasContas: 127638, faltaPagar: 20000, guardadoObjetivos: 7638, gastoDiaADia30Dias: 60000, hoje: "2026-10-07", mes });
+    expect(p).toMatchObject({ livre: 100000, diasRestantes: 25, porDia: 4000, porSemana: 28000, ritmoDiario: 2000 });
+    expect(p.sobraNoFim).toBe(50000); // 25 dias x R$ 20 = R$ 500 de gasto; sobram R$ 500
+    expect(p.acabaNoDia).toBeNull();
+  });
+
+  it("no ritmo atual não chega ao fim do mês: diz o dia em que acaba", () => {
+    const p = planoAteFimDoMes({ nasContas: 50000, faltaPagar: 0, guardadoObjetivos: 0, gastoDiaADia30Dias: 150000, hoje: "2026-10-07", mes });
+    expect(p.ritmoDiario).toBe(5000);
+    expect(p.acabaNoDia).toBe(17); // R$ 500 / R$ 50 por dia = 10 dias depois de hoje
+  });
+
+  it("sem folga: falta pagar mais do que tem", () => {
+    const p = planoAteFimDoMes({ nasContas: 127638, faltaPagar: 200000, guardadoObjetivos: 0, gastoDiaADia30Dias: 0, hoje: "2026-10-07", mes });
+    expect(p).toMatchObject({ livre: -72362, porDia: null, porSemana: null, acabaNoDia: 7 });
+  });
+
+  it("perto do fim do mês a semana não passa do que sobra", () => {
+    const p = planoAteFimDoMes({ nasContas: 10000, faltaPagar: 0, guardadoObjetivos: 0, gastoDiaADia30Dias: 0, hoje: "2026-10-29", mes });
+    expect(p).toMatchObject({ diasRestantes: 3, porDia: 3333, porSemana: 10000 });
+  });
+
+  it("dia a dia: sem contas e sem VA", () => {
+    const base = { tipo: "gasto", status: "confirmado", formaTipo: "debito", ehConta: false };
+    expect(entraNoDiaADia(base)).toBe(true);
+    expect(entraNoDiaADia({ ...base, ehConta: true })).toBe(false);
+    expect(entraNoDiaADia({ ...base, formaTipo: "beneficio" })).toBe(false);
+    expect(entraNoDiaADia({ ...base, status: "a_pagar" })).toBe(false);
+  });
+});

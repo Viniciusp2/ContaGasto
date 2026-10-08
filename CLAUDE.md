@@ -176,6 +176,8 @@ Saldo real não é o mesmo que dinheiro livre. Ter R$ 2.000 de saldo com R$ 1.50
 
 **Disponível para gastar = saldo real − reservado em objetivos − compromissos que ainda vão cair até o fim do mês.**
 
+**Revisto em 08/10/2026 (1.6.6, pedido do Vinícius):** com os saldos dos bancos informados, o Disponível parte do **dinheiro nos bancos**: nas contas hoje (sem VA) − o que falta pagar no mês − **tudo** que está guardado nos objetivos (está no banco, mas já tem destino). Mostra por dia e por semana até o dia 31 (semana nunca passa do livre). A **previsão** vira o **ritmo**: média do dia a dia dos últimos 30 dias (gasto confirmado, sem VA, sem o que é conta pela regra de Pagamentos) × dias que faltam; diz se dá até o fim do mês (e quanto sobra) ou o dia em que acaba. Sem saldos informados, vale a regra antiga abaixo.
+
 - **Reservado em objetivos:** saldo de todas as caixinhas (4.7).
 - **Compromissos:** fixos, parcelas e fixas variáveis (pelo valor estimado) que ainda vão cair no mês. Sem filtro por valor: tudo que vai cair conta.
 - O saldo real **não muda** ao guardar em objetivo. Só o disponível cai.
@@ -372,6 +374,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Sprint 6.4** (1.5.0) Mapa de calor do mês e do ano com dias do salário e do VA, quanto tempo cada um dura, ritmo do mês, comparação com o mês passado, por banco, sobra por mês, totais do dia na lista, ordenar lançamentos e saldo em cada banco. Feito.
 - **Sprint 6.8** (1.6.0) Conferir: curadoria de erros em Mais (por que o disponível difere do banco, bate com o banco, atrasadas sem pagamento, a pagar que parece paga, possíveis repetidos, sem banco) + Pagamentos conta as contas soltas já pagas. Feito.
 - **Sprint 6.9** (1.6.5) Fixos com CRUD completo: editar tudo (inclusive banco, dia e parcelas), apagar de vez com 3 modos, virar fixo a partir de um lançamento, assinaturas do histórico no cartão e em Fixos. Feito.
+- **Sprint 6.10** (1.6.6) Disponível e previsão com base no dinheiro dos bancos (por dia, por semana, ritmo). Feito.
 - **Sprint 6.5** Notificações (conta vencendo amanhã, vence hoje, atrasada).
 - **Sprint 6.6** Comprovantes nas contas pagas (precisa do Vercel Blob ligado ao projeto).
 
@@ -470,6 +473,8 @@ O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados ent
 | Apagar fixo       | manter histórico (recomendado), apagar a pagar, ou apagar tudo; pede APAGAR |
 | Virar fixo        | o lançamento vira a 1ª vez; não preenche meses que já acabaram |
 | Assinaturas       | fixos em Assinaturas + cobranças da categoria nos últimos 45 dias que não são fixo |
+| Disponível (1.6.6) | com saldos informados: bancos − falta pagar − objetivos; por dia e por semana até o dia 31 |
+| Previsão (1.6.6)  | ritmo do dia a dia nos últimos 30 dias (sem contas); dá até o fim ou dia em que acaba |
 | Versões            | nova função +0.1, bug/básico +0.0.1, mínimo não muda; rodapé de Mais mostra versão e commit |
 | Saldo por banco   | você informa o saldo uma vez; o app soma os lançamentos do banco |
 | Saldo em caixa    | saiu da tela em 1.5.1 (confundia com "Nas contas hoje"); cálculo mantido |

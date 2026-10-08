@@ -61,3 +61,44 @@ export function assinaturasDoHistorico(
   }
   return [...ultima.values()].sort((a, b) => b.valor - a.valor);
 }
+
+// Plano até o fim do mês com base no dinheiro dos bancos (pedido em 08/10/2026).
+// Livre = nas contas hoje - o que ainda falta pagar no mês - o que está guardado nos objetivos (o dinheiro da caixinha
+// continua no banco, mas já tem destino). Dividido pelos dias que faltam (contando hoje), dá o máximo por dia e por semana.
+// Ritmo = média do dia a dia nos últimos 30 dias (sem contas, que já estão no "falta pagar"): diz até quando o dinheiro dura.
+export const DIAS_RITMO = 30;
+
+export function planoAteFimDoMes({
+  nasContas,
+  faltaPagar,
+  guardadoObjetivos,
+  gastoDiaADia30Dias,
+  hoje,
+  mes,
+}: {
+  nasContas: number;
+  faltaPagar: number;
+  guardadoObjetivos: number;
+  gastoDiaADia30Dias: number;
+  hoje: string;
+  mes: Mes;
+}) {
+  const diaHoje = Number(hoje.slice(8, 10));
+  const diasRestantes = diasNoMes(mes) - diaHoje + 1;
+  const livre = nasContas - faltaPagar - guardadoObjetivos;
+  const porDia = livre > 0 ? Math.floor(livre / diasRestantes) : null;
+  const porSemana = porDia === null ? null : Math.min(porDia * 7, livre);
+  const ritmoDiario = Math.round(gastoDiaADia30Dias / DIAS_RITMO);
+
+  // No ritmo de agora: dá até o fim do mês (e sobra quanto) ou acaba em que dia
+  const gastoAteOFim = ritmoDiario * diasRestantes;
+  const sobraNoFim = livre - gastoAteOFim;
+  let acabaNoDia: number | null = null;
+  if (sobraNoFim < 0) acabaNoDia = livre <= 0 || ritmoDiario === 0 ? diaHoje : diaHoje + Math.floor(livre / ritmoDiario);
+  return { livre, diasRestantes, porDia, porSemana, ritmoDiario, sobraNoFim, acabaNoDia };
+}
+
+// O que entra no "dia a dia" do ritmo: gasto confirmado, fora do VA e que não é conta (luz, aluguel, assinatura...).
+export function entraNoDiaADia(l: { tipo: string; status: string; formaTipo: string | null; ehConta: boolean }) {
+  return l.tipo === "gasto" && l.status === "confirmado" && l.formaTipo !== "beneficio" && !l.ehConta;
+}

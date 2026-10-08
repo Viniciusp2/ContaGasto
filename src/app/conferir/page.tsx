@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, CircleCheck, CopyX, Landmark, Receipt, SearchCheck, Unlink } from "lucide-react";
 import { apagarRepetido, juntarPagamento, marcarCerto } from "@/app/conferir/actions";
 import { BateComBanco, BotaoAcao } from "@/components/conferir-acoes";
-import { lancamentosParaCalculo, listarEmprestimosParaCalculo } from "@/db/consultas";
+import { lancamentosParaCalculo, listarEmprestimosParaCalculo, listarObjetivos } from "@/db/consultas";
 import { dadosDaConferencia } from "@/db/conferir";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { compromissosDoMes, guardadoNoMes } from "@/db/painel";
@@ -55,12 +55,13 @@ export default async function Conferir() {
   const sem = semBanco(lista, primeiroSaldoInformado, hoje);
   const pontos = parecemPagas.length + atrasadas.length + repetidos.length + sem.length;
 
-  // Por que o Disponível é diferente do banco: decompõe a diferença em pedaços que dá pra conferir
+  // Por que o Disponível é diferente do banco: decompõe a diferença em pedaços que dá pra conferir.
+  // Mesma conta do Início: com saldos informados, parte do banco (1.6.6); sem eles, do que sobrou no mês.
   const sobrou = resumoDoMes(calc, emprestimos, hoje).saldoReal;
   const faltaPagar = compromissos.reduce((s, c) => s + c.valor, 0);
-  const disponivel = disponivelParaGastar(sobrou, guardado, faltaPagar);
   const noBanco = saldos.algumInformado ? saldos.total : null;
-  const deAntes = noBanco !== null ? noBanco - sobrou : null;
+  const guardadoTotal = (await listarObjetivos()).reduce((s, o) => s + o.saldo, 0);
+  const disponivel = noBanco !== null ? noBanco - faltaPagar - guardadoTotal : disponivelParaGastar(sobrou, guardado, faltaPagar);
   const bancos = saldos.linhas.filter((b) => !b.va);
 
   return (
@@ -93,22 +94,18 @@ export default async function Conferir() {
           <div className="flex flex-col gap-1 rounded-2xl bg-fundo p-3 text-sm">
             <p className="font-semibold">A diferença de {formatarCentavos(noBanco - disponivel)} vem de:</p>
             <p className={linha}>
-              <span>Dinheiro que já estava no banco antes deste mês</span>
-              <span className="tabular-nums">{formatarCentavos(deAntes!)}</span>
-            </p>
-            <p className={linha}>
               <span>O que ainda falta pagar este mês</span>
               <span className="tabular-nums">{formatarCentavos(faltaPagar)}</span>
             </p>
-            {guardado !== 0 && (
+            {guardadoTotal !== 0 && (
               <p className={linha}>
-                <span>Guardado nos objetivos este mês</span>
-                <span className="tabular-nums">{formatarCentavos(guardado)}</span>
+                <span>Guardado nos objetivos (está no banco, mas já tem destino)</span>
+                <span className="tabular-nums">{formatarCentavos(guardadoTotal)}</span>
               </p>
             )}
             <p className="mt-1 text-xs text-tinta-suave">
-              O Disponível olha só este mês e já tira o que falta pagar, por segurança. O banco mostra tudo que você tem. Se a linha
-              &quot;antes deste mês&quot; parecer errada, confira os bancos abaixo.
+              O Disponível parte do que tem nos bancos e tira o que já tem destino. Se o &quot;Nas contas hoje&quot; estiver diferente do app do
+              banco, confira os bancos abaixo.
             </p>
           </div>
         )}

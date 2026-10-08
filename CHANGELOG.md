@@ -9,6 +9,13 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.6.6 (08/10/2026)
+
+- **Disponível até o fim do mês** com base no dinheiro dos bancos (quando os saldos estão informados): nas contas hoje menos o que falta pagar no mês menos o que está guardado nos objetivos. Mostra **quanto dá pra gastar por dia e por semana** até o dia 31, e o VA à parte (quanto dá por dia pra comida).
+- **Previsão no seu ritmo**: média do dia a dia nos últimos 30 dias (sem contas, que já estão no "falta pagar"). Diz se o dinheiro dá até o fim do mês (e quanto sobra) ou em que dia acaba.
+- Sem saldos informados, continua a conta antiga (só o mês), com a previsão de antes.
+- Conferir usa a mesma conta do Início.
+
 ## 1.6.5 (07/10/2026)
 
 - **Editar fixo por completo** (Fixos e parcelas, botão de lápis): descrição, valor, categoria, forma de pagamento, **banco**, dia (dia do mês, Nº dia útil, último dia útil), total de parcelas, tipo da conta e débito automático. Pode aplicar as mudanças também nas que ainda estão a pagar; o que já foi pago fica como estava.

@@ -1,13 +1,14 @@
 // Painel do Início (Sprint 3.3): junta o que vai cair, o que foi guardado e as assinaturas.
 import { and, between, eq, inArray, lte, sql } from "drizzle-orm";
 import { intervaloDoMes, somarMeses, type Mes } from "@/lib/datas";
-import { assinaturasDoHistorico } from "@/lib/painel";
+import { ehContaDoMes } from "@/lib/contas";
+import { assinaturasDoHistorico, DIAS_RITMO, entraNoDiaADia } from "@/lib/painel";
 import { mediaEstimada, ocorrenciasNoIntervalo } from "@/lib/recorrencias";
 import { db } from ".";
 import { listarRecorrencias } from "./consultas";
 import { valoresConfirmadosRecentes } from "./gerar-recorrencias";
 import { ocorrenciasJaLancadas } from "./pagamentos";
-import { categorias, emprestimos, lancamentos, movimentosObjetivo } from "./schema";
+import { categorias, emprestimos, lancamentos, movimentosObjetivo, formasPagamento } from "./schema";
 import { USUARIO_PADRAO } from "./usuario-padrao";
 
 const userId = USUARIO_PADRAO.id;
@@ -167,4 +168,26 @@ export async function assinaturasDetectadas(hoje: string) {
     assinaturasAtivas(hoje),
   ]);
   return assinaturasDoHistorico(lista, fixos.itens.map((f) => f.rec.descricao), hoje);
+}
+
+// Quanto foi o dia a dia nos últimos 30 dias (sem contas e sem VA): base do ritmo do plano até o fim do mês
+export async function gastoDiaADiaRecente(hoje: string) {
+  const inicio = new Date(Date.UTC(Number(hoje.slice(0, 4)), Number(hoje.slice(5, 7)) - 1, Number(hoje.slice(8, 10)) - (DIAS_RITMO - 1)))
+    .toISOString()
+    .slice(0, 10);
+  const lista = await db
+    .select({
+      tipo: lancamentos.tipo,
+      status: lancamentos.status,
+      valor: lancamentos.valor,
+      descricao: lancamentos.descricao,
+      recorrenciaId: lancamentos.recorrenciaId,
+      categoriaNome: categorias.nome,
+      formaTipo: formasPagamento.tipo,
+    })
+    .from(lancamentos)
+    .innerJoin(categorias, eq(lancamentos.categoriaId, categorias.id))
+    .leftJoin(formasPagamento, eq(lancamentos.formaPagamentoId, formasPagamento.id))
+    .where(and(eq(lancamentos.userId, userId), eq(lancamentos.tipo, "gasto"), between(lancamentos.data, inicio, hoje)));
+  return lista.filter((l) => entraNoDiaADia({ ...l, ehConta: ehContaDoMes(l) })).reduce((s, l) => s + l.valor, 0);
 }

@@ -13,8 +13,17 @@ import { obterAcesso } from "@/db/acesso";
 import { metasDoMes } from "@/db/metas-do-mes";
 import { BarraProgresso } from "@/components/barra-progresso";
 import { contaComoGasto, resumoDoMes, saldoVA } from "@/lib/calculos";
-import { disponivelParaGastar, partesDaPrevisao, possoGastarPorDia } from "@/lib/painel";
-import { assinaturasAtivas, assinaturasDetectadas, comprometidoProximoMes, compromissosDoMes, entradasPrevistasDoMes, guardadoNoMes } from "@/db/painel";
+import { disponivelParaGastar, partesDaPrevisao, planoAteFimDoMes, possoGastarPorDia } from "@/lib/painel";
+import {
+  assinaturasAtivas,
+  assinaturasDetectadas,
+  comprometidoProximoMes,
+  compromissosDoMes,
+  entradasPrevistasDoMes,
+  gastoDiaADiaRecente,
+  guardadoNoMes,
+} from "@/db/painel";
+import { CartaoPlano, CartaoRitmo } from "@/components/plano";
 import { CartaoDisponivel, CartaoPrevisao, CartoesDoProximoMes } from "@/components/painel";
 import { LinhaDoTempo } from "@/components/linha-do-tempo";
 import { montarLinhaDoTempo } from "@/lib/linha-do-tempo";
@@ -55,6 +64,18 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   const pendentes = mesAtual ? await contasPendentes(hoje, 3) : [];
   // Quanto tem em cada banco hoje (só faz sentido no mês atual)
   const nasContas = mesAtual ? await saldosHoje(hoje) : null;
+  // Com os saldos dos bancos informados, o disponível parte do dinheiro de verdade (1.6.6); sem eles, do que sobrou no mês
+  const plano =
+    painel && nasContas?.algumInformado
+      ? planoAteFimDoMes({
+          nasContas: nasContas.total,
+          faltaPagar: painel.totalCompromissos,
+          guardadoObjetivos: guardado,
+          gastoDiaADia30Dias: await gastoDiaADiaRecente(hoje),
+          hoje,
+          mes,
+        })
+      : null;
 
   async function montarPainel(lista: typeof lancamentos, saldoReal: number, entradas: number) {
     const [compromissos, guardadoMes, proximo, assinaturas, entradasPrevistas, doMes, detectadas] = await Promise.all([
@@ -156,7 +177,18 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
 
       {nasContas && <NasContas {...nasContas} />}
 
-      {painel && (
+      {painel && plano && (
+        <CartaoPlano
+          plano={plano}
+          nasContas={nasContas!.total}
+          faltaPagar={painel.totalCompromissos}
+          guardadoObjetivos={guardado}
+          va={va}
+          pendentes={painel.compromissos.map((c) => ({ chave: c.chave, descricao: c.descricao, valor: c.valor, data: c.data, detalhe: c.detalhe }))}
+        />
+      )}
+
+      {painel && !plano && (
         <CartaoDisponivel
           disponivel={painel.disponivel}
           porDia={painel.porDia}
@@ -186,7 +218,11 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
 
       {painel && (
         <>
-          <CartaoPrevisao partes={painel.previsao} entradas={painel.entradas} />
+          {plano ? (
+            <CartaoRitmo plano={plano} hojeDia={Number(hoje.slice(8, 10))} />
+          ) : (
+            <CartaoPrevisao partes={painel.previsao} entradas={painel.entradas} />
+          )}
           <LinhaDoTempo linha={painel.linha} hoje={hoje} mesTexto={mesParaTexto(mes)} />
           <CartoesDoProximoMes
             comprometido={painel.proximo.total}
