@@ -69,6 +69,7 @@ export async function gerarRecorrencias(hoje = hojeISO()) {
           valor,
           categoriaId: rec.categoriaId,
           formaPagamentoId: rec.formaPagamentoId,
+          contaId: rec.contaId,
           tipo: categoriaTipo,
           subtipoEntrada: categoriaTipo === "entrada" ? subtipoDaCategoria(categoriaNome) : null,
           recorrenciaId: rec.id,

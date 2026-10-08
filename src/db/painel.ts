@@ -1,6 +1,7 @@
 // Painel do Início (Sprint 3.3): junta o que vai cair, o que foi guardado e as assinaturas.
 import { and, between, eq, inArray, lte, sql } from "drizzle-orm";
 import { intervaloDoMes, somarMeses, type Mes } from "@/lib/datas";
+import { assinaturasDoHistorico } from "@/lib/painel";
 import { mediaEstimada, ocorrenciasNoIntervalo } from "@/lib/recorrencias";
 import { db } from ".";
 import { listarRecorrencias } from "./consultas";
@@ -153,4 +154,17 @@ export async function guardadoNoMes(mes: Mes) {
 // o disponível não conta com elas.
 export async function entradasPrevistasDoMes(hoje: string, mes: Mes) {
   return recorrenciasNoIntervalo(hoje, intervaloDoMes(mes).fim, "entrada");
+}
+
+// Assinaturas que estão no histórico (vindas do extrato ou lançadas soltas) mas ainda não são fixo
+export async function assinaturasDetectadas(hoje: string) {
+  const [lista, fixos] = await Promise.all([
+    db
+      .select({ id: lancamentos.id, data: lancamentos.data, valor: lancamentos.valor, descricao: lancamentos.descricao, recorrenciaId: lancamentos.recorrenciaId })
+      .from(lancamentos)
+      .innerJoin(categorias, eq(lancamentos.categoriaId, categorias.id))
+      .where(and(eq(lancamentos.userId, userId), eq(lancamentos.tipo, "gasto"), eq(lancamentos.status, "confirmado"), eq(categorias.nome, "Assinaturas"))),
+    assinaturasAtivas(hoje),
+  ]);
+  return assinaturasDoHistorico(lista, fixos.itens.map((f) => f.rec.descricao), hoje);
 }

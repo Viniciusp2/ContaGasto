@@ -161,6 +161,8 @@ export const recorrencias = pgTable(
     // Pagamentos do mês (6.1): tipo da conta (luz, água...) e se sai sozinho (débito automático)
     tipoConta: text("tipo_conta"),
     pagamentoAutomatico: boolean("pagamento_automatico").notNull().default(false),
+    // Banco de onde sai (1.6.5): os lançamentos gerados já nascem com ele, pro saldo do banco bater
+    contaId: uuid("conta_id").references(() => contas.id, { onDelete: "set null" }),
     ...datas(),
   },
   (t) => [

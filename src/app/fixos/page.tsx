@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { ArrowLeft, Plus, Repeat } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, Repeat, Tv } from "lucide-react";
 import { BotaoEncerrar } from "@/components/botao-encerrar";
 import { BotaoPausar, BotaoRetomar } from "@/components/botoes-pausa";
+import { BotaoVirarFixo } from "@/components/form-fixo";
+import { assinaturasDetectadas } from "@/db/painel";
 import { IconeCategoria } from "@/components/icone-categoria";
 import { listarRecorrencias } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
@@ -20,7 +22,12 @@ const rotuloTipo = {
 export default async function Fixos() {
   await gerarRecorrencias();
   const hoje = hojeISO();
-  const linhas = await listarRecorrencias();
+  const [linhas, detectadas] = await Promise.all([listarRecorrencias(), assinaturasDetectadas(hoje)]);
+  const editar = (id: string) => (
+    <Link href={`/fixos/${id}/editar`} aria-label="Editar" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-fundo">
+      <Pencil size={16} aria-hidden />
+    </Link>
+  );
 
   const itens = linhas.map((l) => {
     const cartao = l.formaTipo === "credito" ? { diaFechamento: l.diaFechamento, diaVencimento: l.diaVencimento } : null;
@@ -43,6 +50,31 @@ export default async function Fixos() {
           Viram lançamento sozinhos quando a data chega. Pra criar, use o + e escolha como repete.
         </p>
       </div>
+
+      {detectadas.length > 0 && (
+        <section className="flex flex-col gap-2 rounded-card bg-cartao p-4 shadow-suave">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <Tv size={18} aria-hidden /> Assinaturas que ainda não são fixo
+          </h2>
+          <p className="text-sm text-tinta-suave">
+            Apareceram nos últimos 45 dias (do extrato ou lançadas soltas). Virando fixo, entram nas assinaturas, nos compromissos e em
+            Pagamentos todo mês.
+          </p>
+          <ul className="flex flex-col gap-2">
+            {detectadas.map((a) => (
+              <li key={a.id} className="flex items-center gap-3 rounded-2xl bg-fundo p-3 text-sm">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{a.descricao}</span>
+                  <span className="block text-xs text-tinta-suave">
+                    {formatarCentavos(a.valor)} · última {diaCurto(a.data)}
+                  </span>
+                </span>
+                <BotaoVirarFixo lancamentoId={a.id} compacto />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {ativos.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-card bg-cartao p-8 text-center shadow-suave">
@@ -110,6 +142,7 @@ export default async function Fixos() {
                 )}
               </p>
               <span className="flex items-center gap-2">
+                {editar(i.rec.id)}
                 {i.rec.tipo !== "temporaria" && <BotaoPausar id={i.rec.id} />}
                 <BotaoEncerrar id={i.rec.id} />
               </span>
@@ -132,6 +165,7 @@ export default async function Fixos() {
                   <span className="block truncate font-semibold">{i.rec.descricao}</span>
                   <span className="block text-sm text-tinta-suave tabular-nums">{formatarCentavos(i.rec.valor)} · pausado</span>
                 </span>
+                {editar(i.rec.id)}
                 <BotaoRetomar id={i.rec.id} />
               </li>
             ))}
@@ -151,7 +185,10 @@ export default async function Fixos() {
                   <IconeCategoria nome={i.categoriaIcone} size={16} />
                   <span className="truncate">{i.rec.descricao}</span>
                 </span>
-                <span className="shrink-0 tabular-nums">{formatarCentavos(i.rec.valor)}</span>
+                <span className="flex shrink-0 items-center gap-2 tabular-nums">
+                  {formatarCentavos(i.rec.valor)}
+                  {editar(i.rec.id)}
+                </span>
               </li>
             ))}
           </ul>

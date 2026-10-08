@@ -78,6 +78,13 @@
       "when": 1791424455362,
       "tag": "0010_conferir",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791425746871,
+      "tag": "0011_fixo_com_banco",
+      "breakpoints": true
     }
   ]
 }

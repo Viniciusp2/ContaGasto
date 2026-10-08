@@ -271,7 +271,7 @@ Todas as tabelas com `id`, `user_id`, `created_at`, `updated_at`. RLS por usuár
 - **categorias** — nome, emoji, icone (nome do ícone lucide), cor, tipo (gasto|entrada), ativa.
 - **formas_pagamento** — nome, tipo (pix|debito|credito|dinheiro|boleto|beneficio), dia_fechamento e dia_vencimento (só crédito, nullable).
 - **lancamentos** — data (quando o dinheiro sai), data_compra, competencia (`YYYY-MM`, só em lançamento gerado por recorrência), descricao, valor, categoria_id, forma_pagamento_id, tipo (gasto|entrada), subtipo_entrada, recorrencia_id (nullable), parcela (nullable, o X de "parcela X/N"), status (estimado|confirmado|a_pagar, default confirmado), vencimento (quando a conta vence; ao pagar, data vira o dia do pagamento), holerite (jsonb opcional: bruto e descontos), obs. subtipo_entrada ganha `beneficio`.
-- **recorrencias** — tipo (fixa|fixa_variavel|temporaria), descricao, valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa, dia_vencimento, valor_estimado, meses_media (default 3), gerada_ate (`YYYY-MM`), dia_util (Nº dia útil; -1 = último; null = dia fixo), sabado_util (default true), tipo_conta (luz, água...), pagamento_automatico (débito automático, default false).
+- **recorrencias** — conta_id (banco, 1.6.5), tipo (fixa|fixa_variavel|temporaria), descricao, valor, dia_do_mes, categoria_id, forma_pagamento_id, total_parcelas (nullable), parcela_atual, data_inicio, data_fim (nullable), ativa, dia_vencimento, valor_estimado, meses_media (default 3), gerada_ate (`YYYY-MM`), dia_util (Nº dia útil; -1 = último; null = dia fixo), sabado_util (default true), tipo_conta (luz, água...), pagamento_automatico (débito automático, default false).
 - **pagamentos_fatura** — forma_pagamento_id, competencia (`YYYY-MM`), pago_em. Fatura marcada como paga (só controle, 4.14).
 - **metas** — categoria_id, limite_mensal.
 - **objetivos** — nome, emoji, valor_alvo, data_alvo. **Sem `valor_guardado`**: o saldo do objetivo é a soma dos movimentos, num lugar só (ver abaixo).
@@ -371,6 +371,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Sprint 6.3** Resumo do ano com análise e Arrumar duplicados (1.4.0). Feito.
 - **Sprint 6.4** (1.5.0) Mapa de calor do mês e do ano com dias do salário e do VA, quanto tempo cada um dura, ritmo do mês, comparação com o mês passado, por banco, sobra por mês, totais do dia na lista, ordenar lançamentos e saldo em cada banco. Feito.
 - **Sprint 6.8** (1.6.0) Conferir: curadoria de erros em Mais (por que o disponível difere do banco, bate com o banco, atrasadas sem pagamento, a pagar que parece paga, possíveis repetidos, sem banco) + Pagamentos conta as contas soltas já pagas. Feito.
+- **Sprint 6.9** (1.6.5) Fixos com CRUD completo: editar tudo (inclusive banco, dia e parcelas), apagar de vez com 3 modos, virar fixo a partir de um lançamento, assinaturas do histórico no cartão e em Fixos. Feito.
 - **Sprint 6.5** Notificações (conta vencendo amanhã, vence hoje, atrasada).
 - **Sprint 6.6** Comprovantes nas contas pagas (precisa do Vercel Blob ligado ao projeto).
 
@@ -465,6 +466,10 @@ O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados ent
 | Várias sessões    | ver seção 10.1: checar, pausar e esperar, deixar resumo, justificar o que apagar |
 | Conferir          | só mostra e sugere; apaga ou junta só com toque seu; repetido = pelo menos um lançado à mão, mesmo valor, até 1 dia |
 | Pagamentos (o que entra) | fixos, a pagar e contas soltas pagas: categorias Contas, Educação, Assinaturas, Pagamento de empréstimo, boleto ou aluguel |
+| Editar fixo       | muda o fixo e (opcional, padrão sim) as que estão a pagar; o pago nunca muda |
+| Apagar fixo       | manter histórico (recomendado), apagar a pagar, ou apagar tudo; pede APAGAR |
+| Virar fixo        | o lançamento vira a 1ª vez; não preenche meses que já acabaram |
+| Assinaturas       | fixos em Assinaturas + cobranças da categoria nos últimos 45 dias que não são fixo |
 | Versões            | nova função +0.1, bug/básico +0.0.1, mínimo não muda; rodapé de Mais mostra versão e commit |
 | Saldo por banco   | você informa o saldo uma vez; o app soma os lançamentos do banco |
 | Saldo em caixa    | saiu da tela em 1.5.1 (confundia com "Nas contas hoje"); cálculo mantido |

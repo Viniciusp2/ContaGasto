@@ -9,6 +9,15 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.6.5 (07/10/2026)
+
+- **Editar fixo por completo** (Fixos e parcelas, botão de lápis): descrição, valor, categoria, forma de pagamento, **banco**, dia (dia do mês, Nº dia útil, último dia útil), total de parcelas, tipo da conta e débito automático. Pode aplicar as mudanças também nas que ainda estão a pagar; o que já foi pago fica como estava.
+- **Apagar fixo de vez**, escolhendo: manter o que já foi lançado (recomendado), apagar também o que está a pagar, ou apagar tudo que ele gerou. Pede APAGAR digitado.
+- **Virar fixo**: um lançamento que já existe passa a repetir todo mês (na tela de editar lançamento). Não inventa meses que já passaram.
+- **Assinaturas** do extrato (Spotify, Netflix...) agora contam no cartão de Assinaturas e aparecem em Fixos com "Virar fixo".
+- Fixo pode ter banco: o que ele gera já sai com o banco, pro saldo do banco bater.
+- Versão escolhida pelo Vinícius (1.6.5): a 1.7.0 fica pro Assistente com IA.
+
 ## 1.6.0 (07/10/2026)
 
 - **Conferir** (Mais): caça o que pode fazer os números não baterem. Explica a diferença entre o Disponível e o que tem no banco (dinheiro de antes do mês + o que falta pagar + guardado), compara cada banco com o saldo que você digita do app do banco (e acerta se quiser), mostra contas atrasadas sem pagamento achado, contas a pagar que parecem já pagas (junta as duas com um toque), possíveis repetidos (apagar um ou "está certo, são dois") e lançamentos sem banco. Nada é apagado sem você mandar.

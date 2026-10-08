@@ -80,3 +80,21 @@ it("previsão em partes: já saiu + ainda vai cair + dia a dia (média dos avuls
   const p = partesDaPrevisao({ gastoAteHoje: 120000, avulsoAteHoje: 14000, compromissos: 30000, hoje: "2026-10-07", mes: { ano: 2026, mes: 10 } });
   expect(p).toEqual({ jaSaiu: 120000, aindaVaiCair: 30000, ritmoDiario: 2000, diasQueFaltam: 24, diaADia: 48000, total: 198000 });
 });
+
+import { assinaturasDoHistorico } from "./painel";
+
+it("assinaturas do histórico: a mais recente de cada, sem as que já são fixo nem as antigas", () => {
+  const r = assinaturasDoHistorico(
+    [
+      { id: "n1", data: "2026-08-10", valor: 2090, descricao: "Netflix", recorrenciaId: null },
+      { id: "n2", data: "2026-09-10", valor: 2090, descricao: "Netflix", recorrenciaId: null },
+      { id: "s1", data: "2026-10-05", valor: 2390, descricao: "Spotify", recorrenciaId: null },
+      { id: "g1", data: "2026-06-08", valor: 11000, descricao: "Google", recorrenciaId: null }, // mais de 45 dias
+      { id: "c1", data: "2026-10-01", valor: 11000, descricao: "Claude", recorrenciaId: null }, // já é fixo
+      { id: "x1", data: "2026-10-02", valor: 500, descricao: "Gerado", recorrenciaId: "r1" },
+    ],
+    ["claude"],
+    "2026-10-07",
+  );
+  expect(r.map((a) => a.id)).toEqual(["s1", "n2"]);
+});

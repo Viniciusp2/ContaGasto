@@ -1,0 +1,2 @@
+ALTER TABLE "recorrencias" ADD COLUMN "conta_id" uuid;--> statement-breakpoint
+ALTER TABLE "recorrencias" ADD CONSTRAINT "recorrencias_conta_id_contas_id_fk" FOREIGN KEY ("conta_id") REFERENCES "public"."contas"("id") ON DELETE set null ON UPDATE no action;

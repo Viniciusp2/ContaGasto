@@ -59,6 +59,7 @@ export async function salvarLancamento(_anterior: EstadoForm, formData: FormData
       valorEstimado: d.repetir === "fixa_variavel" ? d.valor : null,
       tipoConta: d.tipoConta,
       pagamentoAutomatico: d.automatico,
+      contaId: d.contaId,
     });
     await gerarRecorrencias();
     revalidatePath("/", "layout");

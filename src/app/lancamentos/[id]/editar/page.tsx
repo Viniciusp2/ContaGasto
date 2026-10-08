@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { BotaoApagar } from "@/components/botao-apagar";
 import { FormLancamento } from "@/components/form-lancamento";
+import { BotaoVirarFixo } from "@/components/form-fixo";
 import { buscarLancamento, listarCategoriasAtivas, listarContas, listarFormasPagamento } from "@/db/consultas";
 import { hojeISO, mesDe, mesParaTexto } from "@/lib/datas";
 import { ehUuid } from "@/lib/validar-lancamento";
@@ -62,6 +63,19 @@ export default async function EditarLancamento({ params }: PageProps<"/lancament
           holerite: lancamento.holerite,
         }}
       />
+      {lancamento.recorrenciaId ? (
+        <Link href={`/fixos/${lancamento.recorrenciaId}/editar`} className="flex min-h-11 items-center justify-center rounded-2xl bg-cartao text-sm font-semibold underline shadow-suave">
+          Esse lançamento é de um fixo: editar o fixo
+        </Link>
+      ) : (
+        <section className="flex flex-col gap-2 rounded-card bg-cartao p-4 shadow-suave">
+          <h2 className="font-semibold">Repetir todo mês</h2>
+          <p className="text-sm text-tinta-suave">
+            Vira um fixo a partir deste lançamento (ele mesmo é a primeira vez, nada duplica). Os próximos meses aparecem em Pagamentos.
+          </p>
+          <BotaoVirarFixo lancamentoId={lancamento.id} />
+        </section>
+      )}
       <BotaoApagar id={lancamento.id} mes={mes} />
     </section>
   );

@@ -45,6 +45,7 @@ const MENSAGENS: Record<string, string> = {
   editado: "Alterações salvas",
   fixo: "Pronto, vai repetir sozinho",
   conta: "Conta cadastrada",
+  apagado: "Apagado",
 };
 
 // Check animado depois de salvar (a action manda ?salvo=...). Some sozinho e limpa a URL.

@@ -14,7 +14,7 @@ import { metasDoMes } from "@/db/metas-do-mes";
 import { BarraProgresso } from "@/components/barra-progresso";
 import { contaComoGasto, resumoDoMes, saldoVA } from "@/lib/calculos";
 import { disponivelParaGastar, partesDaPrevisao, possoGastarPorDia } from "@/lib/painel";
-import { assinaturasAtivas, comprometidoProximoMes, compromissosDoMes, entradasPrevistasDoMes, guardadoNoMes } from "@/db/painel";
+import { assinaturasAtivas, assinaturasDetectadas, comprometidoProximoMes, compromissosDoMes, entradasPrevistasDoMes, guardadoNoMes } from "@/db/painel";
 import { CartaoDisponivel, CartaoPrevisao, CartoesDoProximoMes } from "@/components/painel";
 import { LinhaDoTempo } from "@/components/linha-do-tempo";
 import { montarLinhaDoTempo } from "@/lib/linha-do-tempo";
@@ -57,13 +57,14 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   const nasContas = mesAtual ? await saldosHoje(hoje) : null;
 
   async function montarPainel(lista: typeof lancamentos, saldoReal: number, entradas: number) {
-    const [compromissos, guardadoMes, proximo, assinaturas, entradasPrevistas, doMes] = await Promise.all([
+    const [compromissos, guardadoMes, proximo, assinaturas, entradasPrevistas, doMes, detectadas] = await Promise.all([
       compromissosDoMes(hoje, mes),
       guardadoNoMes(mes),
       comprometidoProximoMes(mes),
       assinaturasAtivas(hoje),
       entradasPrevistasDoMes(hoje, mes),
       listarLancamentosDoMes(mes),
+      assinaturasDetectadas(hoje),
     ]);
     const totalCompromissos = compromissos.reduce((s, c) => s + c.valor, 0);
     const disponivel = disponivelParaGastar(saldoReal, guardadoMes, totalCompromissos);
@@ -104,6 +105,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
       entradas,
       proximo,
       assinaturas,
+      detectadas,
     };
   }
 
@@ -188,8 +190,8 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
           <LinhaDoTempo linha={painel.linha} hoje={hoje} mesTexto={mesParaTexto(mes)} />
           <CartoesDoProximoMes
             comprometido={painel.proximo.total}
-            assinaturas={painel.assinaturas.total}
-            quantasAssinaturas={painel.assinaturas.itens.length}
+            assinaturas={painel.assinaturas.total + painel.detectadas.reduce((s, a) => s + a.valor, 0)}
+            quantasAssinaturas={painel.assinaturas.itens.length + painel.detectadas.length}
           />
         </>
       )}

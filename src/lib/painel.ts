@@ -38,3 +38,26 @@ export function partesDaPrevisao({
 export function previsaoDoMes(entrada: Parameters<typeof partesDaPrevisao>[0]) {
   return partesDaPrevisao(entrada).total;
 }
+
+// Assinaturas que estão no histórico mas não são fixo (ex.: Netflix e Spotify vindos do extrato).
+// Cobrança da categoria Assinaturas nos últimos 45 dias, a mais recente de cada nome, que ainda não tem fixo igual.
+export const JANELA_ASSINATURA = 45;
+
+export function assinaturasDoHistorico(
+  lancs: { id: string; data: string; valor: number; descricao: string; recorrenciaId: string | null }[],
+  fixos: string[], // descrições dos fixos ativos em Assinaturas
+  hoje: string,
+) {
+  const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+  const limite = new Date(Date.UTC(Number(hoje.slice(0, 4)), Number(hoje.slice(5, 7)) - 1, Number(hoje.slice(8, 10)) - JANELA_ASSINATURA))
+    .toISOString()
+    .slice(0, 10);
+  const jaFixos = new Set(fixos.map(norm));
+  const ultima = new Map<string, (typeof lancs)[number]>();
+  for (const l of lancs) {
+    if (l.recorrenciaId || l.data < limite || l.data > hoje || jaFixos.has(norm(l.descricao))) continue;
+    const atual = ultima.get(norm(l.descricao));
+    if (!atual || l.data > atual.data) ultima.set(norm(l.descricao), l);
+  }
+  return [...ultima.values()].sort((a, b) => b.valor - a.valor);
+}
