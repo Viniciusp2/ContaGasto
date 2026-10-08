@@ -9,6 +9,12 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.9.0 (08/10/2026)
+
+- **IA reserva:** quando a IA principal falha (acabou o limite grátis do dia, está fora do ar ou a chave foi recusada), o assistente faz a mesma pergunta pra outra IA sozinho. A resposta da reserva aparece com a etiqueta "Respondido pela IA reserva". Liga com as variáveis `IA_RESERVA=groq` e `GROQ_API_KEY` na Vercel (chave grátis em console.groq.com).
+- O rodapé do Assistente mostra a principal e a reserva.
+- Trocar de IA não mexe em nada dos seus dados: tudo fica no banco do app.
+
 ## 1.8.0 (08/10/2026)
 
 - **Assistente lança parcelado:** "parcelei no AliExpress, 3x de 51,08 a partir de 20/10" monta o cartão com as parcelas, o total e a data da 1ª. Ao salvar, vai pra Fixos e parcelas, e cada parcela vira conta a pagar no mês dela (no cartão de crédito, segue a fatura).

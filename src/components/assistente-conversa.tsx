@@ -9,7 +9,7 @@ import { descreverRepeticao } from "@/lib/lembretes";
 import { diaCurto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
-type Mensagem = MensagemChat & { proposta?: Proposta; lembrete?: PropostaLembrete; situacao?: "salvo" | "descartado"; erro?: boolean };
+type Mensagem = MensagemChat & { proposta?: Proposta; lembrete?: PropostaLembrete; situacao?: "salvo" | "descartado"; erro?: boolean; respondidoPor?: string };
 
 const SUGESTOES = ["Analisa meu mês", "Quanto posso gastar por dia?", "O que vence essa semana?", "Onde estou gastando mais?", "Gastei 32 no iFood"];
 const GUARDADO = "bolso-assistente"; // a conversa sobrevive a trocar de tela (só nesta aba)
@@ -237,7 +237,7 @@ function Conversa() {
             ...(proposta && { contexto: contextoDaProposta(proposta, situacao) }),
           })),
       );
-      setMensagens((atual) => [...atual, { papel: "bolso", texto: resposta.texto, proposta: resposta.proposta, lembrete: resposta.lembrete, erro: resposta.erro }]);
+      setMensagens((atual) => [...atual, { papel: "bolso", texto: resposta.texto, proposta: resposta.proposta, lembrete: resposta.lembrete, erro: resposta.erro, respondidoPor: resposta.respondidoPor }]);
     } catch {
       setMensagens((atual) => [...atual, { papel: "bolso", texto: "Sem conexão. Tenta de novo quando a internet voltar.", erro: true }]);
     }
@@ -285,6 +285,7 @@ function Conversa() {
                 }
               >
                 {m.papel === "voce" ? <p className="whitespace-pre-wrap">{m.texto}</p> : <TextoBolso texto={m.texto} />}
+                {m.respondidoPor && <p className="mt-1 text-xs text-tinta-suave">Respondido pela IA reserva ({m.respondidoPor})</p>}
                 {m.proposta && (
                   <CartaoProposta
                     m={m}

@@ -263,6 +263,7 @@ Um chat só (Mais, Assistente) pra três coisas: **lançar falando** ("gastei 32
 - **Privacidade:** plano grátis do Gemini pode usar o que é enviado pra melhorar os produtos do Google. Bom pra teste com dado inventado; com dado de verdade em produção, preferir plano pago (Claude ou Gemini pago).
 - **Chave:** variável do provedor (`GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` ou `IA_CHAVE`), local no `.env.local` e na Vercel em Environment Variables. Sem ela, o assistente avisa o que falta. A API do Claude é paga à parte da assinatura do Claude.
 - A conversa fica só na aba do navegador (`sessionStorage`), não vai pro banco.
+- **IA reserva (1.9.0, pedido do Vinícius):** `IA_RESERVA` (ex.: `groq`) responde quando a principal dá qualquer erro (limite grátis do dia, 5xx, sem resposta, chave recusada). A pergunta recomeça do zero na reserva (chamada de uma IA não vai pra outra). A reserva usa só a chave própria (`GROQ_API_KEY`...); `IA_CHAVE`, `IA_MODELO` e `IA_URL` valem só pra principal. Sem a principal configurada, a reserva assume sozinha. A resposta da reserva mostra "Respondido pela IA reserva". Trocar de IA não mexe nos dados (tudo fica no banco).
 - **Parcelado (1.8.0):** `propor_lancamento` aceita `parcelas` (2 a 72): `valor` é o de cada parcela e `data` a da 1ª. Salvar cria a mesma recorrência temporária do formulário. Se a pessoa só souber o total e a taxa, a IA usa `simular_parcelamento` e pede o valor real da parcela antes de propor.
 - **Simular parcelamento (1.8.0):** `lib/financas.ts` calcula as duas leituras comuns (Tabela Price e taxa aplicada uma vez) e a taxa ao ano. Loja e financeira nem sempre dizem qual usam; o valor que vale é o do cronograma delas.
 - **Contexto do cartão (1.8.0):** cada resposta com cartão volta pra IA com um resumo "[Cartão: ...; a pessoa salvou/descartou]", pra ela saber o que já foi feito e não lançar duas vezes.
@@ -534,6 +535,7 @@ O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados ent
 | Lembrete          | título + dia + repetição; o Assistente propõe, salva no toque |
 | Versão 1.7.3      | escolhida pelo Vinícius pra notificações (a regra daria 1.8.0; a 1.8.0 fica pro parcelado do Assistente) |
 | Provedor da IA    | escolhido por `IA_PROVEDOR`; Gemini grátis na fase de teste, Claude Haiku 4.5 como opção paga |
+| IA reserva        | `IA_RESERVA=groq`: entra quando a principal falha; pergunta recomeça do zero nela |
 | Juros no assistente | conta feita pelo app (Price e taxa uma vez); a parcela que vale é a do cronograma da loja |
 
 ### A confirmar

@@ -4,6 +4,8 @@
 //   IA_MODELO     opcional: troca o modelo padrão do provedor
 //   IA_URL        opcional: troca o endereço (proxy, outra região, teste local)
 //   IA_CHAVE      opcional: chave pra qualquer provedor (senão, a variável própria de cada um)
+//   IA_RESERVA    opcional: outra IA (gemini | groq | openrouter | claude) que responde quando a principal
+//                 falha (limite grátis do dia, fora do ar, chave recusada). Usa só a chave própria dela.
 //
 // "compativel" é qualquer IA que fale o formato de chat da OpenAI (/chat/completions): basta
 // IA_URL, IA_MODELO e IA_CHAVE. É assim que uma IA nova entra no futuro.
@@ -75,31 +77,51 @@ export type ConfigIA = Omit<DefinicaoProvedor, "variavelChave"> & {
 
 type Env = Record<string, string | undefined>;
 
-// Lê a configuração das variáveis de ambiente. Devolve o que falta em vez de quebrar,
-// pra tela explicar o que cadastrar.
-export function lerConfigIA(env: Env): { ok: true; config: ConfigIA } | { ok: false; erro: string } {
-  const pedido = (env.IA_PROVEDOR ?? "").trim().toLowerCase() || PROVEDOR_PADRAO;
+type Lida = { ok: true; config: ConfigIA } | { ok: false; erro: string };
+
+// Monta a configuração de um provedor. "ajustes" liga IA_CHAVE, IA_MODELO e IA_URL (só valem pra principal).
+function montarConfig(pedido: string, env: Env, ajustes: boolean, variavel: string): Lida {
   if (!(pedido in PROVEDORES)) {
-    return { ok: false, erro: `IA_PROVEDOR "${pedido}" não existe. Use: ${Object.keys(PROVEDORES).join(", ")}.` };
+    return { ok: false, erro: `${variavel} "${pedido}" não existe. Use: ${Object.keys(PROVEDORES).join(", ")}.` };
   }
   const nome = pedido as NomeProvedor;
   const { variavelChave, ...definicao }: DefinicaoProvedor = PROVEDORES[nome];
-  const chave = (env.IA_CHAVE || env[variavelChave] || "").trim();
+  const chave = ((ajustes && env.IA_CHAVE) || env[variavelChave] || "").trim();
   const config: ConfigIA = {
     ...definicao,
     nome,
     chave,
-    modelo: env.IA_MODELO?.trim() || definicao.modelo,
-    url: env.IA_URL?.trim().replace(/\/+$/, "") || definicao.url,
+    modelo: (ajustes && env.IA_MODELO?.trim()) || definicao.modelo,
+    url: (ajustes && env.IA_URL?.trim().replace(/\/+$/, "")) || definicao.url,
   };
-  if (!config.chave) return { ok: false, erro: `Falta a chave da IA (${variavelChave} ou IA_CHAVE).` };
+  if (!config.chave) return { ok: false, erro: `Falta a chave da IA (${variavelChave}${ajustes ? " ou IA_CHAVE" : ""}).` };
   if (config.formato === "openai" && !config.url) return { ok: false, erro: "Falta o endereço da IA (IA_URL)." };
   if (!config.modelo) return { ok: false, erro: "Falta o modelo da IA (IA_MODELO)." };
   return { ok: true, config };
 }
 
+// Lê a configuração das variáveis de ambiente. Devolve o que falta em vez de quebrar,
+// pra tela explicar o que cadastrar.
+export function lerConfigIA(env: Env): Lida {
+  return montarConfig((env.IA_PROVEDOR ?? "").trim().toLowerCase() || PROVEDOR_PADRAO, env, true, "IA_PROVEDOR");
+}
+
+// A IA reserva, se tiver uma configurada e diferente da principal. Sem IA_RESERVA, null.
+export function lerConfigReserva(env: Env): Lida | null {
+  const pedido = (env.IA_RESERVA ?? "").trim().toLowerCase();
+  if (!pedido) return null;
+  const principal = lerConfigIA(env);
+  if (principal.ok && principal.config.nome === pedido) return null;
+  return montarConfig(pedido, env, false, "IA_RESERVA");
+}
+
+const descrever = (lida: Lida | null) => (lida?.ok ? `${lida.config.rotulo} (${lida.config.modelo})` : null);
+
 // "Google Gemini (gemini-3.8-flash)", pra mostrar na tela qual IA está respondendo
 export function descreverIA(env: Env): string | null {
-  const lida = lerConfigIA(env);
-  return lida.ok ? `${lida.config.rotulo} (${lida.config.modelo})` : null;
+  return descrever(lerConfigIA(env));
+}
+
+export function descreverReserva(env: Env): string | null {
+  return descrever(lerConfigReserva(env));
 }

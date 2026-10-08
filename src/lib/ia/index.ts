@@ -8,5 +8,5 @@ export function criarProvedor(config: ConfigIA): ProvedorIA {
   return config.formato === "anthropic" ? provedorAnthropic(config) : provedorCompativel(config);
 }
 
-export { descreverIA, lerConfigIA } from "./config";
+export { descreverIA, descreverReserva, lerConfigIA, lerConfigReserva } from "./config";
 export * from "./tipos";

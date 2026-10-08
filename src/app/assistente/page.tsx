@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AssistenteConversa } from "@/components/assistente-conversa";
-import { descreverIA } from "@/lib/ia";
+import { descreverIA, descreverReserva } from "@/lib/ia";
 
 export const dynamic = "force-dynamic";
 // Uma pergunta pode precisar de 2 ou 3 chamadas à IA
@@ -10,6 +10,7 @@ export const maxDuration = 60;
 export default function Assistente() {
   // Qual IA está ligada (muda pela variável IA_PROVEDOR, ver lib/ia/config.ts)
   const ia = descreverIA(process.env);
+  const reserva = descreverReserva(process.env);
   return (
     <section className="flex flex-col gap-4">
       <div>
@@ -21,7 +22,9 @@ export default function Assistente() {
       </div>
       <AssistenteConversa />
       <p className="text-center text-xs text-tinta-suave">
-        {ia ? `Respondendo com ${ia}. Confira antes de salvar.` : "IA desligada: falta configurar a chave."}
+        {ia || reserva
+          ? `Respondendo com ${ia ?? reserva}${ia && reserva ? `; se ela falhar, ${reserva}` : ""}. Confira antes de salvar.`
+          : "IA desligada: falta configurar a chave."}
       </p>
     </section>
   );

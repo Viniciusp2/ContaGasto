@@ -21,7 +21,7 @@ import {
   type PropostaLembrete,
 } from "@/lib/assistente";
 import { conferirLembrete } from "@/lib/lembretes";
-import { criarProvedor, ErroIA, lerConfigIA, type ChamadaFerramenta, type MensagemIA } from "@/lib/ia";
+import { criarProvedor, ErroIA, lerConfigIA, lerConfigReserva, type ChamadaFerramenta, type MensagemIA, type ProvedorIA } from "@/lib/ia";
 import { hojeISO } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 import { simularParcelamento, taxaAnual } from "@/lib/financas";
@@ -29,7 +29,8 @@ import { subtipoDaCategoria } from "@/lib/entradas";
 import { dataEfetiva } from "@/lib/recorrencias";
 import { validarLancamento } from "@/lib/validar-lancamento";
 
-export type RespostaAssistente = { texto: string; proposta?: Proposta; lembrete?: PropostaLembrete; erro?: boolean };
+// respondidoPor: só quando quem respondeu foi a IA reserva (a principal falhou)
+export type RespostaAssistente = { texto: string; proposta?: Proposta; lembrete?: PropostaLembrete; erro?: boolean; respondidoPor?: string };
 
 // Pergunta que precisa de dado: a IA pede a ferramenta, o app responde e ela escreve. 3 voltas bastam.
 const MAX_VOLTAS = 3;
@@ -92,9 +93,61 @@ async function executar(chamadas: ChamadaFerramenta[], hoje: string): Promise<Me
   return { papel: "ferramenta", resultados };
 }
 
+// Uma pergunta inteira com uma IA: pede, roda as ferramentas e volta, até 3 vezes. Erro da IA sobe (ErroIA).
+async function responder(
+  ia: ProvedorIA,
+  historico: MensagemIA[],
+  hoje: string,
+  opcoes: Awaited<ReturnType<typeof opcoesDeLancamento>>,
+): Promise<RespostaAssistente> {
+  const conversa: MensagemIA[] = [...historico];
+  for (let volta = 0; volta < MAX_VOLTAS; volta++) {
+    const resposta = await ia.conversar({
+      sistema: instrucoesAssistente(hoje, opcoes),
+      mensagens: conversa,
+      ferramentas: ferramentasAssistente(opcoes),
+      maxTokens: MAX_TOKENS,
+    });
+    console.info(`[assistente] ${ia.nome}/${ia.modelo}: ${resposta.tokens.entrada} tokens de entrada, ${resposta.tokens.saida} de saída`);
+    if (resposta.recusou) return { texto: "Essa eu não consigo responder.", erro: true };
+    const texto = limparResposta(resposta.texto);
+
+    // Propor lançamento encerra a volta: a pessoa confere na tela e decide (não precisa outra chamada)
+    const pedido = resposta.chamadas.find((c) => c.nome === "propor_lancamento");
+    if (pedido) {
+      const proposta = lerProposta(pedido.entrada, opcoes, hoje);
+      if (!proposta.ok) return { texto: proposta.erro, erro: true };
+      return { texto: texto || "Confere e salva:", proposta: proposta.proposta };
+    }
+    const pedidoLembrete = resposta.chamadas.find((c) => c.nome === "propor_lembrete");
+    if (pedidoLembrete) {
+      const r = lerPropostaLembrete(pedidoLembrete.entrada, hoje);
+      if (!r.ok) return { texto: r.erro, erro: true };
+      return { texto: texto || "Confere e salva o lembrete:", lembrete: r.lembrete };
+    }
+    if (resposta.chamadas.length === 0) {
+      if (!texto) console.error(`[assistente] ${ia.nome} respondeu vazio (${resposta.tokens.saida} tokens de saída)`);
+      return { texto: texto || `${ERRO_GENERICO} (resposta vazia)`, erro: !texto };
+    }
+
+    // Todas as ferramentas da volta respondem juntas, numa mensagem só
+    conversa.push({ papel: "assistente", texto: resposta.texto, chamadas: resposta.chamadas }, await executar(resposta.chamadas, hoje));
+  }
+  return { texto: "Essa ficou complicada. Tenta perguntar de um jeito mais direto.", erro: true };
+}
+
+function mensagemDeErro(erro: unknown) {
+  if (!(erro instanceof ErroIA)) return ERRO_GENERICO;
+  // O código ajuda a descobrir o motivo (o detalhe completo fica no log do servidor)
+  const codigo = erro.tipo === "outro" ? ` (código ${erro.status ?? "sem resposta"})` : "";
+  return ERROS_IA[erro.tipo] + codigo;
+}
+
 export async function conversar(mensagens: MensagemChat[]): Promise<RespostaAssistente> {
   const lida = lerConfigIA(process.env);
-  if (!lida.ok) return { texto: `O assistente ainda não está ligado: ${lida.erro}`, erro: true };
+  const reserva = lerConfigReserva(process.env);
+  // Sem a principal mas com a reserva configurada, a reserva assume sozinha
+  if (!lida.ok && !reserva?.ok) return { texto: `O assistente ainda não está ligado: ${lida.ok ? "" : lida.erro}`, erro: true };
 
   const historico = historicoParaApi(mensagens);
   const ultima = historico.at(-1);
@@ -103,49 +156,25 @@ export async function conversar(mensagens: MensagemChat[]): Promise<RespostaAssi
 
   const hoje = hojeISO();
   const opcoes = await opcoesDeLancamento();
-  const ia = criarProvedor(lida.config);
-  const conversa: MensagemIA[] = [...historico];
 
-  try {
-    for (let volta = 0; volta < MAX_VOLTAS; volta++) {
-      const resposta = await ia.conversar({
-        sistema: instrucoesAssistente(hoje, opcoes),
-        mensagens: conversa,
-        ferramentas: ferramentasAssistente(opcoes),
-        maxTokens: MAX_TOKENS,
-      });
-      console.info(`[assistente] ${ia.nome}/${ia.modelo}: ${resposta.tokens.entrada} tokens de entrada, ${resposta.tokens.saida} de saída`);
-      if (resposta.recusou) return { texto: "Essa eu não consigo responder.", erro: true };
-      const texto = limparResposta(resposta.texto);
-
-      // Propor lançamento encerra a volta: a pessoa confere na tela e decide (não precisa outra chamada)
-      const pedido = resposta.chamadas.find((c) => c.nome === "propor_lancamento");
-      if (pedido) {
-        const proposta = lerProposta(pedido.entrada, opcoes, hoje);
-        if (!proposta.ok) return { texto: proposta.erro, erro: true };
-        return { texto: texto || "Confere e salva:", proposta: proposta.proposta };
-      }
-      const pedidoLembrete = resposta.chamadas.find((c) => c.nome === "propor_lembrete");
-      if (pedidoLembrete) {
-        const r = lerPropostaLembrete(pedidoLembrete.entrada, hoje);
-        if (!r.ok) return { texto: r.erro, erro: true };
-        return { texto: texto || "Confere e salva o lembrete:", lembrete: r.lembrete };
-      }
-      if (resposta.chamadas.length === 0) {
-        if (!texto) console.error(`[assistente] ${ia.nome} respondeu vazio (${resposta.tokens.saida} tokens de saída)`);
-        return { texto: texto || `${ERRO_GENERICO} (resposta vazia)`, erro: !texto };
-      }
-
-      // Todas as ferramentas da volta respondem juntas, numa mensagem só
-      conversa.push({ papel: "assistente", texto: resposta.texto, chamadas: resposta.chamadas }, await executar(resposta.chamadas, hoje));
+  let erroPrincipal: unknown = null;
+  if (lida.ok) {
+    try {
+      return await responder(criarProvedor(lida.config), historico, hoje, opcoes);
+    } catch (erro) {
+      console.error(`[assistente] ${lida.config.nome} falhou${reserva?.ok ? `, tentando a reserva (${reserva.config.nome})` : ""}`, erro);
+      erroPrincipal = erro;
     }
-    return { texto: "Essa ficou complicada. Tenta perguntar de um jeito mais direto.", erro: true };
+  }
+  if (!reserva?.ok) return { texto: mensagemDeErro(erroPrincipal), erro: true };
+
+  // A pergunta recomeça do zero na reserva: chamada de uma IA não vai pra outra (cada uma tem o seu jeito)
+  try {
+    const resposta = await responder(criarProvedor(reserva.config), historico, hoje, opcoes);
+    return { ...resposta, respondidoPor: reserva.config.rotulo };
   } catch (erro) {
-    console.error("[assistente]", erro);
-    if (!(erro instanceof ErroIA)) return { texto: ERRO_GENERICO, erro: true };
-    // O código ajuda a descobrir o motivo (o detalhe completo fica no log do servidor)
-    const codigo = erro.tipo === "outro" ? ` (código ${erro.status ?? "sem resposta"})` : "";
-    return { texto: ERROS_IA[erro.tipo] + codigo, erro: true };
+    console.error(`[assistente] a reserva ${reserva.config.nome} também falhou`, erro);
+    return { texto: `${mensagemDeErro(erroPrincipal ?? erro)} A IA reserva também não respondeu.`, erro: true };
   }
 }
 

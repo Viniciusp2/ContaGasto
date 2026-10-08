@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { lerRespostaAnthropic, mensagensAnthropic } from "./anthropic";
 import { lerRespostaCompativel, montarPedidoCompativel, provedorCompativel } from "./compativel";
-import { descreverIA, lerConfigIA, type ConfigIA } from "./config";
+import { descreverIA, descreverReserva, lerConfigIA, lerConfigReserva, type ConfigIA } from "./config";
 import { ErroIA, tipoDoStatus, type PedidoIA } from "./tipos";
 
 describe("configuração da IA", () => {
@@ -147,5 +147,30 @@ describe("formato Anthropic (Claude)", () => {
     } as never);
     expect(r).toMatchObject({ texto: "Vou ver", recusou: false, tokens: { entrada: 1200, saida: 30 } });
     expect(r.chamadas).toEqual([{ id: "t1", nome: "ver_mes", entrada: { mes: "2026-10" } }]);
+  });
+});
+
+describe("IA reserva", () => {
+  it("Groq de reserva com a chave própria dele", () => {
+    const r = lerConfigReserva({ GEMINI_API_KEY: "g", IA_RESERVA: "groq", GROQ_API_KEY: "q" });
+    expect(r).toMatchObject({ ok: true, config: { nome: "groq", chave: "q", modelo: "openai/gpt-oss-120b" } });
+  });
+
+  it("IA_MODELO, IA_URL e IA_CHAVE são só da principal", () => {
+    const env = { GEMINI_API_KEY: "g", IA_RESERVA: "groq", IA_CHAVE: "geral", IA_MODELO: "outro", IA_URL: "http://x" };
+    expect(lerConfigReserva(env)).toEqual({ ok: false, erro: "Falta a chave da IA (GROQ_API_KEY)." });
+    const r = lerConfigReserva({ ...env, GROQ_API_KEY: "q" });
+    expect(r).toMatchObject({ ok: true, config: { chave: "q", modelo: "openai/gpt-oss-120b", url: "https://api.groq.com/openai/v1" } });
+  });
+
+  it("sem IA_RESERVA ou igual à principal não tem reserva", () => {
+    expect(lerConfigReserva({ GEMINI_API_KEY: "g" })).toBeNull();
+    expect(lerConfigReserva({ GEMINI_API_KEY: "g", IA_RESERVA: "gemini" })).toBeNull();
+    expect(lerConfigReserva({ GEMINI_API_KEY: "g", IA_RESERVA: "chatgpt" })).toMatchObject({ ok: false });
+  });
+
+  it("descreve a reserva pra tela", () => {
+    expect(descreverReserva({ GEMINI_API_KEY: "g", IA_RESERVA: "groq", GROQ_API_KEY: "q" })).toBe("Groq (openai/gpt-oss-120b)");
+    expect(descreverReserva({ GEMINI_API_KEY: "g" })).toBeNull();
   });
 });
