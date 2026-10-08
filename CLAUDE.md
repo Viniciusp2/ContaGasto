@@ -518,7 +518,7 @@ O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados ent
 | Disponível (1.6.6) | com saldos informados: bancos − falta pagar − objetivos; por dia e por semana até o dia 31 |
 | Previsão (1.6.6)  | ritmo do dia a dia nos últimos 30 dias (sem contas); dá até o fim ou dia em que acaba |
 | Dois fatores      | app autenticador obrigatório no site; 8 códigos de recuperação; 5 erros travam 15 min |
-| Assistente no Início | cartão no topo com 3 comentários do mês, guardados no aparelho até o dia seguinte |
+| Assistente no Início | cartão no topo com 3 comentários do mês, guardados no aparelho até você tocar em atualizar (1.10.2); só pede sozinho no primeiro uso |
 | Versões            | nova função +0.1, bug/básico +0.0.1, mínimo não muda; rodapé de Mais mostra versão e commit |
 | Saldo por banco   | você informa o saldo uma vez; o app soma os lançamentos do banco |
 | Saldo em caixa    | saiu da tela em 1.5.1 (confundia com "Nas contas hoje"); cálculo mantido |

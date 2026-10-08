@@ -9,6 +9,11 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.10.2 (08/10/2026)
+
+- O cartão do Assistente no Início não chama mais a IA a cada vez que a página abre ou atualiza: mostra o último comentário guardado ("Feito hoje às 09:12") e só pede um novo quando você toca em atualizar. Economiza o limite grátis da IA.
+- Se a IA der erro, o cartão não fica tentando sozinho a cada atualização: mostra o aviso e espera o seu toque. O último comentário bom continua na tela.
+
 ## 1.10.1 (08/10/2026)
 
 - Corrigido: quando `IA_RESERVA` ou `IA_PROVEDOR` tinham um valor que não era nome de IA (por exemplo, uma chave colada ali por engano), a tela Dev mostrava esse valor. Agora nenhuma tela repete o valor de variável.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import { Bot, ChevronRight, LoaderCircle, RefreshCw } from "lucide-react";
 import { conversar } from "@/app/assistente/actions";
@@ -33,52 +33,96 @@ function TextoAssistente({ texto }: { texto: string }) {
   );
 }
 
-// Os comentários ficam guardados no aparelho até o dia seguinte: abrir o Início não gasta o limite da IA toda vez
-function lerGuardado(hoje: string): string | null {
+// Os comentários ficam guardados no aparelho e continuam ali até você tocar em atualizar (pedido do Vinícius):
+// abrir ou recarregar o Início nunca chama a IA, a não ser na primeira vez (quando não tem nada guardado).
+type Guardado = { texto: string; em: string };
+
+function lerGuardado(): Guardado | null {
   try {
-    const salvo = JSON.parse(localStorage.getItem(CHAVE) ?? "null") as { dia: string; texto: string } | null;
-    return salvo?.dia === hoje ? salvo.texto : null;
+    const salvo = JSON.parse(localStorage.getItem(CHAVE) ?? "null") as (Partial<Guardado> & { dia?: string }) | null;
+    if (!salvo?.texto) return null;
+    // Formato antigo guardava só o dia
+    return { texto: salvo.texto, em: salvo.em ?? `${salvo.dia ?? ""}T12:00:00` };
   } catch {
     return null;
   }
 }
 
-function guardar(hoje: string, texto: string) {
+function guardar(texto: string) {
   try {
-    localStorage.setItem(CHAVE, JSON.stringify({ dia: hoje, texto }));
+    localStorage.setItem(CHAVE, JSON.stringify({ texto, em: new Date().toISOString() }));
+    localStorage.removeItem(CHAVE_TENTATIVA);
   } catch {
     // sem armazenamento (aba anônima): só não guarda
   }
 }
 
+// Primeira vez que deu erro: guarda a hora, pra recarregar a página não ficar tentando de novo sozinho
+const CHAVE_TENTATIVA = "bolso-comentarios-tentativa";
+function jaTentou(): boolean {
+  try {
+    return localStorage.getItem(CHAVE_TENTATIVA) !== null;
+  } catch {
+    return false;
+  }
+}
+function marcarTentativa() {
+  try {
+    localStorage.setItem(CHAVE_TENTATIVA, new Date().toISOString());
+  } catch {}
+}
+
+// "hoje às 09:12", "ontem às 18:40" ou "07/10 às 08:05"
+function quando(iso: string, hoje: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const fuso = { timeZone: "America/Sao_Paulo" } as const;
+  const dia = new Intl.DateTimeFormat("en-CA", fuso).format(d);
+  const hora = new Intl.DateTimeFormat("pt-BR", { ...fuso, hour: "2-digit", minute: "2-digit" }).format(d);
+  const ontem = new Date(new Date(`${hoje}T12:00:00Z`).getTime() - 86_400_000).toISOString().slice(0, 10);
+  if (dia === hoje) return `hoje às ${hora}`;
+  if (dia === ontem) return `ontem às ${hora}`;
+  return `${new Intl.DateTimeFormat("pt-BR", { ...fuso, day: "2-digit", month: "2-digit" }).format(d)} às ${hora}`;
+}
+
 const nadaMuda = () => () => {};
 
 export function AssistenteInicio({ hoje, ligado }: { hoje: string; ligado: boolean }) {
-  // O que já está guardado de hoje no aparelho (no servidor não tem: começa vazio)
-  const guardado = useSyncExternalStore(nadaMuda, () => lerGuardado(hoje), () => null);
-  const [novo, setNovo] = useState<string | null>(null);
+  // O que já está guardado no aparelho (no servidor não tem: começa vazio)
+  const guardado = useSyncExternalStore(nadaMuda, () => localStorage.getItem(CHAVE), () => null);
+  const [novo, setNovo] = useState<Guardado | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, iniciar] = useTransition();
-  const texto = novo ?? guardado;
+  const pedindo = useRef(false); // trava: uma pergunta por vez (o React pode rodar o efeito duas vezes)
+  const atual = novo ?? (guardado ? lerGuardado() : null);
 
   function pedir() {
+    if (pedindo.current) return;
+    pedindo.current = true;
     iniciar(async () => {
-      const r = await conversar([{ papel: "voce", texto: PEDIDO }]);
-      // Erro (sem chave, limite do dia) não fica guardado: senão o cartão mostraria o aviso o dia todo.
+      const r = await conversar([{ papel: "voce", texto: PEDIDO }]).finally(() => {
+        pedindo.current = false;
+      });
+      // Erro (sem chave, limite do dia) não fica guardado: o último comentário bom continua na tela.
       // Proposta de lançamento é ignorada: aqui não tem Salvar.
       if (r.erro) {
+        marcarTentativa();
         setErro(r.texto);
         return;
       }
       setErro(null);
-      setNovo(r.texto);
-      guardar(hoje, r.texto);
+      setNovo({ texto: r.texto, em: new Date().toISOString() });
+      guardar(r.texto);
     });
   }
 
-  // Ao abrir o Início: se não tem nada guardado de hoje, pede uma vez
+  // Ao abrir o Início: só pede sozinho se nunca teve comentário e nunca tentou (primeiro uso).
+  // Marca a tentativa antes de pedir: nem recarregar nem o React rodando o efeito duas vezes chamam de novo.
   useEffect(() => {
-    if (ligado && !lerGuardado(hoje)) pedir();
+    if (ligado && !lerGuardado() && !jaTentou()) {
+      marcarTentativa();
+      pedir();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao montar
   }, []);
 
@@ -96,7 +140,8 @@ export function AssistenteInicio({ hoje, ligado }: { hoje: string; ligado: boole
             type="button"
             onClick={() => pedir()}
             disabled={carregando}
-            aria-label="Pedir comentários novos"
+            aria-label="Pedir comentários novos (usa a IA)"
+            title="Pedir comentários novos"
             className="flex size-11 items-center justify-center rounded-full text-tinta-suave disabled:opacity-50"
           >
             <RefreshCw size={16} className={carregando ? "animate-spin" : ""} aria-hidden />
@@ -106,17 +151,29 @@ export function AssistenteInicio({ hoje, ligado }: { hoje: string; ligado: boole
 
       {!ligado ? (
         <p className="text-sm text-tinta-suave">O assistente ainda está desligado: falta cadastrar a chave da IA na Vercel.</p>
-      ) : carregando && !texto ? (
+      ) : carregando && !atual ? (
         <p className="flex items-center gap-2 text-sm text-tinta-suave">
           <LoaderCircle size={16} className="animate-spin" aria-hidden /> Olhando o seu mês...
         </p>
-      ) : erro ? (
-        <p role="alert" className="text-sm">
-          {erro}
-        </p>
-      ) : texto ? (
-        <TextoAssistente texto={texto} />
-      ) : null}
+      ) : (
+        <>
+          {erro && (
+            <p role="alert" className="rounded-2xl bg-limao px-3 py-2 text-sm">
+              {erro}
+            </p>
+          )}
+          {atual ? (
+            <>
+              <TextoAssistente texto={atual.texto} />
+              <p className="text-xs text-tinta-suave">
+                {carregando ? "Pedindo comentários novos..." : `Feito ${quando(atual.em, hoje)}. Toque em atualizar pra pedir de novo.`}
+              </p>
+            </>
+          ) : (
+            !erro && <p className="text-sm text-tinta-suave">Toque em atualizar pra pedir os comentários do mês.</p>
+          )}
+        </>
+      )}
 
       <Link href="/assistente" className="flex min-h-11 items-center justify-between rounded-2xl bg-fundo px-3 text-sm font-semibold">
         Perguntar ou lançar falando
