@@ -9,6 +9,15 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.7.0 (08/10/2026)
+
+- **Assistente** (Mais, Assistente): um chat com IA que faz três coisas.
+  - **Lança falando:** escreva ou fale "gastei 32 no iFood no pix" e ele monta o lançamento (valor, categoria, dia, forma e banco). Você confere e toca em **Salvar**. Nada é salvo sem o seu toque.
+  - **Analisa o mês:** "analisa meu mês" mostra onde mais foi dinheiro, o que mudou desde o mês passado, metas estouradas, compras pequenas e quanto dá pra gastar.
+  - **Responde sobre o seu dinheiro:** "quanto gastei de mercado?", "quanto posso gastar por dia?". Os números vêm das mesmas contas das telas: a IA só explica.
+- Botão de microfone pra falar em vez de digitar (usa o ditado do celular).
+- Usa o modelo mais barato da Anthropic (Claude Haiku 4.5): de 1 a 3 centavos de real por pergunta. Precisa da chave da API (`ANTHROPIC_API_KEY`) cadastrada na Vercel.
+
 ## 1.6.7 (08/10/2026)
 
 - Corrigido: marcar **Paguei** numa conta não descontava do "Nas contas hoje" quando a conta não tinha banco. Agora o Paguei mostra de qual banco saiu, já marcado (o banco da conta ou do fixo, senão o último usado, senão o único), e desconta dele na hora. Dá pra trocar antes de tocar.

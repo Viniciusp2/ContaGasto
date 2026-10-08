@@ -250,6 +250,17 @@ Aba própria na barra de baixo. Lista as contas do mês: o que já pagou, o que 
 - **Fácil de achar:** aba Pagamentos, bloco "Contas pra pagar" no topo do Início (atrasadas e as que vencem em até 3 dias, com Paguei a um toque) e etiqueta "a pagar" na lista de lançamentos.
 - **Próximos:** notificações (conta vencendo, atrasada) e comprovantes (foto ou PDF, no Vercel Blob).
 
+### 4.15 Assistente com IA (Sprint 6.7, pedido em 08/10/2026)
+
+Um chat só (Mais, Assistente) pra três coisas: **lançar falando** ("gastei 32 no iFood"), **analisar o mês** e **responder sobre o dinheiro** ("quanto gastei de mercado?", "dá pra gastar quanto por dia?").
+
+- **O código calcula, a IA comenta.** A IA nunca faz conta: ela chama ferramentas (`ver_mes`, `buscar_lancamentos`) que devolvem os números já prontos e escritos em reais, pelos mesmos cálculos das telas (o disponível é o mesmo do Início, com ou sem saldo dos bancos). As instruções proíbem somar, subtrair ou inventar número.
+- **Lançar:** a ferramenta `propor_lancamento` não salva nada. O app confere (categoria pelo nome, sem acento; valor em centavos; data válida; entrada sem forma) e mostra um cartão com **Salvar** e **Descartar**. Salvar usa a mesma validação e as mesmas regras do formulário (crédito segue a fatura, "ainda vou pagar" fica a pagar). Só lançamento único; fixo e parcela continuam no formulário.
+- **Falar:** botão de microfone com o ditado do próprio navegador (grátis). Some onde o navegador não tem.
+- **O mais barato possível** (pedido do Vinícius): modelo Claude Haiku 4.5 (US$ 1 por milhão de tokens de entrada, US$ 5 de saída), sem thinking, `max_tokens` 1024, só as últimas 10 mensagens vão pra IA, no máximo 3 voltas de ferramenta por pergunta e propor lançamento encerra na primeira volta. Fica em torno de 1 a 3 centavos de real por pergunta.
+- **Chave:** variável `ANTHROPIC_API_KEY` (local no `.env.local`, na Vercel em Environment Variables). Sem ela, o assistente avisa que não está ligado. A API é paga à parte da assinatura do Claude: créditos pré-pagos no console da Anthropic, com limite de gasto.
+- A conversa fica só na aba do navegador (`sessionStorage`), não vai pro banco.
+
 ### 4.11 Contas e transferências (v2)
 
 Hoje o app diz **quanto** dinheiro existe, não **onde** ele está. Na v2:
@@ -376,6 +387,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Sprint 6.8** (1.6.0) Conferir: curadoria de erros em Mais (por que o disponível difere do banco, bate com o banco, atrasadas sem pagamento, a pagar que parece paga, possíveis repetidos, sem banco) + Pagamentos conta as contas soltas já pagas. Feito.
 - **Sprint 6.9** (1.6.5) Fixos com CRUD completo: editar tudo (inclusive banco, dia e parcelas), apagar de vez com 3 modos, virar fixo a partir de um lançamento, assinaturas do histórico no cartão e em Fixos. Feito.
 - **Sprint 6.10** (1.6.6) Disponível e previsão com base no dinheiro dos bancos (por dia, por semana, ritmo). Feito.
+- **Sprint 6.7** (1.7.0) Assistente com IA (4.15): um chat em Mais que lança falando, analisa o mês e responde sobre o dinheiro, com Claude Haiku 4.5 (o mais barato). Feito.
 - **Sprint 6.5** Notificações (conta vencendo amanhã, vence hoje, atrasada).
 - **Sprint 6.6** Comprovantes nas contas pagas (precisa do Vercel Blob ligado ao projeto).
 
@@ -487,6 +499,8 @@ O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados ent
 | Salário           | líquido no saldo; holerite só pra consulta  |
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |
+| Assistente (IA)   | um chat só; o código calcula, a IA comenta; lançamento só salva no toque |
+| Modelo da IA      | Claude Haiku 4.5, o mais barato (pedido do Vinícius) |
 
 ### A confirmar
 

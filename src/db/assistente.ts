@@ -6,14 +6,15 @@ import { categorias, contas, formasPagamento, lancamentos } from "./schema";
 import { USUARIO_PADRAO } from "./usuario-padrao";
 import { lancamentosVAAte, listarCategoriasAtivas, listarContas, listarFormasPagamento, listarObjetivos } from "./consultas";
 import { metasDoMes } from "./metas-do-mes";
-import { compromissosDoMes, guardadoNoMes } from "./painel";
+import { compromissosDoMes, gastoDiaADiaRecente, guardadoNoMes } from "./painel";
+import { saldosHoje } from "./saldos";
 import { dadosDaAnalise } from "@/lib/analise-ia";
 import type { OpcoesLancamento } from "@/lib/assistente";
 import { filtrarLancamentos } from "@/lib/busca";
 import { contaComoGasto, saldoReal, saldoVA } from "@/lib/calculos";
 import { diaCurto, intervaloDoMes, lerMes, somarMeses, type Mes } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
-import { disponivelParaGastar, partesDaPrevisao, possoGastarPorDia } from "@/lib/painel";
+import { disponivelParaGastar, partesDaPrevisao, planoAteFimDoMes, possoGastarPorDia } from "@/lib/painel";
 
 const userId = USUARIO_PADRAO.id;
 const reais = formatarCentavos;
@@ -77,9 +78,48 @@ export async function verMes(mesTexto: string, hoje: string) {
   };
   if (mesTexto !== hoje.slice(0, 7)) return { ...analise, ...extras };
 
-  // Mesma conta do cartão "Disponível para gastar" do Início (4.9)
-  const [compromissos, guardado] = await Promise.all([compromissosDoMes(hoje, mes), guardadoNoMes(mes)]);
+  // Mesma conta do Início: com os saldos dos bancos informados, parte do dinheiro de verdade (1.6.6);
+  // sem eles, do que sobrou no mês (4.9)
+  const [compromissos, guardado, bancos] = await Promise.all([compromissosDoMes(hoje, mes), guardadoNoMes(mes), saldosHoje(hoje)]);
   const totalCompromissos = compromissos.reduce((s, c) => s + c.valor, 0);
+  const contasQueAindaVaoCair = compromissos
+    .sort((a, b) => a.data.localeCompare(b.data))
+    .slice(0, 8)
+    .map((c) => ({ dia: diaCurto(c.data), descricao: c.descricao, valor: reais(c.valor), tipo: c.tipo }));
+
+  if (bancos.algumInformado) {
+    const guardadoTotal = objetivos.reduce((s, o) => s + o.saldo, 0);
+    const plano = planoAteFimDoMes({
+      nasContas: bancos.total,
+      faltaPagar: totalCompromissos,
+      guardadoObjetivos: guardadoTotal,
+      gastoDiaADia30Dias: await gastoDiaADiaRecente(hoje),
+      hoje,
+      mes,
+    });
+    return {
+      ...analise,
+      ...extras,
+      agora: {
+        comoEContado: "nas contas hoje menos o que falta pagar no mês menos o que está guardado nos objetivos",
+        nasContasHoje: reais(bancos.total),
+        faltaPagarNoMes: reais(totalCompromissos),
+        guardadoNosObjetivos: reais(guardadoTotal),
+        disponivelParaGastar: reais(plano.livre),
+        disponivelNegativo: plano.livre < 0,
+        podeGastarPorDia: plano.porDia === null ? "sem folga" : reais(plano.porDia),
+        podeGastarPorSemana: plano.porSemana === null ? "sem folga" : reais(plano.porSemana),
+        diasQueFaltamContandoHoje: plano.diasRestantes,
+        ritmoDoDiaADia: `${reais(plano.ritmoDiario)} por dia (média dos últimos 30 dias, sem contas)`,
+        noRitmoDeAgora:
+          plano.acabaNoDia === null
+            ? `dá até o fim do mês e sobra ${reais(plano.sobraNoFim)}`
+            : `o dinheiro acaba por volta do dia ${plano.acabaNoDia}`,
+        contasQueAindaVaoCair,
+      },
+    };
+  }
+
   const disponivel = disponivelParaGastar(saldoReal(lista), guardado, totalCompromissos);
   const porDia = possoGastarPorDia(disponivel, hoje, mes);
   const ateHoje = lista.filter((l) => l.data <= hoje && contaComoGasto(l));
@@ -94,6 +134,7 @@ export async function verMes(mesTexto: string, hoje: string) {
     ...analise,
     ...extras,
     agora: {
+      comoEContado: "o que sobrou no mês menos o guardado no mês menos o que ainda vai cair",
       disponivelParaGastar: reais(disponivel),
       disponivelNegativo: disponivel < 0,
       podeGastarPorDia: porDia.porDia === null ? "sem folga" : reais(porDia.porDia),
@@ -102,10 +143,7 @@ export async function verMes(mesTexto: string, hoje: string) {
       previsaoDeGastoNoMes: reais(previsao.total),
       ritmoDoDiaADia: `${reais(previsao.ritmoDiario)} por dia`,
       aindaVaiCair: reais(totalCompromissos),
-      contasQueAindaVaoCair: compromissos
-        .sort((a, b) => a.data.localeCompare(b.data))
-        .slice(0, 8)
-        .map((c) => ({ dia: diaCurto(c.data), descricao: c.descricao, valor: reais(c.valor), tipo: c.tipo })),
+      contasQueAindaVaoCair,
     },
   };
 }
