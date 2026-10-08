@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowUp, Check, LoaderCircle, Mic, MicOff, Sparkles, Trash2, X } from "lucide-react";
 import { conversar, salvarDoAssistente } from "@/app/assistente/actions";
@@ -117,22 +117,30 @@ function CartaoProposta({ m, aoSalvar, aoDescartar }: { m: Mensagem; aoSalvar: (
   );
 }
 
+function lerGuardado(): Mensagem[] {
+  try {
+    return JSON.parse(sessionStorage.getItem(GUARDADO) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+const nada = () => () => {};
+
+// A conversa guardada só existe no navegador: espera a página abrir nele antes de mostrar
 export function AssistenteConversa() {
-  const [mensagens, setMensagens] = useState<Mensagem[]>([]);
+  const noNavegador = useSyncExternalStore(nada, () => true, () => false);
+  return noNavegador ? <Conversa /> : null;
+}
+
+function Conversa() {
+  const [mensagens, setMensagens] = useState<Mensagem[]>(lerGuardado);
   const [texto, setTexto] = useState("");
   const [pensando, setPensando] = useState(false);
   const [ouvindo, setOuvindo] = useState(false);
-  const [temMicrofone, setTemMicrofone] = useState(false);
+  const [temMicrofone] = useState(() => criarReconhecimento() !== null);
   const reconhecimento = useRef<Reconhecimento | null>(null);
   const fim = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    try {
-      const salvo = sessionStorage.getItem(GUARDADO);
-      if (salvo) setMensagens(JSON.parse(salvo));
-    } catch {}
-    setTemMicrofone(criarReconhecimento() !== null);
-  }, []);
 
   useEffect(() => {
     try {
@@ -184,7 +192,7 @@ export function AssistenteConversa() {
           </span>
           <p className="font-semibold">Oi! Sou o assistente do Bolso.</p>
           <p className="text-sm text-tinta-suave">
-            Me conta um gasto ("gastei 32 no iFood") que eu lanço pra você, ou pergunta qualquer coisa sobre o seu mês.
+            Me conta um gasto (&ldquo;gastei 32 no iFood&rdquo;) que eu lanço pra você, ou pergunta qualquer coisa sobre o seu mês.
           </p>
         </div>
       ) : (
@@ -225,13 +233,13 @@ export function AssistenteConversa() {
       )}
 
       {!pensando && (mensagens.length === 0 || mensagens.at(-1)?.papel === "bolso") && (
-        <div className="flex flex-wrap gap-2" aria-label="Sugestões">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" aria-label="Sugestões">
           {SUGESTOES.map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => enviar(s)}
-              className="min-h-11 rounded-full bg-cartao px-4 text-sm font-medium shadow-suave active:scale-95"
+              className="min-h-11 shrink-0 whitespace-nowrap rounded-full bg-cartao px-4 text-sm font-medium shadow-suave active:scale-95"
             >
               {s}
             </button>
