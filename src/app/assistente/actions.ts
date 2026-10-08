@@ -1,6 +1,5 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { buscarNoMes, opcoesDeLancamento, verMes } from "@/db/assistente";
@@ -15,10 +14,10 @@ import {
   lerProposta,
   limparResposta,
   MAX_TEXTO,
-  MODELO_ASSISTENTE,
   type MensagemChat,
   type Proposta,
 } from "@/lib/assistente";
+import { criarProvedor, ErroIA, lerConfigIA, type ChamadaFerramenta, type MensagemIA } from "@/lib/ia";
 import { hojeISO } from "@/lib/datas";
 import { subtipoDaCategoria } from "@/lib/entradas";
 import { dataEfetiva } from "@/lib/recorrencias";
@@ -28,84 +27,77 @@ export type RespostaAssistente = { texto: string; proposta?: Proposta; erro?: bo
 
 // Pergunta que precisa de dado: a IA pede a ferramenta, o app responde e ela escreve. 3 voltas bastam.
 const MAX_VOLTAS = 3;
+const MAX_TOKENS = 1024;
 
 const ERRO_GENERICO = "Não consegui responder agora. Tenta de novo daqui a pouco.";
+const ERROS_IA = {
+  chave: "A chave da IA não foi aceita. Confere a variável da chave.",
+  limite: "Muita pergunta seguida (ou acabou o limite grátis do dia). Espera um pouco e tenta de novo.",
+  creditos: "Os créditos da IA acabaram. Dá pra colocar mais no painel do provedor.",
+  outro: ERRO_GENERICO,
+};
+
+// Roda as ferramentas que a IA pediu e devolve os resultados como texto (JSON) pra ela ler
+async function executar(chamadas: ChamadaFerramenta[], hoje: string): Promise<MensagemIA> {
+  const resultados = await Promise.all(
+    chamadas.map(async (c) => {
+      const mes = lerMesPedido(c.entrada.mes, hoje);
+      const dados =
+        c.nome === "ver_mes"
+          ? await verMes(mes, hoje)
+          : c.nome === "buscar_lancamentos"
+            ? await buscarNoMes(mes, String(c.entrada.texto ?? ""), hoje)
+            : null;
+      return dados
+        ? { id: c.id, nome: c.nome, conteudo: JSON.stringify(dados) }
+        : { id: c.id, nome: c.nome, conteudo: "Ferramenta desconhecida.", erro: true };
+    }),
+  );
+  return { papel: "ferramenta", resultados };
+}
 
 export async function conversar(mensagens: MensagemChat[]): Promise<RespostaAssistente> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { texto: "O assistente ainda não está ligado: falta a chave da IA (ANTHROPIC_API_KEY).", erro: true };
-  }
+  const lida = lerConfigIA(process.env);
+  if (!lida.ok) return { texto: `O assistente ainda não está ligado: ${lida.erro}`, erro: true };
+
   const historico = historicoParaApi(mensagens);
   const ultima = historico.at(-1);
-  if (!ultima || ultima.role !== "user") return { texto: "Manda uma mensagem pra começar.", erro: true };
-  if (typeof ultima.content === "string" && ultima.content.length > MAX_TEXTO) {
-    return { texto: `Mensagem grande demais. Escreve em até ${MAX_TEXTO} letras.`, erro: true };
-  }
+  if (!ultima || ultima.papel !== "usuario") return { texto: "Manda uma mensagem pra começar.", erro: true };
+  if (ultima.texto.length > MAX_TEXTO) return { texto: `Mensagem grande demais. Escreve em até ${MAX_TEXTO} letras.`, erro: true };
 
   const hoje = hojeISO();
   const opcoes = await opcoesDeLancamento();
-  const client = new Anthropic();
-  const conversa: Anthropic.MessageParam[] = [...historico];
+  const ia = criarProvedor(lida.config);
+  const conversa: MensagemIA[] = [...historico];
 
   try {
     for (let volta = 0; volta < MAX_VOLTAS; volta++) {
-      const resposta = await client.messages.create({
-        model: MODELO_ASSISTENTE,
-        max_tokens: 1024,
-        system: instrucoesAssistente(hoje, opcoes),
-        tools: ferramentasAssistente(opcoes),
-        messages: conversa,
+      const resposta = await ia.conversar({
+        sistema: instrucoesAssistente(hoje, opcoes),
+        mensagens: conversa,
+        ferramentas: ferramentasAssistente(opcoes),
+        maxTokens: MAX_TOKENS,
       });
-      console.info("[assistente] tokens", resposta.usage.input_tokens, "entrada,", resposta.usage.output_tokens, "saída");
-      if (resposta.stop_reason === "refusal") return { texto: "Essa eu não consigo responder.", erro: true };
-
-      const texto = limparResposta(
-        resposta.content.map((b) => (b.type === "text" ? b.text : "")).join("\n"),
-      );
-      const usos = resposta.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
+      console.info(`[assistente] ${ia.nome}/${ia.modelo}: ${resposta.tokens.entrada} tokens de entrada, ${resposta.tokens.saida} de saída`);
+      if (resposta.recusou) return { texto: "Essa eu não consigo responder.", erro: true };
+      const texto = limparResposta(resposta.texto);
 
       // Propor lançamento encerra a volta: a pessoa confere na tela e decide (não precisa outra chamada)
-      const pedido = usos.find((u) => u.name === "propor_lancamento");
+      const pedido = resposta.chamadas.find((c) => c.nome === "propor_lancamento");
       if (pedido) {
-        const lida = lerProposta(pedido.input as Record<string, unknown>, opcoes, hoje);
-        if (!lida.ok) return { texto: lida.erro, erro: true };
-        return { texto: texto || "Confere e salva:", proposta: lida.proposta };
+        const proposta = lerProposta(pedido.entrada, opcoes, hoje);
+        if (!proposta.ok) return { texto: proposta.erro, erro: true };
+        return { texto: texto || "Confere e salva:", proposta: proposta.proposta };
       }
-      if (resposta.stop_reason !== "tool_use" || usos.length === 0) {
-        return { texto: texto || ERRO_GENERICO, erro: !texto };
-      }
+      if (resposta.chamadas.length === 0) return { texto: texto || ERRO_GENERICO, erro: !texto };
 
       // Todas as ferramentas da volta respondem juntas, numa mensagem só
-      const resultados = await Promise.all(
-        usos.map(async (u): Promise<Anthropic.ToolResultBlockParam> => {
-          const entrada = u.input as Record<string, unknown>;
-          const mes = lerMesPedido(entrada.mes, hoje);
-          const dados =
-            u.name === "ver_mes"
-              ? await verMes(mes, hoje)
-              : u.name === "buscar_lancamentos"
-                ? await buscarNoMes(mes, String(entrada.texto ?? ""), hoje)
-                : null;
-          return dados
-            ? { type: "tool_result", tool_use_id: u.id, content: JSON.stringify(dados) }
-            : { type: "tool_result", tool_use_id: u.id, content: "Ferramenta desconhecida.", is_error: true };
-        }),
-      );
-      conversa.push({ role: "assistant", content: resposta.content }, { role: "user", content: resultados });
+      conversa.push({ papel: "assistente", texto: resposta.texto, chamadas: resposta.chamadas }, await executar(resposta.chamadas, hoje));
     }
     return { texto: "Essa ficou complicada. Tenta perguntar de um jeito mais direto.", erro: true };
   } catch (erro) {
-    if (erro instanceof Anthropic.AuthenticationError) {
-      return { texto: "A chave da IA não foi aceita. Confere a ANTHROPIC_API_KEY.", erro: true };
-    }
-    if (erro instanceof Anthropic.RateLimitError) {
-      return { texto: "Muita pergunta seguida. Espera um minutinho e tenta de novo.", erro: true };
-    }
-    if (erro instanceof Anthropic.APIError && erro.status === 402) {
-      return { texto: "Os créditos da IA acabaram. Dá pra colocar mais no painel da Anthropic.", erro: true };
-    }
     console.error("[assistente]", erro);
-    return { texto: ERRO_GENERICO, erro: true };
+    return { texto: erro instanceof ErroIA ? ERROS_IA[erro.tipo] : ERRO_GENERICO, erro: true };
   }
 }
 

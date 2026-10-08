@@ -1,13 +1,11 @@
 // Assistente do Bolso (Sprint 6.7): um chat só pra analisar o mês, lançar falando e tirar dúvida.
-// Aqui fica o que é puro (instruções, ferramentas, conferir o que a IA propõe). A chamada da API mora
-// em app/assistente/actions.ts e os dados em db/assistente.ts. Regra: o código calcula, a IA só comenta.
-import type Anthropic from "@anthropic-ai/sdk";
+// Aqui fica o que é puro (instruções, ferramentas, conferir o que a IA propõe). A conversa com a IA mora
+// em app/assistente/actions.ts, qual IA usar em lib/ia e os dados em db/assistente.ts.
+// Regra: o código calcula, a IA só comenta.
 import { dataValida } from "./datas";
 import { MAX_CENTAVOS } from "./dinheiro";
 import { normalizar } from "./busca";
-
-// O mais barato (pedido do Vinícius): US$ 1 por milhão de tokens de entrada e US$ 5 de saída
-export const MODELO_ASSISTENTE = "claude-haiku-4-5";
+import type { Ferramenta, MensagemIA } from "./ia/tipos";
 // Só as últimas mensagens vão pra IA: conversa longa custa mais e não ajuda
 export const MAX_HISTORICO = 10;
 export const MAX_TEXTO = 500;
@@ -64,30 +62,30 @@ Pra lançar:
 - Vários gastos na mesma frase: proponha o primeiro e diga que manda o próximo depois.`;
 }
 
-export function ferramentasAssistente(opcoes: OpcoesLancamento): Anthropic.Tool[] {
+export function ferramentasAssistente(opcoes: OpcoesLancamento): Ferramenta[] {
   const mes = { type: "string", description: "Mês no formato AAAA-MM." } as const;
   return [
     {
-      name: "ver_mes",
-      description:
+      nome: "ver_mes",
+      descricao:
         "Números de um mês já calculados pelo app: entradas, gastos, quanto sobrou, categorias comparadas com o mês anterior, maiores gastos, compras pequenas, metas e objetivos. No mês atual também traz o disponível para gastar, quanto dá pra gastar por dia, a previsão do mês e as contas que ainda vão cair.",
-      input_schema: { type: "object", properties: { mes }, required: ["mes"] },
+      parametros: { type: "object", properties: { mes }, required: ["mes"] },
     },
     {
-      name: "buscar_lancamentos",
-      description:
+      nome: "buscar_lancamentos",
+      descricao:
         "Procura lançamentos de um mês pela descrição, categoria, forma de pagamento ou valor (ex.: ifood, mercado, 45,90). Traz até 30, com o total já somado.",
-      input_schema: {
+      parametros: {
         type: "object",
         properties: { mes, texto: { type: "string", description: "Palavras pra procurar." } },
         required: ["mes", "texto"],
       },
     },
     {
-      name: "propor_lancamento",
-      description:
+      nome: "propor_lancamento",
+      descricao:
         "Monta um lançamento pra pessoa conferir e salvar. Não salva sozinho. Use quando a pessoa contar um gasto ou entrada com valor.",
-      input_schema: {
+      parametros: {
         type: "object",
         properties: {
           tipo: { type: "string", enum: ["gasto", "entrada"] },
@@ -161,12 +159,12 @@ export function lerProposta(
 }
 
 // Histórico que vai pra API: só as últimas mensagens, começando por uma sua, sem texto gigante
-export function historicoParaApi(mensagens: MensagemChat[]): Anthropic.MessageParam[] {
-  const ultimas = mensagens
+export function historicoParaApi(mensagens: MensagemChat[]): MensagemIA[] {
+  const ultimas: MensagemIA[] = mensagens
     .filter((m) => m.texto.trim())
     .slice(-MAX_HISTORICO)
-    .map((m) => ({ role: m.papel === "voce" ? ("user" as const) : ("assistant" as const), content: m.texto.slice(0, MAX_TEXTO * 4) }));
-  while (ultimas.length > 0 && ultimas[0].role !== "user") ultimas.shift();
+    .map((m) => ({ papel: m.papel === "voce" ? "usuario" : "assistente", texto: m.texto.slice(0, MAX_TEXTO * 4) }));
+  while (ultimas.length > 0 && ultimas[0].papel !== "usuario") ultimas.shift();
   return ultimas;
 }
 

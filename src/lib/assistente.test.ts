@@ -91,8 +91,8 @@ describe("histórico que vai pra API", () => {
     const muitas = Array.from({ length: 15 }, (_, i) => ({ papel: i % 2 ? ("bolso" as const) : ("voce" as const), texto: `m${i}` }));
     const h = historicoParaApi(muitas);
     expect(h.length).toBeLessThanOrEqual(MAX_HISTORICO);
-    expect(h[0].role).toBe("user");
-    expect(h.at(-1)).toEqual({ role: "user", content: "m14" });
+    expect(h[0].papel).toBe("usuario");
+    expect(h.at(-1)).toEqual({ papel: "usuario", texto: "m14" });
   });
   it("ignora mensagem vazia", () => {
     expect(historicoParaApi([{ papel: "voce", texto: "  " }])).toEqual([]);
@@ -102,12 +102,12 @@ describe("histórico que vai pra API", () => {
 describe("ferramentas e instruções", () => {
   it("as três ferramentas, com as categorias como opção", () => {
     const f = ferramentasAssistente(opcoes);
-    expect(f.map((t) => t.name)).toEqual(["ver_mes", "buscar_lancamentos", "propor_lancamento"]);
-    const props = f[2].input_schema.properties as Record<string, { enum?: string[] }>;
+    expect(f.map((t) => t.nome)).toEqual(["ver_mes", "buscar_lancamentos", "propor_lancamento"]);
+    const props = f[2].parametros.properties as Record<string, { enum?: string[] }>;
     expect(props.categoria.enum).toEqual(["Alimentação", "Outros", "Salário"]);
   });
   it("sem banco cadastrado o campo banco não aparece (enum vazio a API recusa)", () => {
-    const props = ferramentasAssistente({ ...opcoes, bancos: [] })[2].input_schema.properties as Record<string, unknown>;
+    const props = ferramentasAssistente({ ...opcoes, bancos: [] })[2].parametros.properties as Record<string, unknown>;
     expect(props.banco).toBeUndefined();
     expect(props.forma).toBeDefined();
   });

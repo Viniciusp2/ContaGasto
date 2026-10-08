@@ -257,8 +257,11 @@ Um chat só (Mais, Assistente) pra três coisas: **lançar falando** ("gastei 32
 - **O código calcula, a IA comenta.** A IA nunca faz conta: ela chama ferramentas (`ver_mes`, `buscar_lancamentos`) que devolvem os números já prontos e escritos em reais, pelos mesmos cálculos das telas (o disponível é o mesmo do Início, com ou sem saldo dos bancos). As instruções proíbem somar, subtrair ou inventar número.
 - **Lançar:** a ferramenta `propor_lancamento` não salva nada. O app confere (categoria pelo nome, sem acento; valor em centavos; data válida; entrada sem forma) e mostra um cartão com **Salvar** e **Descartar**. Salvar usa a mesma validação e as mesmas regras do formulário (crédito segue a fatura, "ainda vou pagar" fica a pagar). Só lançamento único; fixo e parcela continuam no formulário.
 - **Falar:** botão de microfone com o ditado do próprio navegador (grátis). Some onde o navegador não tem.
-- **O mais barato possível** (pedido do Vinícius): modelo Claude Haiku 4.5 (US$ 1 por milhão de tokens de entrada, US$ 5 de saída), sem thinking, `max_tokens` 1024, só as últimas 10 mensagens vão pra IA, no máximo 3 voltas de ferramenta por pergunta e propor lançamento encerra na primeira volta. Fica em torno de 1 a 3 centavos de real por pergunta.
-- **Chave:** variável `ANTHROPIC_API_KEY` (local no `.env.local`, na Vercel em Environment Variables). Sem ela, o assistente avisa que não está ligado. A API é paga à parte da assinatura do Claude: créditos pré-pagos no console da Anthropic, com limite de gasto.
+- **Qualquer IA, escolhida por variável** (pedido do Vinícius, 08/10/2026, pensando no portfólio): `src/lib/ia/` tem um formato neutro de conversa (`tipos.ts`), a lista de provedores (`config.ts`) e dois adaptadores: `anthropic.ts` (SDK oficial) e `compativel.ts` (formato de chat da OpenAI, com fetch puro, que serve pro Gemini, Groq, OpenRouter e pra qualquer IA futura). `IA_PROVEDOR` = `gemini` (padrão na fase de teste, plano grátis), `groq`, `openrouter`, `claude` ou `compativel` (só `IA_URL` + `IA_MODELO` + `IA_CHAVE`, sem mexer no código). `IA_MODELO` e `IA_URL` trocam o padrão de cada um. A tela mostra qual IA está respondendo.
+- **Gasto baixo:** `max_tokens` 1024, raciocínio no mínimo onde dá (`reasoning_effort: low`), só as últimas 10 mensagens vão pra IA, no máximo 3 voltas de ferramenta por pergunta e propor lançamento encerra na primeira volta. No Claude Haiku 4.5 fica em torno de 1 a 3 centavos de real por pergunta; Gemini, Groq e OpenRouter têm plano grátis com limite por dia.
+- **Chamada de ferramenta volta igual:** o adaptador guarda a chamada como o provedor mandou e devolve sem mexer (o Gemini anexa uma assinatura que precisa voltar).
+- **Privacidade:** plano grátis do Gemini pode usar o que é enviado pra melhorar os produtos do Google. Bom pra teste com dado inventado; com dado de verdade em produção, preferir plano pago (Claude ou Gemini pago).
+- **Chave:** variável do provedor (`GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` ou `IA_CHAVE`), local no `.env.local` e na Vercel em Environment Variables. Sem ela, o assistente avisa o que falta. A API do Claude é paga à parte da assinatura do Claude.
 - A conversa fica só na aba do navegador (`sessionStorage`), não vai pro banco.
 
 ### 4.11 Contas e transferências (v2)
@@ -387,7 +390,7 @@ Notificações (alertas de categoria, lembrete de lançar, relatório mensal) ·
 - **Sprint 6.8** (1.6.0) Conferir: curadoria de erros em Mais (por que o disponível difere do banco, bate com o banco, atrasadas sem pagamento, a pagar que parece paga, possíveis repetidos, sem banco) + Pagamentos conta as contas soltas já pagas. Feito.
 - **Sprint 6.9** (1.6.5) Fixos com CRUD completo: editar tudo (inclusive banco, dia e parcelas), apagar de vez com 3 modos, virar fixo a partir de um lançamento, assinaturas do histórico no cartão e em Fixos. Feito.
 - **Sprint 6.10** (1.6.6) Disponível e previsão com base no dinheiro dos bancos (por dia, por semana, ritmo). Feito.
-- **Sprint 6.7** (1.7.0) Assistente com IA (4.15): um chat em Mais que lança falando, analisa o mês e responde sobre o dinheiro, com Claude Haiku 4.5 (o mais barato). Feito.
+- **Sprint 6.7** (1.7.0) Assistente com IA (4.15): um chat em Mais que lança falando, analisa o mês e responde sobre o dinheiro. A IA é escolhida por variável (Gemini, Groq, OpenRouter, Claude ou qualquer compatível); Gemini grátis na fase de teste. Feito.
 - **Sprint 6.5** Notificações (conta vencendo amanhã, vence hoje, atrasada).
 - **Sprint 6.6** Comprovantes nas contas pagas (precisa do Vercel Blob ligado ao projeto).
 
@@ -500,7 +503,7 @@ O `.sessoes.md` é só local (está no `.gitignore`): é o quadro de recados ent
 | Dia útil          | seg a sáb, sem feriados nacionais           |
 | Vale alimentação  | saldo próprio, fora do saldo real            |
 | Assistente (IA)   | um chat só; o código calcula, a IA comenta; lançamento só salva no toque |
-| Modelo da IA      | Claude Haiku 4.5, o mais barato (pedido do Vinícius) |
+| Provedor da IA    | escolhido por `IA_PROVEDOR`; Gemini grátis na fase de teste, Claude Haiku 4.5 como opção paga |
 
 ### A confirmar
 

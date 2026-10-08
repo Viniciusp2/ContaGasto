@@ -16,7 +16,7 @@ A versão que está no ar aparece no fim da tela **Mais**, com o código da publ
   - **Analisa o mês:** "analisa meu mês" mostra onde mais foi dinheiro, o que mudou desde o mês passado, metas estouradas, compras pequenas e quanto dá pra gastar.
   - **Responde sobre o seu dinheiro:** "quanto gastei de mercado?", "quanto posso gastar por dia?". Os números vêm das mesmas contas das telas: a IA só explica.
 - Botão de microfone pra falar em vez de digitar (usa o ditado do celular).
-- Usa o modelo mais barato da Anthropic (Claude Haiku 4.5): de 1 a 3 centavos de real por pergunta. Precisa da chave da API (`ANTHROPIC_API_KEY`) cadastrada na Vercel.
+- **Escolha a IA** pela variável `IA_PROVEDOR`: Google Gemini (padrão, plano grátis), Groq, OpenRouter, Claude ou qualquer IA compatível com o formato da OpenAI. A tela mostra qual está respondendo. Precisa da chave do provedor escolhido (ex.: `GEMINI_API_KEY`) cadastrada na Vercel.
 
 ## 1.6.7 (08/10/2026)
 
