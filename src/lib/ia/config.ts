@@ -82,7 +82,8 @@ type Lida = { ok: true; config: ConfigIA } | { ok: false; erro: string };
 // Monta a configuração de um provedor. "ajustes" liga IA_CHAVE, IA_MODELO e IA_URL (só valem pra principal).
 function montarConfig(pedido: string, env: Env, ajustes: boolean, variavel: string): Lida {
   if (!(pedido in PROVEDORES)) {
-    return { ok: false, erro: `${variavel} "${pedido}" não existe. Use: ${Object.keys(PROVEDORES).join(", ")}.` };
+    // Nunca repete o valor: se a pessoa colou uma chave aqui por engano, ela apareceria na tela
+    return { ok: false, erro: `${variavel} tem um valor que não é o nome de uma IA. Use só: ${Object.keys(PROVEDORES).join(", ")}.` };
   }
   const nome = pedido as NomeProvedor;
   const { variavelChave, ...definicao }: DefinicaoProvedor = PROVEDORES[nome];

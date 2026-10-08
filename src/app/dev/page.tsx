@@ -4,7 +4,7 @@ import { BotaoApagarLogs, CopiarDiagnostico, TestarIA } from "@/components/dev-a
 import { USA_NEON } from "@/db";
 import { resumoDasTabelas } from "@/db/dev";
 import { apagarLogsAntigos, DIAS_DE_LOG, listarLogs, origensDosLogs } from "@/db/logs";
-import { estadoVariaveis, NIVEIS, nomesParecidos, textoDiagnostico, type NivelLog } from "@/lib/dev";
+import { avisosDeValor, estadoVariaveis, NIVEIS, nomesParecidos, textoDiagnostico, type NivelLog } from "@/lib/dev";
 import { descreverIA, descreverReserva, listarIAs } from "@/lib/ia";
 import { textoVersao, VERSAO_ATUAL } from "@/lib/versao";
 
@@ -47,6 +47,7 @@ export default async function Dev({ searchParams }: PageProps<"/dev">) {
   const env = process.env;
   const variaveis = estadoVariaveis(env);
   const parecidos = nomesParecidos(env);
+  const avisos = avisosDeValor(env);
   const ias = listarIAs(env);
   const ambiente = env.VERCEL_ENV ?? env.NODE_ENV ?? "?";
   const banco = USA_NEON ? "Neon (nuvem)" : "PGlite (local)";
@@ -57,6 +58,7 @@ export default async function Dev({ searchParams }: PageProps<"/dev">) {
     banco,
     variaveis,
     parecidos,
+    avisos,
     ias,
     erros: ultimosErros.map((e) => ({ em: quando(e.em), origem: e.origem, mensagem: e.mensagem, detalhe: e.detalhe })),
   });
@@ -104,7 +106,7 @@ export default async function Dev({ searchParams }: PageProps<"/dev">) {
               <dt className="text-tinta-suave">IA</dt>
               <dd>{principal ?? "nenhuma pronta"}</dd>
               <dt className="text-tinta-suave">Reserva</dt>
-              <dd>{reserva ?? (env.IA_RESERVA ? `${env.IA_RESERVA} (sem chave)` : "nenhuma")}</dd>
+              <dd>{reserva ?? (env.IA_RESERVA ? "configurada, mas não está pronta (veja os avisos)" : "nenhuma")}</dd>
             </dl>
           </Cartao>
 
@@ -131,6 +133,12 @@ export default async function Dev({ searchParams }: PageProps<"/dev">) {
 
           <Cartao titulo="Variáveis" Icone={Database}>
             <p className="mb-3 text-xs text-tinta-suave">Só o nome e se existe. O valor nunca aparece aqui.</p>
+            {avisos.map((a) => (
+              <div key={a} className="mb-3 flex gap-2 rounded-2xl bg-coral p-3 text-sm">
+                <TriangleAlert size={18} className="mt-0.5 shrink-0" aria-hidden />
+                <p>{a}</p>
+              </div>
+            ))}
             {parecidos.length > 0 && (
               <div className="mb-3 flex gap-2 rounded-2xl bg-limao p-3 text-sm">
                 <TriangleAlert size={18} className="mt-0.5 shrink-0" aria-hidden />

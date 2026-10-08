@@ -9,6 +9,11 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.10.1 (08/10/2026)
+
+- Corrigido: quando `IA_RESERVA` ou `IA_PROVEDOR` tinham um valor que não era nome de IA (por exemplo, uma chave colada ali por engano), a tela Dev mostrava esse valor. Agora nenhuma tela repete o valor de variável.
+- A área Dev avisa quando parece que tem uma chave dentro de `IA_RESERVA` ou `IA_PROVEDOR`, e diz onde ela deveria ficar.
+
 ## 1.10.0 (08/10/2026)
 
 - **Área Dev** (Mais, Dev), só sua:

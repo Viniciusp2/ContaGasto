@@ -53,6 +53,25 @@ export function nomesParecidos(env: Env): { encontrado: string; talvezSeja: stri
     });
 }
 
+// IA_PROVEDOR e IA_RESERVA levam só o nome da IA. Valor diferente (ou uma chave colada ali) vira aviso,
+// sem nunca mostrar o valor.
+const NOMES_DE_IA = ["gemini", "groq", "openrouter", "claude", "compativel"];
+const CARA_DE_CHAVE = /^(sk-|gsk_|AIza|sk-or-|sk-ant-)|^[A-Za-z0-9_\-]{30,}$/;
+
+export function avisosDeValor(env: Env): string[] {
+  const avisos: string[] = [];
+  for (const nome of ["IA_PROVEDOR", "IA_RESERVA"]) {
+    const valor = (env[nome] ?? "").trim();
+    if (!valor || NOMES_DE_IA.includes(valor.toLowerCase())) continue;
+    avisos.push(
+      CARA_DE_CHAVE.test(valor)
+        ? `${nome} parece ter uma chave dentro. Ela leva só o nome da IA (ex.: openrouter); a chave vai na variável própria (ex.: OPENROUTER_API_KEY). Troque a chave, porque ela ficou num lugar visível.`
+        : `${nome} tem um valor que não é o nome de uma IA. Use só: ${NOMES_DE_IA.join(", ")}.`,
+    );
+  }
+  return avisos;
+}
+
 // Detalhe de log: corta texto grande e tira qualquer campo com cara de segredo
 const CAMPOS_SECRETOS = /(senha|segredo|secret|chave|key|token|authorization|password)/i;
 export function limparDetalhe(detalhe: Record<string, unknown>): Record<string, unknown> {
@@ -72,6 +91,7 @@ export function textoDiagnostico({
   banco,
   variaveis,
   parecidos = [],
+  avisos = [],
   ias,
   erros,
 }: {
@@ -80,6 +100,7 @@ export function textoDiagnostico({
   banco: string;
   variaveis: EstadoVariavel[];
   parecidos?: { encontrado: string; talvezSeja: string }[];
+  avisos?: string[];
   ias: { descricao: string; pronta: boolean; motivo?: string }[];
   erros: { em: string; origem: string; mensagem: string; detalhe?: unknown }[];
 }) {
@@ -90,6 +111,7 @@ export function textoDiagnostico({
     "Variáveis (só se existem, sem valor):",
     ...variaveis.map((v) => `- ${v.nome}: ${v.definida ? `sim${v.comoNome ? ` (como ${v.comoNome})` : ""}` : "não"}`),
     ...parecidos.map((p) => `- ATENÇÃO: existe ${p.encontrado}, mas o app procura ${p.talvezSeja}`),
+    ...avisos.map((a) => `- ATENÇÃO: ${a}`),
     "",
     "IAs:",
     ...ias.map((ia) => `- ${ia.descricao}: ${ia.pronta ? "pronta" : `não (${ia.motivo ?? "sem chave"})`}`),

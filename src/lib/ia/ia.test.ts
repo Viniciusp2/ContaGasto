@@ -209,3 +209,13 @@ describe("pedido sem ferramentas", () => {
     expect("tools" in corpo).toBe(false);
   });
 });
+
+describe("erro de configuração não repete o valor", () => {
+  it("chave colada em IA_RESERVA não aparece na mensagem", () => {
+    const chave = "sk-or-v1-0123456789abcdef";
+    const r = lerConfigReserva({ GEMINI_API_KEY: "g", IA_RESERVA: chave });
+    expect(r).toMatchObject({ ok: false });
+    expect(JSON.stringify(r)).not.toContain(chave);
+    expect(JSON.stringify(listarIAs({ IA_PROVEDOR: chave }))).not.toContain(chave);
+  });
+});

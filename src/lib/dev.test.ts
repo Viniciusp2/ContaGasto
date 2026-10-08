@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estadoVariaveis, limparDetalhe, nomesParecidos, textoDiagnostico } from "./dev";
+import { avisosDeValor, estadoVariaveis, limparDetalhe, nomesParecidos, textoDiagnostico } from "./dev";
 
 describe("variáveis na área Dev", () => {
   it("diz só se existe, e vazio ou espaço conta como não", () => {
@@ -43,5 +43,19 @@ describe("texto pro Claude", () => {
     expect(t).toContain("OpenRouter: não (Falta a chave");
     expect(t).toContain("[assistente] Google Gemini falhou (código 429)");
     expect(t).not.toContain("segredo");
+  });
+});
+
+describe("valor errado em IA_PROVEDOR e IA_RESERVA", () => {
+  it("chave colada no lugar do nome vira aviso, sem mostrar a chave", () => {
+    const chave = "sk-or-v1-0123456789abcdef0123456789abcdef";
+    const avisos = avisosDeValor({ IA_RESERVA: chave, IA_PROVEDOR: "gemini" });
+    expect(avisos).toHaveLength(1);
+    expect(avisos[0]).toContain("IA_RESERVA parece ter uma chave dentro");
+    expect(avisos.join()).not.toContain(chave);
+  });
+  it("nome inventado também avisa; nome certo, não", () => {
+    expect(avisosDeValor({ IA_PROVEDOR: "chatgpt" })[0]).toContain("não é o nome de uma IA");
+    expect(avisosDeValor({ IA_PROVEDOR: "Gemini", IA_RESERVA: "openrouter" })).toEqual([]);
   });
 });
