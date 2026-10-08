@@ -5,6 +5,7 @@ import { ContaPagamento } from "@/components/conta-pagamento";
 import { SeletorMes } from "@/components/seletor-mes";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
 import { contasDoMes } from "@/db/pagamentos";
+import { saldosHoje, ultimaContaUsada } from "@/db/saldos";
 import { resumoPagamentos } from "@/lib/contas";
 import { hojeISO, intervaloDoMes, lerMes } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
@@ -16,7 +17,9 @@ export default async function Pagamentos({ searchParams }: PageProps<"/pagamento
   const params = await searchParams;
   const mes = lerMes(typeof params.mes === "string" ? params.mes : undefined);
   const hoje = hojeISO();
-  const contas = await contasDoMes(mes, hoje);
+  const [contas, saldos, bancoPadrao] = await Promise.all([contasDoMes(mes, hoje), saldosHoje(hoje), ultimaContaUsada()]);
+  // Bancos pro "Paguei" (o do VA fica de fora: conta não se paga com o VA)
+  const bancos = saldos.linhas.filter((b) => !b.va).map((b) => ({ id: b.id, nome: b.nome, sigla: b.sigla, cor: b.cor, corTexto: b.corTexto }));
   const resumo = resumoPagamentos(contas);
   const { inicio } = intervaloDoMes(mes);
 
@@ -86,7 +89,7 @@ export default async function Pagamentos({ searchParams }: PageProps<"/pagamento
           )}
           <ul className="flex flex-col gap-2">
             {atrasadas.map((c) => (
-              <ContaPagamento key={c.chave} conta={c} hoje={hoje} />
+              <ContaPagamento key={c.chave} conta={c} hoje={hoje} bancos={bancos} bancoPadrao={bancoPadrao} />
             ))}
           </ul>
         </section>
@@ -97,7 +100,7 @@ export default async function Pagamentos({ searchParams }: PageProps<"/pagamento
           <h2 className="font-semibold">A pagar</h2>
           <ul className="flex flex-col gap-2">
             {aPagar.map((c) => (
-              <ContaPagamento key={c.chave} conta={c} hoje={hoje} />
+              <ContaPagamento key={c.chave} conta={c} hoje={hoje} bancos={bancos} bancoPadrao={bancoPadrao} />
             ))}
           </ul>
         </section>
@@ -108,7 +111,7 @@ export default async function Pagamentos({ searchParams }: PageProps<"/pagamento
           <h2 className="font-semibold">Pagas</h2>
           <ul className="flex flex-col gap-2">
             {pagas.map((c) => (
-              <ContaPagamento key={c.chave} conta={c} hoje={hoje} />
+              <ContaPagamento key={c.chave} conta={c} hoje={hoje} bancos={bancos} bancoPadrao={bancoPadrao} />
             ))}
           </ul>
         </section>

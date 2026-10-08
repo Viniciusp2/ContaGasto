@@ -9,6 +9,11 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.6.7 (08/10/2026)
+
+- Corrigido: marcar **Paguei** numa conta não descontava do "Nas contas hoje" quando a conta não tinha banco. Agora o Paguei mostra de qual banco saiu, já marcado (o banco da conta ou do fixo, senão o último usado, senão o único), e desconta dele na hora. Dá pra trocar antes de tocar.
+- Conta que já foi paga sem banco aparece em Mais, Conferir, "Lançamentos sem banco": toque e escolha o banco.
+
 ## 1.6.6 (08/10/2026)
 
 - **Disponível até o fim do mês** com base no dinheiro dos bancos (quando os saldos estão informados): nas contas hoje menos o que falta pagar no mês menos o que está guardado nos objetivos. Mostra **quanto dá pra gastar por dia e por semana** até o dia 31, e o VA à parte (quanto dá por dia pra comida).

@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { buscarCategoria, buscarFormaPagamento } from "@/db/consultas";
+import { buscarCategoria, buscarConta, buscarFormaPagamento } from "@/db/consultas";
 import { buscarRecorrencia } from "@/db/pagamentos";
 import { lancamentos, pagamentosFatura } from "@/db/schema";
 import { USUARIO_PADRAO } from "@/db/usuario-padrao";
@@ -24,7 +24,9 @@ function lerPagamento(fd: FormData) {
   const textoValor = String(fd.get("valor") ?? "");
   const valor = textoValor ? Number(textoValor) : null;
   if (valor !== null && (!Number.isInteger(valor) || valor <= 0 || valor > MAX_CENTAVOS)) return { erro: "Valor inválido." };
-  return { pagoEm, valor };
+  const contaTexto = String(fd.get("contaId") ?? "");
+  if (contaTexto && !ehUuid(contaTexto)) return { erro: "Banco inválido." };
+  return { pagoEm, valor, contaId: contaTexto || null };
 }
 
 function pronto(): EstadoPagamento {
@@ -37,6 +39,7 @@ export async function pagar(_: EstadoPagamento, fd: FormData): Promise<EstadoPag
   const lido = lerPagamento(fd);
   if ("erro" in lido) return { erro: lido.erro };
   const origem = String(fd.get("origem") ?? "");
+  if (lido.contaId && !(await buscarConta(lido.contaId))) return { erro: "Esse banco não existe mais." };
 
   if (origem === "lancamento") {
     const id = String(fd.get("lancamentoId") ?? "");
@@ -51,6 +54,8 @@ export async function pagar(_: EstadoPagamento, fd: FormData): Promise<EstadoPag
         status: "confirmado",
         data: lido.pagoEm,
         vencimento: l.vencimento ?? l.data,
+        // De qual banco saiu: sem isso o "Nas contas hoje" não desconta (conserto 1.6.7)
+        contaId: lido.contaId ?? l.contaId,
         ...(lido.valor !== null ? { valor: lido.valor } : {}),
       })
       .where(eq(lancamentos.id, id));
@@ -95,6 +100,7 @@ export async function pagar(_: EstadoPagamento, fd: FormData): Promise<EstadoPag
         valor: lido.valor ?? rec.valor,
         categoriaId: rec.categoriaId,
         formaPagamentoId: rec.formaPagamentoId,
+        contaId: lido.contaId ?? rec.contaId,
         tipo: "gasto",
         recorrenciaId: rec.id,
         parcela: o.parcela,

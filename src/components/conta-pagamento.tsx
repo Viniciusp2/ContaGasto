@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Check, LoaderCircle, Undo2 } from "lucide-react";
 import { desfazerPagamento, pagar, type EstadoPagamento } from "@/app/pagamentos/actions";
 import { IconeCategoria } from "@/components/icone-categoria";
+import { SeloConta } from "@/components/selo-conta";
 import type { ContaDoMes } from "@/db/pagamentos";
 import { situacaoConta, textoVencimento } from "@/lib/contas";
 import { diaCurto } from "@/lib/datas";
@@ -29,8 +30,25 @@ function CamposConta({ conta }: { conta: ContaDoMes }) {
   );
 }
 
-export function ContaPagamento({ conta, hoje, compacta = false }: { conta: ContaDoMes; hoje: string; compacta?: boolean }) {
+type Banco = { id: string; nome: string; sigla: string; cor: string; corTexto: string };
+
+export function ContaPagamento({
+  conta,
+  hoje,
+  compacta = false,
+  bancos = [],
+  bancoPadrao = null,
+}: {
+  conta: ContaDoMes;
+  hoje: string;
+  compacta?: boolean;
+  bancos?: Banco[]; // bancos de onde a conta pode ter saído (sem o do VA)
+  bancoPadrao?: string | null; // último banco usado
+}) {
   const [detalhes, setDetalhes] = useState(false);
+  // Banco já marcado: o da conta (ou do fixo), senão o último usado, senão o único que existir (conserto 1.6.7)
+  const sugerido = [conta.contaId, bancoPadrao].find((id) => id && bancos.some((b) => b.id === id)) ?? (bancos.length === 1 ? bancos[0].id : "");
+  const [bancoId, setBancoId] = useState(sugerido ?? "");
   const [valor, setValor] = useState(conta.valor);
   const [pagoEm, setPagoEm] = useState(hoje);
   const [estadoPagar, acaoPagar, pagando] = useActionState(async (a: EstadoPagamento, fd: FormData) => {
@@ -115,6 +133,26 @@ export function ContaPagamento({ conta, hoje, compacta = false }: { conta: Conta
           )}
           {precisaValor && <input type="hidden" name="valor" value={valor} />}
           <input type="hidden" name="pagoEm" value={pagoEm} />
+          {conta.origem !== "fatura" && bancos.length > 0 && (
+            <div role="radiogroup" aria-label="Saiu de qual banco" className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-tinta-suave">Saiu do</span>
+              {bancos.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={bancoId === b.id}
+                  aria-label={b.nome}
+                  onClick={() => setBancoId(bancoId === b.id ? "" : b.id)}
+                  className={`flex min-h-9 items-center rounded-full border-2 px-1.5 ${bancoId === b.id ? "border-tinta" : "border-transparent opacity-50"}`}
+                >
+                  <SeloConta nome={b.nome} sigla={b.sigla} cor={b.cor} corTexto={b.corTexto} />
+                </button>
+              ))}
+              {!bancoId && <span className="text-xs font-semibold">escolha o banco pra descontar do saldo</span>}
+            </div>
+          )}
+          {bancoId && <input type="hidden" name="contaId" value={bancoId} />}
           <div className="flex gap-2">
             <button
               type="submit"

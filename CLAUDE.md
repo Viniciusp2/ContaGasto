@@ -246,6 +246,7 @@ Aba própria na barra de baixo. Lista as contas do mês: o que já pagou, o que 
 - **Fatura do cartão** aparece como conta: soma dos gastos no crédito que vencem no mês + parcelas e fixos do cartão que ainda vão cair. Marcar a fatura como paga é **só controle** (`pagamentos_fatura`): os gastos do cartão já contam no vencimento.
 - **Pagar adiantado:** conta que ainda vai vencer já pode ser paga; vira lançamento da competência dela e o gerador não duplica.
 - **Contas soltas (1.6.0):** gasto já pago que é conta de verdade (categorias Contas, Educação, Assinaturas, Pagamento de empréstimo, pago com boleto ou descrição com aluguel) também aparece em Pagamentos como paga, mesmo sem ser fixo (ex.: o que veio do extrato).
+- **Paguei escolhe o banco (1.6.7):** o pagamento grava de qual banco saiu (padrão: banco da conta ou do fixo, senão o último usado, senão o único; o do VA fica de fora), senão o "Nas contas hoje" não desconta.
 - **Fácil de achar:** aba Pagamentos, bloco "Contas pra pagar" no topo do Início (atrasadas e as que vencem em até 3 dias, com Paguei a um toque) e etiqueta "a pagar" na lista de lançamentos.
 - **Próximos:** notificações (conta vencendo, atrasada) e comprovantes (foto ou PDF, no Vercel Blob).
 

@@ -33,7 +33,7 @@ import { NumeroAnimado } from "@/components/animacoes";
 import { ContaPagamento } from "@/components/conta-pagamento";
 import { contasPendentes } from "@/db/pagamentos";
 import { NasContas } from "@/components/nas-contas";
-import { saldosHoje } from "@/db/saldos";
+import { saldosHoje, ultimaContaUsada } from "@/db/saldos";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +64,8 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
   const pendentes = mesAtual ? await contasPendentes(hoje, 3) : [];
   // Quanto tem em cada banco hoje (só faz sentido no mês atual)
   const nasContas = mesAtual ? await saldosHoje(hoje) : null;
+  const bancoPadrao = pendentes.length > 0 ? await ultimaContaUsada() : null;
+  const bancosPagar = (nasContas?.linhas ?? []).filter((b) => !b.va).map((b) => ({ id: b.id, nome: b.nome, sigla: b.sigla, cor: b.cor, corTexto: b.corTexto }));
   // Com os saldos dos bancos informados, o disponível parte do dinheiro de verdade (1.6.6); sem eles, do que sobrou no mês
   const plano =
     painel && nasContas?.algumInformado
@@ -164,7 +166,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
           </div>
           <ul className="flex flex-col gap-2">
             {pendentes.slice(0, 3).map((c) => (
-              <ContaPagamento key={c.chave} conta={c} hoje={hoje} compacta />
+              <ContaPagamento key={c.chave} conta={c} hoje={hoje} compacta bancos={bancosPagar} bancoPadrao={bancoPadrao} />
             ))}
           </ul>
           {pendentes.length > 3 && (

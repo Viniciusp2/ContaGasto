@@ -28,6 +28,7 @@ export type ContaDoMes = {
   paga: boolean;
   pagoEm?: string;
   automatico: boolean; // débito automático: já nasce paga
+  contaId?: string | null; // banco de onde sai (do lançamento ou do fixo): o Paguei já vem com ele
   estimado: boolean; // valor ainda é a média (luz, água)
 };
 
@@ -100,6 +101,7 @@ export async function contasDoMes(mes: Mes, hoje: string): Promise<ContaDoMes[]>
     contas.push({
       chave: l.id,
       origem: "lancamento",
+      contaId: l.contaId ?? r?.rec.contaId ?? null,
       lancamentoId: l.id,
       recorrenciaId: l.recorrenciaId ?? undefined,
       descricao: l.descricao,
@@ -138,6 +140,7 @@ export async function contasDoMes(mes: Mes, hoje: string): Promise<ContaDoMes[]>
         contas.push({
           chave: `${r.rec.id}-${o.competencia}`,
           origem: "prevista",
+          contaId: r.rec.contaId ?? null,
           recorrenciaId: r.rec.id,
           competencia: o.competencia,
           descricao: r.rec.descricao,
