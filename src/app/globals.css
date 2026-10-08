@@ -104,6 +104,11 @@ body {
 .recharts-reference-line line {
   stroke: var(--tinta-suave);
 }
+/* Tocar no gráfico não pode desenhar moldura de foco (o gráfico não é um controle) */
+.recharts-wrapper :focus,
+.recharts-wrapper:focus {
+  outline: none;
+}
 
 /* Impressão (relatório em PDF): papel branco, tinta escura, sem a barra e o botão flutuante */
 @media print {

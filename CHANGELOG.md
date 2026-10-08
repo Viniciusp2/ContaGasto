@@ -8,6 +8,10 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.2.3 (07/10/2026)
+
+- Tocar num gráfico (por dia da semana, fluxo do mês) não desenha mais uma moldura preta por cima das barras.
+
 ## 1.2.2 (07/10/2026)
 
 - **Importar lançamentos** subiu pra antes do Backup, na tela Exportar e backup.

@@ -59,7 +59,8 @@ export function GraficoFluxo({ pontos }: { pontos: { dia: number; saldo: number 
     <>
       <div className="h-52" style={{ color: cor }} role="img" aria-label={`Saldo acumulado do dia 1 ao dia ${pontos.length}, terminando em ${formatarCentavos(pontos.at(-1)!.saldo)}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={pontos} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          {/* accessibilityLayer desligado: ao tocar, o celular desenhava uma moldura preta de foco. A leitura acessível já vem do aria-label e da tabela. */}
+          <AreaChart data={pontos} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} accessibilityLayer={false}>
             <defs>
               <linearGradient id="preenchimentoFluxo" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="currentColor" stopOpacity={0.25} />
@@ -91,7 +92,7 @@ export function GraficoSemana({ dias }: { dias: { dia: string; valor: number }[]
     <>
       <div className="h-44" style={{ color: COR_GRAFICO.gasto }} role="img" aria-label={`Gasto por dia da semana. Dia que mais gasta: ${maior.dia}, ${formatarCentavos(maior.valor)}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={dias} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <BarChart data={dias} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} accessibilityLayer={false}>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="dia" tick={EIXO} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={eixoReais} tick={EIXO} axisLine={false} tickLine={false} width={70} />
