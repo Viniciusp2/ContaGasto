@@ -58,7 +58,7 @@ export function provedorAnthropic(config: ConfigIA): ProvedorIA {
         });
         return lerRespostaAnthropic(resposta);
       } catch (erro) {
-        if (erro instanceof Anthropic.APIError) throw new ErroIA(tipoDoStatus(erro.status ?? 0), erro.message);
+        if (erro instanceof Anthropic.APIError) throw new ErroIA(tipoDoStatus(erro.status ?? 0), erro.message, erro.status);
         throw new ErroIA("outro", (erro as Error).message);
       }
     },

@@ -27,7 +27,8 @@ export type RespostaAssistente = { texto: string; proposta?: Proposta; erro?: bo
 
 // Pergunta que precisa de dado: a IA pede a ferramenta, o app responde e ela escreve. 3 voltas bastam.
 const MAX_VOLTAS = 3;
-const MAX_TOKENS = 1024;
+// Folga pro raciocínio: no Gemini ele conta dentro do limite de saída
+const MAX_TOKENS = 2048;
 
 const ERRO_GENERICO = "Não consegui responder agora. Tenta de novo daqui a pouco.";
 const ERROS_IA = {
@@ -89,7 +90,10 @@ export async function conversar(mensagens: MensagemChat[]): Promise<RespostaAssi
         if (!proposta.ok) return { texto: proposta.erro, erro: true };
         return { texto: texto || "Confere e salva:", proposta: proposta.proposta };
       }
-      if (resposta.chamadas.length === 0) return { texto: texto || ERRO_GENERICO, erro: !texto };
+      if (resposta.chamadas.length === 0) {
+        if (!texto) console.error(`[assistente] ${ia.nome} respondeu vazio (${resposta.tokens.saida} tokens de saída)`);
+        return { texto: texto || `${ERRO_GENERICO} (resposta vazia)`, erro: !texto };
+      }
 
       // Todas as ferramentas da volta respondem juntas, numa mensagem só
       conversa.push({ papel: "assistente", texto: resposta.texto, chamadas: resposta.chamadas }, await executar(resposta.chamadas, hoje));
@@ -97,7 +101,10 @@ export async function conversar(mensagens: MensagemChat[]): Promise<RespostaAssi
     return { texto: "Essa ficou complicada. Tenta perguntar de um jeito mais direto.", erro: true };
   } catch (erro) {
     console.error("[assistente]", erro);
-    return { texto: erro instanceof ErroIA ? ERROS_IA[erro.tipo] : ERRO_GENERICO, erro: true };
+    if (!(erro instanceof ErroIA)) return { texto: ERRO_GENERICO, erro: true };
+    // O código ajuda a descobrir o motivo (o detalhe completo fica no log do servidor)
+    const codigo = erro.tipo === "outro" ? ` (código ${erro.status ?? "sem resposta"})` : "";
+    return { texto: ERROS_IA[erro.tipo] + codigo, erro: true };
   }
 }
 

@@ -3,7 +3,18 @@
 import type { ConfigIA } from "./config";
 import { ErroIA, tipoDoStatus, type ChamadaFerramenta, type PedidoIA, type ProvedorIA, type RespostaIA } from "./tipos";
 
-type ChamadaBruta = { id?: string; type?: string; function?: { name?: string; arguments?: string } };
+type ChamadaBruta = { id?: string; type?: string; function?: { name?: string; arguments?: string }; extra_content?: unknown };
+
+// Volta só o que é do padrão + a assinatura do Gemini (extra_content). Campo a mais, alguns provedores recusam.
+function chamadaParaDevolver(c: ChamadaFerramenta) {
+  const bruta = (c.bruto ?? {}) as ChamadaBruta;
+  return {
+    id: c.id,
+    type: "function",
+    function: { name: c.nome, arguments: bruta.function?.arguments ?? JSON.stringify(c.entrada) },
+    ...(bruta.extra_content !== undefined && { extra_content: bruta.extra_content }),
+  };
+}
 
 // Pedido no formato OpenAI. Separado da chamada de rede pra dar pra testar.
 export function montarPedidoCompativel(config: ConfigIA, pedido: PedidoIA) {
@@ -15,14 +26,10 @@ export function montarPedidoCompativel(config: ConfigIA, pedido: PedidoIA) {
         role: "assistant",
         content: m.texto || null,
         // Volta a chamada original (com assinatura, se o provedor mandou uma)
-        ...(m.chamadas?.length && {
-          tool_calls: m.chamadas.map(
-            (c) => c.bruto ?? { id: c.id, type: "function", function: { name: c.nome, arguments: JSON.stringify(c.entrada) } },
-          ),
-        }),
+        ...(m.chamadas?.length && { tool_calls: m.chamadas.map(chamadaParaDevolver) }),
       });
     } else {
-      for (const r of m.resultados) mensagens.push({ role: "tool", tool_call_id: r.id, name: r.nome, content: r.conteudo });
+      for (const r of m.resultados) mensagens.push({ role: "tool", tool_call_id: r.id, content: r.conteudo });
     }
   }
   return {
@@ -58,7 +65,7 @@ export function lerRespostaCompativel(corpo: unknown): RespostaIA {
     .map((c, i) => {
       // Alguns provedores mandam id vazio; a resposta da ferramenta precisa de um pra casar
       const id = c.id || `chamada_${i}`;
-      return { id, nome: c.function!.name!, entrada: lerEntrada(c.function!.arguments), bruto: { ...c, id } };
+      return { id, nome: c.function!.name!, entrada: lerEntrada(c.function!.arguments), bruto: c };
     });
   return {
     texto: escolha?.message?.content ?? "",
@@ -73,22 +80,31 @@ export function provedorCompativel(config: ConfigIA): ProvedorIA {
     nome: config.nome,
     modelo: config.modelo,
     async conversar(pedido) {
-      let resposta: Response;
-      try {
-        resposta = await fetch(`${config.url}/chat/completions`, {
-          method: "POST",
-          headers: { "content-type": "application/json", authorization: `Bearer ${config.chave}` },
-          body: JSON.stringify(montarPedidoCompativel(config, pedido)),
-          signal: AbortSignal.timeout(50_000),
-        });
-      } catch (erro) {
-        throw new ErroIA("outro", `Sem resposta da IA: ${(erro as Error).message}`);
+      const corpo = JSON.stringify(montarPedidoCompativel(config, pedido));
+      // IA sobrecarregada (5xx) ou sem resposta costuma passar em segundos: tenta mais uma vez
+      for (let tentativa = 1; ; tentativa++) {
+        let resposta: Response;
+        try {
+          resposta = await fetch(`${config.url}/chat/completions`, {
+            method: "POST",
+            headers: { "content-type": "application/json", authorization: `Bearer ${config.chave}` },
+            body: corpo,
+            signal: AbortSignal.timeout(25_000),
+          });
+        } catch (erro) {
+          if (tentativa < 2) continue;
+          throw new ErroIA("outro", `Sem resposta da IA: ${(erro as Error).message}`);
+        }
+        if (resposta.status >= 500 && tentativa < 2) {
+          await new Promise((r) => setTimeout(r, 1500));
+          continue;
+        }
+        if (!resposta.ok) {
+          const detalhe = (await resposta.text().catch(() => "")).slice(0, 500);
+          throw new ErroIA(tipoDoStatus(resposta.status), `IA respondeu ${resposta.status}: ${detalhe}`, resposta.status);
+        }
+        return lerRespostaCompativel(await resposta.json());
       }
-      if (!resposta.ok) {
-        const detalhe = (await resposta.text().catch(() => "")).slice(0, 300);
-        throw new ErroIA(tipoDoStatus(resposta.status), `IA respondeu ${resposta.status}: ${detalhe}`);
-      }
-      return lerRespostaCompativel(await resposta.json());
     },
   };
 }

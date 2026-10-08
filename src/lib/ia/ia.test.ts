@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { lerRespostaAnthropic, mensagensAnthropic } from "./anthropic";
-import { lerRespostaCompativel, montarPedidoCompativel } from "./compativel";
+import { lerRespostaCompativel, montarPedidoCompativel, provedorCompativel } from "./compativel";
 import { descreverIA, lerConfigIA, type ConfigIA } from "./config";
-import { tipoDoStatus, type PedidoIA } from "./tipos";
+import { ErroIA, tipoDoStatus, type PedidoIA } from "./tipos";
 
 describe("configuração da IA", () => {
   it("sem IA_PROVEDOR usa o Gemini com a chave dele", () => {
@@ -73,7 +73,13 @@ describe("formato OpenAI (Gemini, Groq, OpenRouter...)", () => {
     const { messages } = montarPedidoCompativel(gemini, pedido);
     expect(messages[2]).toMatchObject({ role: "assistant", content: null });
     expect((messages[2].tool_calls as { extra_content: unknown }[])[0].extra_content).toEqual({ google: { thought_signature: "assinatura" } });
-    expect(messages[3]).toEqual({ role: "tool", tool_call_id: "c1", name: "ver_mes", content: '{"gastos":"R$ 10,00"}' });
+    expect(messages[3]).toEqual({ role: "tool", tool_call_id: "c1", content: '{"gastos":"R$ 10,00"}' });
+  });
+
+  it("a chamada devolvida leva só os campos do padrão (campo a mais, o provedor pode recusar)", () => {
+    const comLixo = { ...pedido, mensagens: pedido.mensagens.map((m) => (m.papel === "assistente" ? { ...m, chamadas: m.chamadas!.map((c) => ({ ...c, bruto: { ...(c.bruto as object), index: 0, outro: 1 } })) } : m)) };
+    const chamada = (montarPedidoCompativel(gemini, comLixo).messages[2].tool_calls as Record<string, unknown>[])[0];
+    expect(Object.keys(chamada).sort()).toEqual(["extra_content", "function", "id", "type"]);
   });
 
   it("lê texto, chamadas e tokens da resposta", () => {
@@ -93,6 +99,32 @@ describe("formato OpenAI (Gemini, Groq, OpenRouter...)", () => {
     });
     expect(r.chamadas[0].entrada).toEqual({});
     expect(r.recusou).toBe(true);
+  });
+});
+
+describe("rede do formato OpenAI", () => {
+  const config = lerConfigIA({ GEMINI_API_KEY: "g" });
+  const gemini = (config.ok ? config.config : null) as ConfigIA;
+  const ok = { choices: [{ finish_reason: "stop", message: { content: "oi" } }] };
+  const resposta = (status: number, corpo: unknown) => new Response(JSON.stringify(corpo), { status });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("IA sobrecarregada (503) tenta de novo uma vez", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(resposta(503, {})).mockResolvedValueOnce(resposta(200, ok));
+    vi.stubGlobal("fetch", fetch);
+    const r = await provedorCompativel(gemini).conversar(pedido);
+    expect(r.texto).toBe("oi");
+    expect(fetch).toHaveBeenCalledTimes(2);
+  }, 10_000);
+
+  it("pedido recusado (400) não repete e leva o código", async () => {
+    const fetch = vi.fn().mockResolvedValue(resposta(400, { error: { message: "Invalid JSON payload" } }));
+    vi.stubGlobal("fetch", fetch);
+    const erro = await provedorCompativel(gemini).conversar(pedido).catch((e) => e);
+    expect(erro).toBeInstanceOf(ErroIA);
+    expect(erro).toMatchObject({ tipo: "outro", status: 400 });
+    expect(erro.message).toContain("Invalid JSON payload");
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });
 

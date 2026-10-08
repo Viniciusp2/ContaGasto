@@ -9,6 +9,12 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.7.2 (08/10/2026)
+
+- Corrigido: com o Gemini, o Assistente (e o cartão do Início) respondia "Não consegui responder agora" nas perguntas sobre o mês. O pedido da segunda volta (depois de buscar os números) levava campos que o Gemini pode recusar; agora vai só o do padrão.
+- Se a IA estiver sobrecarregada, o app tenta de novo uma vez sozinho.
+- Quando ainda assim der erro, a mensagem mostra o código (ex.: "código 503"), pra saber o motivo.
+
 ## 1.7.1 (08/10/2026)
 
 - **Autenticação em dois fatores** (Mais, Segurança): além da senha, um código de 6 dígitos do app autenticador (Google Authenticator, Microsoft Authenticator, Authy). Liga lendo um QR code. No site é obrigatório: até ligar, só a tela Segurança abre. Ao ligar, os outros aparelhos saem e entram de novo com o código.

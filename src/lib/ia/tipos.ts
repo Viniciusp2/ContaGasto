@@ -48,6 +48,7 @@ export class ErroIA extends Error {
   constructor(
     public tipo: TipoErroIA,
     mensagem: string,
+    public status?: number, // código HTTP, quando a IA respondeu com erro
   ) {
     super(mensagem);
     this.name = "ErroIA";
