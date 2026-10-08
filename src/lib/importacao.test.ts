@@ -89,3 +89,54 @@ describe("conciliar com o que já está no app", () => {
     expect(r.novos).toHaveLength(1);
   });
 });
+
+import { copiasAMais, type Importado } from "./importacao";
+
+describe("copiasAMais (importação que duplicou)", () => {
+  const linha = (o = {}) => ({ data: "2026-06-13", descricao: "Lavanderia", valor: 1790, tipo: "gasto" as const, categoria: "Casa", forma: "Débito", obs: "Extrato Itaú: PAY BRILH 13/06", conta: "Itaú", ...o });
+  const imp = (id: string, minuto: number, o = {}): Importado => ({ id, data: "2026-06-13", valor: 1790, tipo: "gasto", descricao: "Lavanderia", contaNome: "Itaú", criadoEm: new Date(2026, 9, 7, 21, minuto), ...o });
+
+  it("tudo em dobro: apaga uma de cada, a mais nova", () => {
+    expect(copiasAMais([linha()], [imp("velho", 1), imp("novo", 2)])).toEqual(["novo"]);
+  });
+
+  it("dois iguais de verdade no arquivo ficam os dois", () => {
+    expect(copiasAMais([linha(), linha()], [imp("a", 1), imp("b", 1)])).toEqual([]);
+    expect(copiasAMais([linha(), linha()], [imp("a", 1), imp("b", 1), imp("c", 2), imp("d", 2)]).sort()).toEqual(["c", "d"]);
+  });
+
+  it("o que não está no arquivo (ou é de outro banco) não é tocado", () => {
+    expect(copiasAMais([linha()], [imp("outro", 1, { descricao: "Café" }), imp("outro2", 2, { descricao: "Café" })])).toEqual([]);
+    expect(copiasAMais([linha()], [imp("c6", 1, { contaNome: "C6" }), imp("c6b", 2, { contaNome: "C6" })])).toEqual([]);
+  });
+});
+
+import { manuaisDuplicados, veioDeExtrato } from "./importacao";
+
+describe("manuaisDuplicados", () => {
+  const x = (id: string, data: string, valor: number, tipo = "gasto") => ({ id, data, valor, tipo, descricao: id });
+
+  it("acha o seu que tem gêmeo no extrato (mesmo valor, até 4 dias)", () => {
+    const pares = manuaisDuplicados([x("casa", "2026-08-06", 100000), x("cafe", "2026-08-06", 500)], [x("pix", "2026-08-08", 100000)]);
+    expect(pares.map((p) => [p.manual.id, p.extrato.id])).toEqual([["casa", "pix"]]);
+  });
+
+  it("longe demais, outro valor ou outro tipo: não é gêmeo", () => {
+    expect(manuaisDuplicados([x("m", "2026-08-01", 100000)], [x("e", "2026-08-08", 100000)])).toEqual([]);
+    expect(manuaisDuplicados([x("m", "2026-08-08", 99000)], [x("e", "2026-08-08", 100000)])).toEqual([]);
+    expect(manuaisDuplicados([x("m", "2026-08-08", 100000, "entrada")], [x("e", "2026-08-08", 100000)])).toEqual([]);
+  });
+
+  it("cada um do extrato leva só um seu, o mais perto", () => {
+    const pares = manuaisDuplicados([x("longe", "2026-08-05", 470), x("perto", "2026-08-08", 470)], [x("e", "2026-08-08", 470)]);
+    expect(pares.map((p) => p.manual.id)).toEqual(["perto"]);
+  });
+
+  it("reconhece o que veio de extrato pela observação", () => {
+    expect(veioDeExtrato("Extrato Itaú: PIX TRANSF")).toBe(true);
+    expect(veioDeExtrato("Aluguel pago por Pix pra Lucierlen. (Extrato Itaú: PIX TRANSF LUCIERL08/08)")).toBe(true);
+    expect(veioDeExtrato("Conta de setembro, paga atrasada. Extrato Itaú: VIVO")).toBe(true);
+    expect(veioDeExtrato("comprei no mercado")).toBe(false);
+    expect(veioDeExtrato(null)).toBe(false);
+  });
+});

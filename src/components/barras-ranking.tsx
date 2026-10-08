@@ -1,13 +1,14 @@
+import { BarraProgresso } from "@/components/barra-progresso";
 import { formatarCentavos } from "@/lib/dinheiro";
 
-// Ranking em barras horizontais com o valor escrito ao lado (uma série, uma cor)
+// Ranking em barras horizontais com o valor escrito ao lado (uma série, uma cor). As barras enchem ao aparecer.
 export function BarrasRanking({
   itens,
-  cor,
+  estado,
   mostrarPorcentagem = false,
 }: {
   itens: { nome: string; valor: number; fracao?: number }[];
-  cor: string;
+  estado: "gasto" | "dado";
   mostrarPorcentagem?: boolean;
 }) {
   const maior = Math.max(...itens.map((i) => i.valor), 1);
@@ -24,12 +25,7 @@ export function BarrasRanking({
               )}
             </span>
           </span>
-          <span className="block h-2.5 overflow-hidden rounded-full bg-fundo">
-            <span
-              className="block h-full rounded-full"
-              style={{ width: `${Math.max((i.valor / maior) * 100, 2)}%`, backgroundColor: cor }}
-            />
-          </span>
+          <BarraProgresso fracao={Math.max(i.valor / maior, 0.02)} estado={estado} rotulo={`${i.nome}: ${formatarCentavos(i.valor)}`} />
         </li>
       ))}
     </ul>

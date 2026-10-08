@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { BarraProgresso } from "@/components/barra-progresso";
+import { GraficoMeses, GraficoSemana } from "@/components/graficos";
 import { IconeCategoria } from "@/components/icone-categoria";
 import { lancamentosDoAno, listarTodasCategorias } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
+import { diasCorridos, diasQueMaisGastou, distribuicao, gastoPorMes, padroesDoAno } from "@/lib/analise-ano";
 import { gastoPorCategoria, resumoPorPeriodo, type Periodo } from "@/lib/calculos";
-import { hojeISO } from "@/lib/datas";
+import { diaCurto, hojeISO } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +41,23 @@ export default async function Resumo({ searchParams }: PageProps<"/resumo">) {
   const topo = [...porCategoria.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
   const maiorValor = topo[0]?.[1] ?? 0;
 
+  // Análise do ano: meses, dias e padrões (só até o mês atual)
+  const doPeriodo = lancamentos.filter((l) => Number(l.data.slice(5, 7)) <= ateMes);
+  const meses = ateMes > 0 ? gastoPorMes(doPeriodo, ateMes) : [];
+  const temGasto = meses.some((m) => m.gasto > 0);
+  const padroes = padroesDoAno(doPeriodo, ateMes, mesAtual);
+  const dias = diasQueMaisGastou(doPeriodo, 5);
+  const dist = distribuicao(doPeriodo);
+  const semana = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"].map((dia, i) => ({ dia, valor: dist.semana[i] }));
+  const mediaPorDia = Math.floor(dist.total / Math.max(1, diasCorridos(ano, Math.max(ateMes, 1), mesAtual ? hoje : undefined)));
+  const partes: [string, number][] = [
+    ["Do dia 1 ao 15", dist.primeiraQuinzena],
+    ["Do dia 16 ao fim do mês", dist.total - dist.primeiraQuinzena],
+    ["Fim de semana", dist.fimDeSemana],
+    ["Segunda a sexta", dist.total - dist.fimDeSemana],
+  ];
+  const cartao = "rounded-card bg-cartao p-4 shadow-suave";
+
   const href = (a: number, p: Periodo) => `/resumo?ano=${a}&periodo=${p}`;
   const botao = "flex size-11 items-center justify-center rounded-full bg-cartao shadow-suave active:scale-90";
 
@@ -60,22 +80,6 @@ export default async function Resumo({ searchParams }: PageProps<"/resumo">) {
         </Link>
       </nav>
 
-      <div role="tablist" aria-label="Período" className="grid grid-cols-4 gap-1 rounded-card bg-lavanda p-1.5">
-        {periodos.map((p) => (
-          <Link
-            key={p.valor}
-            role="tab"
-            aria-selected={p.valor === periodo}
-            href={href(ano, p.valor)}
-            className={`flex min-h-11 items-center justify-center rounded-2xl text-sm ${
-              p.valor === periodo ? "bg-cartao font-semibold shadow-suave" : "text-tinta-suave"
-            }`}
-          >
-            {p.rotulo}
-          </Link>
-        ))}
-      </div>
-
       {!total ? (
         <p className="rounded-card bg-cartao p-8 text-center text-tinta-suave shadow-suave">Esse ano ainda não começou.</p>
       ) : (
@@ -95,6 +99,101 @@ export default async function Resumo({ searchParams }: PageProps<"/resumo">) {
             </div>
           </div>
 
+          {temGasto && (
+            <>
+              <section className={cartao}>
+                <h2 className="font-bold">Gasto mês a mês</h2>
+                <p className="mb-2 text-sm text-tinta-suave">
+                  Média de {formatarCentavos(mediaPorDia)} por dia no ano
+                  {mesAtual ? `, ${meses.at(-1)?.rotulo} ainda em andamento` : ""}
+                </p>
+                <GraficoMeses meses={meses} emAndamento={mesAtual} />
+              </section>
+
+              {padroes.length > 0 && (
+                <section className={cartao}>
+                  <h2 className="mb-3 flex items-center gap-2 font-bold">
+                    <Sparkles size={18} aria-hidden /> O que dá pra notar
+                  </h2>
+                  <ul className="flex flex-col gap-2 text-sm">
+                    {padroes.map((p) => (
+                      <li key={p} className="rounded-2xl bg-fundo px-3 py-2">
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {dias.length > 0 && (
+                <section className={cartao}>
+                  <h2 className="mb-3 flex items-center gap-2 font-bold">
+                    <CalendarDays size={18} aria-hidden /> Os dias que mais pesaram
+                  </h2>
+                  <ol className="flex flex-col gap-3">
+                    {dias.map((d, i) => (
+                      <li key={d.data} className="flex flex-col gap-1 text-sm">
+                        <span className="flex items-baseline justify-between gap-2">
+                          <span className="font-semibold capitalize">
+                            {i + 1}. {diaCurto(d.data)}
+                          </span>
+                          <span className="font-bold tabular-nums">{formatarCentavos(d.total)}</span>
+                        </span>
+                        <BarraProgresso fracao={d.total / dias[0].total} estado="gasto" rotulo={`${diaCurto(d.data)}: ${formatarCentavos(d.total)}`} />
+                        <span className="text-xs text-tinta-suave">
+                          {d.maior && d.compras > 1
+                            ? `${d.compras} lançamentos, o maior foi ${d.maior.descricao} (${formatarCentavos(d.maior.valor)})`
+                            : d.maior?.descricao}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
+
+              <section className={cartao}>
+                <h2 className="font-bold">Por dia da semana</h2>
+                <p className="mb-2 text-sm text-tinta-suave">Tudo que você gastou no ano, separado por dia da semana</p>
+                <GraficoSemana dias={semana} />
+              </section>
+
+              <section className={cartao}>
+                <h2 className="mb-3 font-bold">Quando o dinheiro sai</h2>
+                <div className="flex flex-col gap-3 text-sm">
+                  {partes.map(([rotulo, valor]) => (
+                    <div key={rotulo} className="flex flex-col gap-1">
+                      <span className="flex justify-between gap-2">
+                        <span>{rotulo}</span>
+                        <span className="tabular-nums">
+                          <strong>{formatarCentavos(valor)}</strong> · {dist.total > 0 ? Math.round((valor / dist.total) * 100) : 0}%
+                        </span>
+                      </span>
+                      <BarraProgresso fracao={dist.total > 0 ? valor / dist.total : 0} estado="gasto" rotulo={`${rotulo}: ${formatarCentavos(valor)}`} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
+
+          <h2 className="mt-2 font-bold">Por período</h2>
+          <div role="tablist" aria-label="Período" className="grid grid-cols-4 gap-1 rounded-card bg-lavanda p-1.5">
+            {periodos.map((p) => (
+              <Link
+                key={p.valor}
+                role="tab"
+                aria-selected={p.valor === periodo}
+                href={href(ano, p.valor)}
+                scroll={false}
+                className={`flex min-h-11 items-center justify-center rounded-2xl text-sm ${
+                  p.valor === periodo ? "bg-cartao font-semibold shadow-suave" : "text-tinta-suave"
+                }`}
+              >
+                {p.rotulo}
+              </Link>
+            ))}
+          </div>
+
           {periodo !== "ano" && (
             <ul className="flex flex-col gap-2">
               {[...linhas].reverse().map((p) => {
@@ -111,15 +210,15 @@ export default async function Resumo({ searchParams }: PageProps<"/resumo">) {
                     <div className="flex flex-col gap-1 text-xs">
                       <span className="flex items-center gap-2">
                         <span className="w-16 text-tinta-suave">Recebido</span>
-                        <span className="h-2 flex-1 overflow-hidden rounded-full bg-fundo">
-                          <span className="block h-full rounded-full bg-menta" style={{ width: `${(p.entradas / base) * 100}%` }} />
+                        <span className="flex-1">
+                          <BarraProgresso fracao={p.entradas / base} estado="positivo" rotulo={`Recebido em ${p.rotulo}`} />
                         </span>
                         <span className="w-24 text-right tabular-nums">{formatarCentavos(p.entradas)}</span>
                       </span>
                       <span className="flex items-center gap-2">
                         <span className="w-16 text-tinta-suave">Gasto</span>
-                        <span className="h-2 flex-1 overflow-hidden rounded-full bg-fundo">
-                          <span className="block h-full rounded-full bg-coral" style={{ width: `${(p.gasto / base) * 100}%` }} />
+                        <span className="flex-1">
+                          <BarraProgresso fracao={p.gasto / base} estado="gasto" rotulo={`Gasto em ${p.rotulo}`} />
                         </span>
                         <span className="w-24 text-right tabular-nums">{formatarCentavos(p.gasto)}</span>
                       </span>
@@ -150,8 +249,8 @@ export default async function Resumo({ searchParams }: PageProps<"/resumo">) {
                           <span className="truncate">{c?.nome ?? "Categoria"}</span>
                           <span className="font-semibold tabular-nums">{formatarCentavos(valor)}</span>
                         </span>
-                        <span className="mt-1 block h-2 overflow-hidden rounded-full bg-fundo">
-                          <span className="block h-full rounded-full bg-coral" style={{ width: `${(valor / maiorValor) * 100}%` }} />
+                        <span className="mt-1 block">
+                          <BarraProgresso fracao={valor / maiorValor} estado="gasto" rotulo={`${c?.nome ?? "Categoria"}: ${formatarCentavos(valor)}`} />
                         </span>
                       </span>
                     </li>

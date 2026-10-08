@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, DatabaseBackup, FileInput, FileSpreadsheet, FileText } from "lucide-react";
+import { ArrowLeft, CopyX, DatabaseBackup, FileInput, FileSpreadsheet, FileText } from "lucide-react";
+import { ArrumarDuplicados } from "@/components/arrumar-duplicados";
 import { ImportarLancamentos } from "@/components/importar-lancamentos";
 import { RestaurarBackup } from "@/components/restaurar-backup";
 import { hojeISO, mesParaTexto, mesDe } from "@/lib/datas";
@@ -57,6 +58,17 @@ export default function Exportar() {
           Pra trazer um extrato do banco já convertido. Só adiciona: não apaga nada, e o que já está no app fica de fora.
         </p>
         <ImportarLancamentos />
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-card bg-cartao p-4 shadow-suave">
+        <h2 className="flex items-center gap-2 font-semibold">
+          <CopyX size={20} aria-hidden /> Arrumar duplicados
+        </h2>
+        <p className="text-sm text-tinta-suave">
+          Acha lançamentos seus que ficaram em dobro com os do extrato e apaga os seus. O do extrato fica, com banco e descrição.
+          Primeiro mostra a lista, só apaga depois que você confirmar.
+        </p>
+        <ArrumarDuplicados />
       </section>
 
       <section className="flex flex-col gap-3 rounded-card bg-cartao p-4 shadow-suave">

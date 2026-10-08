@@ -8,6 +8,16 @@ Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
 A versão que está no ar aparece no fim da tela **Mais**, com o código da publicação e a hora.
 
+## 1.4.0 (07/10/2026)
+
+- **Arrumar duplicados** (Mais, Exportar e backup): acha lançamentos seus que ficaram em dobro com os do extrato, mostra a lista e, depois de você confirmar, apaga os seus. O do extrato fica.
+- Importar o mesmo arquivo de novo apaga as cópias a mais de uma importação que rodou em dobro (mantém exatamente quantos o arquivo tem).
+- Duas importações não rodam mais ao mesmo tempo (era o que gravava tudo em dobro).
+- **Resumo do ano** com análise: gasto mês a mês (gráfico animado), "o que dá pra notar" (mês mais caro e mais tranquilo, meses no vermelho, dia da semana que mais pesa, primeira x segunda quinzena, fim de semana, compras pequenas), os 5 dias que mais pesaram, por dia da semana e quando o dinheiro sai.
+- Barras do resumo e dos gráficos agora enchem com animação.
+- O botão **+** só aparece no Início e em Lançamentos, e some enquanto você rola pra baixo.
+- Corrigido: barras de "Maiores vilões" e "Por forma de pagamento" apareciam vazias.
+
 ## 1.3.0 (07/10/2026)
 
 - **Importar concilia com o que já está no app:** o que você lançou manda. Se o extrato trouxer o mesmo valor e tipo até 4 dias de diferença, o seu lançamento fica (data, valor, categoria) e só ganha banco, forma de pagamento, observação e a descrição, se estava em branco. Nada duplica.

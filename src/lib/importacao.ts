@@ -159,3 +159,56 @@ export function conciliar<T extends LinhaImportacao>(linhas: T[], existentes: Ex
   }
   return { novos, repetidos, completar };
 }
+
+// Cópias a mais de lançamentos importados (ex.: a mesma importação rodou duas vezes ao mesmo tempo).
+// O arquivo é a fonte da verdade: de cada lançamento (dia, valor, tipo, descrição e banco) fica no app no máximo
+// quantos o arquivo tem. Só conta o que veio de extrato; o que você lançou à mão nunca entra aqui.
+// Apaga as cópias mais novas e mantém a mais antiga (a que pode ter sido conciliada ou editada).
+export type Importado = { id: string; data: string; valor: number; tipo: string; descricao: string; contaNome: string | null; criadoEm: Date };
+
+const chaveComBanco = (l: { data: string; valor: number; tipo: string; descricao: string }, conta: string | null) =>
+  `${chaveDoLancamento(l)}|${(conta ?? "").toLowerCase()}`;
+
+export function copiasAMais(linhas: LinhaImportacao[], importados: Importado[]): string[] {
+  const noArquivo = new Map<string, number>();
+  for (const l of linhas) {
+    const k = chaveComBanco(l, l.conta);
+    noArquivo.set(k, (noArquivo.get(k) ?? 0) + 1);
+  }
+  const noApp = new Map<string, Importado[]>();
+  for (const i of importados) {
+    const k = chaveComBanco(i, i.contaNome);
+    if (!noArquivo.has(k)) continue; // não é deste arquivo: não mexe
+    noApp.set(k, [...(noApp.get(k) ?? []), i]);
+  }
+  const apagar: string[] = [];
+  for (const [k, lista] of noApp) {
+    const sobra = lista.length - noArquivo.get(k)!;
+    if (sobra <= 0) continue;
+    const maisNovosPrimeiro = [...lista].sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime() || b.id.localeCompare(a.id));
+    apagar.push(...maisNovosPrimeiro.slice(0, sobra).map((i) => i.id));
+  }
+  return apagar;
+}
+
+// Lançamento seu (feito à mão ou gerado por fixo) que tem um gêmeo vindo do extrato: mesmo tipo e valor,
+// até 4 dias de diferença. O do extrato fica (decisão do Vinícius em 07/10/2026); o seu é apagado.
+// Cada lançamento do extrato "absorve" no máximo um seu, o mais perto na data.
+export type ParaDuplicar = { id: string; data: string; valor: number; tipo: string; descricao: string };
+
+export function manuaisDuplicados(manuais: ParaDuplicar[], doExtrato: ParaDuplicar[]) {
+  const usados = new Set<string>();
+  const pares: { manual: ParaDuplicar; extrato: ParaDuplicar }[] = [];
+  for (const e of [...doExtrato].sort((a, b) => a.data.localeCompare(b.data) || a.id.localeCompare(b.id))) {
+    const m = manuais
+      .filter((x) => !usados.has(x.id) && x.tipo === e.tipo && x.valor === e.valor && Math.abs(diasEntre(x.data, e.data)) <= JANELA_DIAS)
+      .sort((a, b) => Math.abs(diasEntre(a.data, e.data)) - Math.abs(diasEntre(b.data, e.data)) || a.id.localeCompare(b.id))[0];
+    if (!m) continue;
+    usados.add(m.id);
+    pares.push({ manual: m, extrato: e });
+  }
+  return pares.sort((a, b) => a.manual.data.localeCompare(b.manual.data));
+}
+
+// Veio de extrato? (a observação guarda o texto do banco)
+export const veioDeExtrato = (obs: string | null) => Boolean(obs && /Extrato (Itaú|C6|Alelo|[A-Za-zÀ-ú0-9 ]+):/.test(obs));

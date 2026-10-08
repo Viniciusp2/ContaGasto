@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ChartColumn } from "lucide-react";
 import { BarrasRanking } from "@/components/barras-ranking";
-import { COR_GRAFICO, GraficoFluxo, GraficoSemana, VerEmTabela } from "@/components/graficos";
+import { GraficoFluxo, GraficoSemana, VerEmTabela } from "@/components/graficos";
 import { SeletorMes } from "@/components/seletor-mes";
 import { lancamentosParaGraficos, listarTodasCategorias } from "@/db/consultas";
 import { gerarRecorrencias } from "@/db/gerar-recorrencias";
@@ -69,11 +69,11 @@ export default async function Graficos({ searchParams }: PageProps<"/graficos">)
           {temGasto && (
             <>
               <Cartao titulo="Maiores vilões" dica="Onde mais foi dinheiro">
-                <BarrasRanking itens={viloes} cor={COR_GRAFICO.gasto} />
+                <BarrasRanking itens={viloes} estado="gasto" />
               </Cartao>
 
               <Cartao titulo="Por forma de pagamento" dica="Como você pagou os gastos">
-                <BarrasRanking itens={formas} cor={COR_GRAFICO.neutro} mostrarPorcentagem />
+                <BarrasRanking itens={formas} estado="dado" mostrarPorcentagem />
                 <VerEmTabela
                   linhas={formas.map((f) => [f.nome, `${formatarCentavos(f.valor)} (${Math.round(f.fracao * 100)}%)`])}
                 />

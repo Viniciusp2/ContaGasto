@@ -1,15 +1,10 @@
 "use client";
 
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { COR_GRAFICO } from "@/lib/cores-grafico";
 import { formatarCentavos } from "@/lib/dinheiro";
 
-// Cores das marcas vêm do tema (globals.css), validadas no claro e no escuro.
-// No SVG, a série usa currentColor e a cor vem do "color" do contêiner.
-export const COR_GRAFICO = {
-  gasto: "var(--grafico-gasto)",
-  positivo: "var(--grafico-positivo)",
-  neutro: "var(--grafico-neutro)",
-} as const;
+// No SVG, a série usa currentColor e a cor vem do "color" do contêiner (cores em lib/cores-grafico).
 const EIXO = { fontSize: 12 };
 
 const compacto = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", notation: "compact" });
@@ -107,6 +102,49 @@ export function GraficoSemana({ dias }: { dias: { dia: string; valor: number }[]
         </ResponsiveContainer>
       </div>
       <VerEmTabela linhas={dias.map((d) => [d.dia, formatarCentavos(d.valor)])} />
+    </>
+  );
+}
+
+// Gasto mês a mês no ano. Só o mês mais caro ganha o valor escrito em cima (rótulo seletivo).
+export function GraficoMeses({ meses, emAndamento }: { meses: { mes: number; rotulo: string; gasto: number }[]; emAndamento?: number }) {
+  const maior = meses.reduce((a, b) => (b.gasto > a.gasto ? b : a));
+  return (
+    <>
+      <div
+        className="h-52"
+        style={{ color: COR_GRAFICO.gasto }}
+        role="img"
+        aria-label={`Gasto por mês. Mês mais caro: ${maior.rotulo}, ${formatarCentavos(maior.gasto)}`}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={meses} margin={{ top: 22, right: 8, left: 0, bottom: 0 }} accessibilityLayer={false}>
+            <CartesianGrid vertical={false} />
+            <XAxis dataKey="rotulo" tick={EIXO} axisLine={false} tickLine={false} interval={0} />
+            <YAxis tickFormatter={eixoReais} tick={EIXO} axisLine={false} tickLine={false} width={70} />
+            <Tooltip
+              cursor
+              content={({ active, payload, label }) => (
+                <DicaValor active={active} payload={payload} rotulo={`${label}${meses.find((m) => m.rotulo === label)?.mes === emAndamento ? " (em andamento)" : ""}`} />
+              )}
+            />
+            <Bar dataKey="gasto" fill="currentColor" radius={[4, 4, 0, 0]} maxBarSize={28} animationDuration={700}>
+              <LabelList
+                dataKey="gasto"
+                position="top"
+                content={({ x, y, width, value, index }) =>
+                  index === meses.indexOf(maior) && Number(value) > 0 ? (
+                    <text x={Number(x) + Number(width) / 2} y={Number(y) - 6} textAnchor="middle" fontSize={11} fontWeight={700} fill="var(--tinta)">
+                      {eixoReais(Number(value))}
+                    </text>
+                  ) : null
+                }
+              />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <VerEmTabela linhas={meses.map((m) => [m.rotulo + (m.mes === emAndamento ? " (em andamento)" : ""), formatarCentavos(m.gasto)])} />
     </>
   );
 }

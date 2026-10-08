@@ -2,13 +2,17 @@
 
 import { motion } from "motion/react";
 
-// Barra das metas e objetivos. Cor por estado, nunca só a cor: o texto ao lado diz o mesmo.
+// Barra das metas, objetivos e do resumo do ano. Cor por estado, nunca só a cor: o texto ao lado diz o mesmo.
 // Enche ao aparecer (quem pediu menos movimento vê ela já cheia).
 const cores = {
   ok: "bg-[var(--barra-ok)]",
   atencao: "bg-[var(--barra-atencao)]",
   estourou: "bg-[var(--barra-estourou)]",
   neutro: "bg-lavanda",
+  // Pra comparar valores (resumo do ano): as cores dos gráficos, com contraste validado
+  gasto: "bg-[var(--grafico-gasto)]",
+  positivo: "bg-[var(--grafico-positivo)]",
+  dado: "bg-[var(--grafico-neutro)]",
 } as const;
 
 export function BarraProgresso({

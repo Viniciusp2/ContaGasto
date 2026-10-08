@@ -269,6 +269,7 @@ export function lancamentosDoAno(ano: number) {
   return db
     .select({
       data: lancamentos.data,
+      descricao: lancamentos.descricao,
       tipo: lancamentos.tipo,
       valor: lancamentos.valor,
       subtipoEntrada: lancamentos.subtipoEntrada,
