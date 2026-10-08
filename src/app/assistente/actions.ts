@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { buscarNoMes, opcoesDeLancamento, verAvisos, verMes } from "@/db/assistente";
 import { buscarCategoria, buscarConta, buscarFormaPagamento } from "@/db/consultas";
-import { lancamentos, lembretes } from "@/db/schema";
+import { gerarRecorrencias } from "@/db/gerar-recorrencias";
+import { lancamentos, lembretes, recorrencias } from "@/db/schema";
 import { USUARIO_PADRAO } from "@/db/usuario-padrao";
 import {
   ferramentasAssistente,
@@ -22,6 +23,8 @@ import {
 import { conferirLembrete } from "@/lib/lembretes";
 import { criarProvedor, ErroIA, lerConfigIA, type ChamadaFerramenta, type MensagemIA } from "@/lib/ia";
 import { hojeISO } from "@/lib/datas";
+import { formatarCentavos } from "@/lib/dinheiro";
+import { simularParcelamento, taxaAnual } from "@/lib/financas";
 import { subtipoDaCategoria } from "@/lib/entradas";
 import { dataEfetiva } from "@/lib/recorrencias";
 import { validarLancamento } from "@/lib/validar-lancamento";
@@ -41,6 +44,31 @@ const ERROS_IA = {
   outro: ERRO_GENERICO,
 };
 
+// simular_parcelamento: a conta é do código; a IA recebe os valores já escritos em reais
+function simular(entrada: Record<string, unknown>) {
+  const total = Math.round(Number(entrada.total) * 100);
+  const taxa = Number(entrada.taxa_mensal);
+  const parcelas = Number(entrada.parcelas);
+  if (!(total > 0) || !(taxa >= 0) || taxa > 100 || !Number.isInteger(parcelas) || parcelas < 1 || parcelas > 120) {
+    return { erro: "Preciso de total maior que zero, taxa ao mês entre 0 e 100 e de 1 a 120 parcelas." };
+  }
+  const r = simularParcelamento(total, taxa, parcelas);
+  const escrever = (x: typeof r.price) => ({
+    parcela: formatarCentavos(x.parcela),
+    totalPago: formatarCentavos(x.totalPago),
+    juros: formatarCentavos(x.juros),
+  });
+  return {
+    financiado: formatarCentavos(total),
+    parcelas,
+    taxaAoMes: `${taxa}%`,
+    taxaAoAno: `${Math.round(taxaAnual(taxa))}%`,
+    tabelaPrice: { ...escrever(r.price), comoE: "juros compostos ao mês, parcelas iguais (o mais comum em banco, cartão e financeira)" },
+    taxaAplicadaUmaVez: { ...escrever(r.taxaUmaVez), comoE: "a porcentagem aplicada uma vez sobre o total e dividida pelas parcelas" },
+    obs: "O valor certo da parcela é o que a loja ou a financeira mostra no cronograma.",
+  };
+}
+
 // Roda as ferramentas que a IA pediu e devolve os resultados como texto (JSON) pra ela ler
 async function executar(chamadas: ChamadaFerramenta[], hoje: string): Promise<MensagemIA> {
   const resultados = await Promise.all(
@@ -53,6 +81,8 @@ async function executar(chamadas: ChamadaFerramenta[], hoje: string): Promise<Me
             ? await buscarNoMes(mes, String(c.entrada.texto ?? ""), hoje)
             : c.nome === "ver_avisos"
               ? await verAvisos(hoje, Number(c.entrada.dias ?? 15))
+            : c.nome === "simular_parcelamento"
+              ? simular(c.entrada)
               : null;
       return dados
         ? { id: c.id, nome: c.nome, conteudo: JSON.stringify(dados) }
@@ -133,6 +163,10 @@ export async function salvarDoAssistente(p: Proposta): Promise<{ ok: true } | { 
   form.set("data", p.data);
   form.set("descricao", p.descricao);
   form.set("pago", p.pago ? "sim" : "nao");
+  if (p.parcelas) {
+    form.set("repetir", "temporaria");
+    form.set("parcelas", String(p.parcelas));
+  }
   const resultado = validarLancamento(form);
   if (!resultado.ok) return { ok: false, erro: resultado.erro };
   const d = resultado.dados;
@@ -143,6 +177,31 @@ export async function salvarDoAssistente(p: Proposta): Promise<{ ok: true } | { 
   if (d.formaPagamentoId && !forma) return { ok: false, erro: "Forma de pagamento inválida." };
   if (forma?.tipo === "beneficio" && d.tipo === "entrada") return { ok: false, erro: "VA recebido vai na categoria Vale alimentação." };
   if (d.contaId && !(await buscarConta(d.contaId))) return { ok: false, erro: "Esse banco não existe mais." };
+
+  // Parcelado vira recorrência temporária, igual ao formulário: o gerador cria cada parcela quando a data chega
+  if (d.repetir === "temporaria") {
+    await db.insert(recorrencias).values({
+      userId,
+      tipo: "temporaria",
+      descricao: d.descricao || categoria.nome,
+      valor: d.valor,
+      diaDoMes: Number(d.data.slice(8, 10)),
+      diaUtil: null,
+      sabadoUtil: d.sabadoUtil,
+      categoriaId: d.categoriaId,
+      formaPagamentoId: d.formaPagamentoId,
+      totalParcelas: d.parcelas,
+      dataInicio: d.data,
+      diaVencimento: null,
+      valorEstimado: null,
+      tipoConta: null,
+      pagamentoAutomatico: false,
+      contaId: d.contaId,
+    });
+    await gerarRecorrencias();
+    revalidatePath("/", "layout");
+    return { ok: true };
+  }
 
   const cartao = forma?.tipo === "credito" ? forma : null;
   const aPagar = d.tipo === "gasto" && !d.pago && !cartao && forma?.tipo !== "beneficio";

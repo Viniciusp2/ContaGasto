@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowUp, BellRing, Check, LoaderCircle, Mic, MicOff, Sparkles, Trash2, X } from "lucide-react";
 import { conversar, salvarDoAssistente, salvarLembreteDoAssistente } from "@/app/assistente/actions";
-import { MAX_TEXTO, type MensagemChat, type Proposta, type PropostaLembrete } from "@/lib/assistente";
+import { contextoDaProposta, MAX_TEXTO, textoParcelas, type MensagemChat, type Proposta, type PropostaLembrete } from "@/lib/assistente";
 import { descreverRepeticao } from "@/lib/lembretes";
 import { diaCurto } from "@/lib/datas";
 import { formatarCentavos } from "@/lib/dinheiro";
@@ -56,10 +56,23 @@ function CartaoProposta({ m, aoSalvar, aoDescartar }: { m: Mensagem; aoSalvar: (
   const [erro, setErro] = useState<string | null>(null);
   const linhas: [string, string][] = [
     ["Categoria", p.categoriaNome],
-    ["Dia", diaCurto(p.data)],
+    ...(p.parcelas
+      ? [
+          ["Parcelas", textoParcelas(p)] as [string, string],
+          ["1ª parcela", diaCurto(p.data)] as [string, string],
+        ]
+      : [["Dia", diaCurto(p.data)] as [string, string]]),
     ...(p.formaNome ? [["Pagou com", p.formaNome] as [string, string]] : []),
     ...(p.bancoNome ? [["Banco", p.bancoNome] as [string, string]] : []),
-    ...(p.tipo === "gasto" ? [["Situação", p.pago ? "já pago" : "ainda vou pagar"] as [string, string]] : []),
+    // Parcelado: cada parcela vira conta a pagar quando chega (no crédito, segue a fatura)
+    ...(p.tipo === "gasto"
+      ? [
+          [
+            "Situação",
+            p.parcelas ? (p.formaTipo === "credito" ? "segue a fatura do cartão" : "cada parcela fica a pagar até o Paguei") : p.pago ? "já pago" : "ainda vou pagar",
+          ] as [string, string],
+        ]
+      : []),
   ];
   return (
     <div className="mt-2 rounded-2xl border border-lavanda bg-fundo p-3">
@@ -68,6 +81,7 @@ function CartaoProposta({ m, aoSalvar, aoDescartar }: { m: Mensagem; aoSalvar: (
         <span className={`text-lg font-bold tabular-nums ${p.tipo === "entrada" ? "text-positivo" : ""}`}>
           {p.tipo === "entrada" ? "+" : "-"}
           {formatarCentavos(p.valor)}
+          {p.parcelas && <span className="text-sm font-semibold text-tinta-suave"> x{p.parcelas}</span>}
         </span>
       </div>
       <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 text-sm text-tinta-suave">
@@ -213,7 +227,16 @@ function Conversa() {
     setPensando(true);
     try {
       // Só o texto vai pro servidor: proposta e erro são coisa da tela
-      const resposta = await conversar(lista.filter((m) => !m.erro).map(({ papel, texto }) => ({ papel, texto })));
+      // Só o texto vai pro servidor, mais o que aconteceu com cada cartão proposto (salvo, descartado), pra IA ter o contexto
+      const resposta = await conversar(
+        lista
+          .filter((m) => !m.erro)
+          .map(({ papel, texto, proposta, situacao }) => ({
+            papel,
+            texto,
+            ...(proposta && { contexto: contextoDaProposta(proposta, situacao) }),
+          })),
+      );
       setMensagens((atual) => [...atual, { papel: "bolso", texto: resposta.texto, proposta: resposta.proposta, lembrete: resposta.lembrete, erro: resposta.erro }]);
     } catch {
       setMensagens((atual) => [...atual, { papel: "bolso", texto: "Sem conexão. Tenta de novo quando a internet voltar.", erro: true }]);

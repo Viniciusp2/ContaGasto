@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { formatarCentavos as fmt } from "./dinheiro";
 import {
+  contextoDaProposta,
   ferramentasAssistente,
   historicoParaApi,
   instrucoesAssistente,
@@ -8,6 +10,7 @@ import {
   lerPropostaLembrete,
   limparResposta,
   MAX_HISTORICO,
+  textoParcelas,
   type OpcoesLancamento,
 } from "./assistente";
 
@@ -45,8 +48,10 @@ describe("proposta de lançamento", () => {
         categoriaNome: "Alimentação",
         formaPagamentoId: "f-pix",
         formaNome: "Pix",
+        formaTipo: "pix",
         contaId: "b-itau",
         bancoNome: "Itaú",
+        parcelas: null,
       },
     });
   });
@@ -79,6 +84,23 @@ describe("proposta de lançamento", () => {
     expect(r.ok && r.proposta.pago).toBe(false);
   });
 
+  it("parcelado: valor é o de cada parcela e a data é a da 1ª", () => {
+    const r = lerProposta(
+      { tipo: "gasto", valor: 51, descricao: "AliExpress", categoria: "Outros", data: "2026-10-20", forma: "Nubank crédito", parcelas: 3, ja_paguei: true },
+      opcoes,
+      hoje,
+    );
+    expect(r.ok && r.proposta).toMatchObject({ valor: 5100, parcelas: 3, data: "2026-10-20", formaTipo: "credito" });
+  });
+
+  it("parcelas 0 ou 1 é lançamento único; entrada não parcela; mais de 72 não", () => {
+    const um = lerProposta({ tipo: "gasto", valor: 10, categoria: "Outros", parcelas: 1, ja_paguei: true }, opcoes, hoje);
+    expect(um.ok && um.proposta.parcelas).toBeNull();
+    expect(lerProposta({ tipo: "entrada", valor: 10, categoria: "Salário", parcelas: 3 }, opcoes, hoje)).toEqual({ ok: false, erro: "Entrada não pode ser parcelada." });
+    expect(lerProposta({ tipo: "gasto", valor: 10, categoria: "Outros", parcelas: 100 }, opcoes, hoje).ok).toBe(false);
+    expect(lerProposta({ tipo: "gasto", valor: 10, categoria: "Outros", parcelas: 2.5 }, opcoes, hoje).ok).toBe(false);
+  });
+
   it("sem valor ou tipo errado não propõe", () => {
     expect(lerProposta({ tipo: "gasto", valor: 0, categoria: "Outros" }, opcoes, hoje).ok).toBe(false);
     expect(lerProposta({ tipo: "gasto", categoria: "Outros" }, opcoes, hoje).ok).toBe(false);
@@ -95,6 +117,15 @@ describe("histórico que vai pra API", () => {
     expect(h[0].papel).toBe("usuario");
     expect(h.at(-1)).toEqual({ papel: "usuario", texto: "m14" });
   });
+  it("o que aconteceu com o cartão vai junto da mensagem", () => {
+    const h = historicoParaApi([
+      { papel: "voce", texto: "gastei 124,58 no aliexpress" },
+      { papel: "bolso", texto: "Confere e salva:", contexto: "[Cartão: gasto AliExpress, R$ 124,58; a pessoa salvou]" },
+      { papel: "voce", texto: "e divide em 3" },
+    ]);
+    expect(h[1]).toEqual({ papel: "assistente", texto: "Confere e salva:\n[Cartão: gasto AliExpress, R$ 124,58; a pessoa salvou]" });
+  });
+
   it("ignora mensagem vazia", () => {
     expect(historicoParaApi([{ papel: "voce", texto: "  " }])).toEqual([]);
   });
@@ -103,7 +134,7 @@ describe("histórico que vai pra API", () => {
 describe("ferramentas e instruções", () => {
   it("as ferramentas, com as categorias como opção", () => {
     const f = ferramentasAssistente(opcoes);
-    expect(f.map((t) => t.nome)).toEqual(["ver_mes", "buscar_lancamentos", "propor_lancamento", "ver_avisos", "propor_lembrete"]);
+    expect(f.map((t) => t.nome)).toEqual(["ver_mes", "buscar_lancamentos", "propor_lancamento", "ver_avisos", "propor_lembrete", "simular_parcelamento"]);
     const props = f[2].parametros.properties as Record<string, { enum?: string[] }>;
     expect(props.categoria.enum).toEqual(["Alimentação", "Outros", "Salário"]);
   });
@@ -140,5 +171,32 @@ describe("proposta de lembrete", () => {
     expect(lerPropostaLembrete({ titulo: "x", data: "2026-10-01", repetir: "nao" }, hoje).ok).toBe(false);
     expect(lerPropostaLembrete({ titulo: " ", data: "2026-10-15", repetir: "nao" }, hoje).ok).toBe(false);
     expect(lerPropostaLembrete({ titulo: "x", data: "2026-10-15", repetir: "diario" }, hoje).ok).toBe(false);
+  });
+});
+
+describe("cartão proposto como texto", () => {
+  const base = {
+    tipo: "gasto" as const,
+    valor: 5100,
+    descricao: "AliExpress",
+    data: "2026-10-20",
+    pago: true,
+    categoriaId: "c",
+    categoriaNome: "Compras",
+    formaPagamentoId: null,
+    formaNome: null,
+    formaTipo: null,
+    contaId: null,
+    bancoNome: null,
+    parcelas: 3,
+  };
+  it("parcelas com total", () => {
+    expect(textoParcelas(base)).toBe(`3x de ${fmt(5100)} (total ${fmt(15300)})`);
+    expect(textoParcelas({ valor: 3250, parcelas: null })).toBe(fmt(3250));
+  });
+  it("contexto diz o que era e o que a pessoa fez", () => {
+    expect(contextoDaProposta(base, "salvo")).toBe(`[Cartão: gasto AliExpress, 3x de ${fmt(5100)} (total ${fmt(15300)}), 1ª parcela ter, 20 out, categoria Compras; a pessoa salvou]`);
+    expect(contextoDaProposta({ ...base, parcelas: null })).toContain("ainda não salvou");
+    expect(contextoDaProposta({ ...base, parcelas: null }, "descartado")).toContain("a pessoa descartou");
   });
 });

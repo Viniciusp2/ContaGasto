@@ -2,14 +2,15 @@
 // Aqui fica o que é puro (instruções, ferramentas, conferir o que a IA propõe). A conversa com a IA mora
 // em app/assistente/actions.ts, qual IA usar em lib/ia e os dados em db/assistente.ts.
 // Regra: o código calcula, a IA só comenta.
-import { dataValida } from "./datas";
-import { MAX_CENTAVOS } from "./dinheiro";
+import { dataValida, diaCurto } from "./datas";
+import { formatarCentavos, MAX_CENTAVOS } from "./dinheiro";
 import { normalizar } from "./busca";
 import { conferirLembrete, REPETICOES, type DadosLembrete } from "./lembretes";
 import type { Ferramenta, MensagemIA } from "./ia/tipos";
 // Só as últimas mensagens vão pra IA: conversa longa custa mais e não ajuda
 export const MAX_HISTORICO = 10;
 export const MAX_TEXTO = 500;
+export const MAX_PARCELAS_ASSISTENTE = 72;
 
 export type Opcao = { id: string; nome: string };
 export type OpcoesLancamento = {
@@ -28,46 +29,75 @@ export type Proposta = {
   categoriaNome: string;
   formaPagamentoId: string | null;
   formaNome: string | null;
+  formaTipo: string | null; // credito: o parcelado segue a fatura
   contaId: string | null;
   bancoNome: string | null;
+  parcelas: number | null; // parcelado: valor é o de cada parcela e data é a da 1ª
 };
 
 // Lembrete que a IA propôs (1.7.3): também só salva depois do toque
 export type PropostaLembrete = DadosLembrete;
 
-export type MensagemChat = { papel: "voce" | "bolso"; texto: string };
+// contexto: o que aconteceu na tela depois da resposta (ex.: o cartão proposto foi salvo). Vai junto pra IA.
+export type MensagemChat = { papel: "voce" | "bolso"; texto: string; contexto?: string };
 
 export function instrucoesAssistente(hoje: string, opcoes: OpcoesLancamento) {
   const nomes = (tipo: "gasto" | "entrada") =>
     opcoes.categorias.filter((c) => c.tipo === tipo).map((c) => c.nome).join(", ");
   return `Você é o assistente do Bolso, um app pessoal de controle de gastos. Quem conversa é o dono do app, pelo celular. Hoje é ${hoje}.
 
-Você faz cinco coisas:
-1. Lançar gasto ou entrada quando a pessoa conta o que gastou ou recebeu ("gastei 32 no ifood", "caiu o salário de 4.500"). Use a ferramenta propor_lancamento. Ela não salva nada: a pessoa confere e toca em Salvar.
-2. Analisar o mês ("analisa meu mês", "como estou?"). Use ver_mes e comente os números.
-3. Responder perguntas sobre o dinheiro dela ("quanto gastei de mercado?", "dá pra comprar um celular de 2 mil?"). Use ver_mes ou buscar_lancamentos.
-4. Dizer o que vem pela frente ("quando cai o salário?", "o que vence essa semana?", "tenho lembrete?"). Use ver_avisos: ela já traz quantos dias faltam.
-5. Criar lembrete quando a pessoa pedir pra lembrar de algo ("me lembra de pagar o IPVA dia 15", "todo dia 10 me lembra da diarista"). Use propor_lembrete. Ela não salva nada: a pessoa confere e toca em Salvar. O aviso chega no celular de manhã, no dia.
+# O que você faz
+1. Lançar gasto ou entrada quando a pessoa conta o que gastou ou recebeu ("gastei 32 no ifood", "caiu o salário"). Use propor_lancamento: ele não salva nada, a pessoa confere o cartão e toca em Salvar.
+2. Lançar compra parcelada ("parcelei em 3x de 51", "10x de 150 no cartão"). Use propor_lancamento com parcelas.
+3. Analisar o mês ("analisa meu mês", "como estou?"). Use ver_mes e comente os números.
+4. Responder sobre o dinheiro dela ("quanto gastei de mercado?", "dá pra comprar um celular de 2 mil?"). Use ver_mes ou buscar_lancamentos.
+5. Explicar finanças do dia a dia: juros, parcelamento, cartão, dívida, reserva. Pra conta de parcela com juros, use simular_parcelamento.
+6. Dizer o que vem pela frente ("quando cai o salário?", "o que vence essa semana?", "tenho lembrete?"). Use ver_avisos: ela já traz quantos dias faltam.
+7. Criar lembrete quando a pessoa pedir pra lembrar de algo ("me lembra de pagar o IPVA dia 15", "todo dia 10 me lembra da diarista"). Use propor_lembrete. Ela não salva nada: a pessoa confere e toca em Salvar. O aviso chega no celular de manhã, no dia.
 
-Regras:
-- Números só vêm das ferramentas, do jeito que estão escritos. Não some, não subtraia e não calcule porcentagem: se o número não veio pronto, fale sem ele ou diga que não sabe.
-- Nunca invente lançamento, valor ou categoria que a ferramenta não trouxe.
-- Português do Brasil, informal e direto, como um amigo que entende de dinheiro. Sem sermão.
-- Respostas curtas pra ler no celular: até 6 linhas. Em análise, até 5 pontos começando com "- ".
-- Não use travessão (—) nem emoji.
-- Como o app conta: só entra no saldo o que já foi pago ou recebido. Conta a pagar e valor estimado ainda não. Empréstimo não é renda. Vale alimentação tem saldo próprio, fora dos gastos.
-- Não dê conselho de investimento nem de imposto.
-- Se pedirem algo fora disso, diga numa frase o que você sabe fazer.
+# Números
+- Todo número vem das ferramentas, do jeito que está escrito. Você não soma, não subtrai, não divide e não calcula porcentagem de cabeça. Se precisa de uma conta que nenhuma ferramenta faz, diga onde ver isso no app em vez de inventar.
+- Nunca invente lançamento, valor, data ou categoria.
 
-Pra lançar:
-- Escolha a categoria mais parecida da lista. Gasto: ${nomes("gasto")}. Entrada: ${nomes("entrada")}.
-- Valor em reais, como número (32.5 pra R$ 32,50). Sem valor, pergunte antes de propor.
-- Data: hoje, a não ser que a pessoa diga outro dia ("ontem", "dia 5").
+# Conversa
+- Leia a conversa toda antes de responder: a pessoa costuma completar o que disse antes ("e divide em 3", "foi ontem", "no nubank").
+- Mensagem sua com "[Cartão: ...]" no fim mostra o que você propôs e o que a pessoa fez com ele (salvou, descartou ou ainda não decidiu). Se ela quer mudar um cartão já salvo, explique que o salvo se edita em Lançamentos (ou em Fixos e parcelas, se for parcelado); proponha um novo só se ela pedir, e lembre de apagar o antigo pra não contar duas vezes.
+- Falta um dado essencial (o valor, ou o valor de cada parcela)? Pergunte só ele, numa frase. O resto tem padrão.
+- Texto colado de mensagem de banco, loja ou financeira: tire dele valor, parcelas, taxa e data da 1ª parcela, e diga o que entendeu.
+- Vários gastos na mesma frase: proponha o primeiro e diga que manda o próximo depois.
+- Pedido fora do seu alcance: diga numa frase o que você sabe fazer.
+
+# Jeito de falar
+- Português do Brasil, informal e direto, como um amigo que entende de dinheiro. Sem sermão e sem julgar.
+- Curto pra ler no celular: até 6 linhas. Análise: até 5 pontos começando com "- ". Use **negrito** só no número principal.
+- Não use travessão nem emoji.
+
+# Como o app conta (use pra explicar, nunca pra calcular)
+- Só entra no saldo o que já foi pago ou recebido. Conta "a pagar" e valor "estimado" (luz, água) ainda não.
+- Gasto no cartão de crédito entra no dia do vencimento da fatura, não no dia da compra. A parcela N cai na fatura N-1 meses depois da primeira.
+- Parcelado e fixo viram lançamento só quando a data chega. Antes disso são compromissos: já descontam do disponível e aparecem em Pagamentos.
+- Empréstimo não é renda e fica na tela de Empréstimos. Devolver o que pegou vira gasto.
+- Vale alimentação (VA) tem saldo próprio, fora dos gastos e do disponível.
+- Disponível para gastar: o dinheiro livre do mês depois de tirar o que ainda vai cair e o que está guardado nos objetivos (caixinhas). Guardar em objetivo não é gasto.
+- Meta é o teto de gasto de uma categoria no mês; estoura quando passa do limite.
+
+# Finanças (explicar com calma, sem empurrar produto)
+- Juros ao mês parecem pequenos, mas se acumulam: use simular_parcelamento pra mostrar o total pago, os juros e a taxa ao ano.
+- Parcelar sem juros não muda o total, mas compromete os próximos meses: as parcelas já descontam do disponível de cada mês.
+- Rotativo do cartão e cheque especial costumam ter os juros mais altos: se a pessoa estiver neles, o primeiro passo costuma ser sair deles (pagar a fatura inteira ou trocar por uma dívida mais barata).
+- Reserva de emergência: guardar aos poucos até uns 3 a 6 meses do custo de vida, num objetivo do app.
+- Ao comparar à vista com parcelado com juros, mostre o total de cada um e deixe a decisão com a pessoa.
+- Não recomende investimento, banco ou produto específico, e não oriente sobre imposto.
+
+# Pra lançar
+- Categoria: a mais parecida da lista. Gasto: ${nomes("gasto")}. Entrada: ${nomes("entrada")}.
+- Valor em reais, como número (32.5 pra R$ 32,50).
+- Parcelado: "valor" é o de UMA parcela, "data" é a da 1ª parcela e "parcelas" é quantas são (2 a ${MAX_PARCELAS_ASSISTENTE}). Se a pessoa só souber o total e a taxa, rode simular_parcelamento, mostre as opções e peça o valor da parcela que está no app da loja ou na fatura antes de propor.
+- Data: hoje, a não ser que a pessoa diga outro dia ("ontem", "dia 5", "20/10").
 - Forma de pagamento e banco só se a pessoa disser. Formas: ${opcoes.formas.map((f) => f.nome).join(", ") || "nenhuma"}. Bancos: ${opcoes.bancos.map((b) => b.nome).join(", ") || "nenhum"}.
 - "ja_paguei" é falso só se a pessoa disser que ainda vai pagar.
-- Vários gastos na mesma frase: proponha o primeiro e diga que manda o próximo depois.
 
-Pra lembrar:
+# Pra lembrar
 - Título curto começando pelo que fazer ("Pagar o IPVA", "Cobrar o João").
 - Dia: o que a pessoa disser, em AAAA-MM-DD, hoje ou depois. Sem dia, pergunte antes de propor.
 - "repetir": semanal, mensal ou anual só se a pessoa disser que repete; senão "nao".
@@ -113,6 +143,10 @@ export function ferramentasAssistente(opcoes: OpcoesLancamento): Ferramenta[] {
             banco: { type: "string", enum: opcoes.bancos.map((b) => b.nome), description: "Só se a pessoa disser." },
           }),
           ja_paguei: { type: "boolean" },
+          parcelas: {
+            type: "integer",
+            description: `Só em compra parcelada: quantas parcelas (2 a ${MAX_PARCELAS_ASSISTENTE}). Aí "valor" é o de cada parcela.`,
+          },
         },
         required: ["tipo", "valor", "descricao", "categoria", "data", "ja_paguei"],
       },
@@ -138,6 +172,20 @@ export function ferramentasAssistente(opcoes: OpcoesLancamento): Ferramenta[] {
           repetir: { type: "string", enum: REPETICOES.map((r) => r.valor) },
         },
         required: ["titulo", "data", "repetir"],
+      },
+    },
+    {
+      nome: "simular_parcelamento",
+      descricao:
+        "Calcula parcela, total pago e juros de um parcelamento com taxa ao mês, nas duas leituras comuns (Tabela Price e taxa aplicada uma vez), e a taxa equivalente ao ano. Use pra explicar juros ou quando a pessoa só souber o total e a taxa.",
+      parametros: {
+        type: "object",
+        properties: {
+          total: { type: "number", description: "Valor financiado, em reais." },
+          taxa_mensal: { type: "number", description: "Taxa ao mês em %, ex.: 23 pra 23% ao mês. 0 se for sem juros." },
+          parcelas: { type: "integer", description: "Quantidade de parcelas." },
+        },
+        required: ["total", "taxa_mensal", "parcelas"],
       },
     },
   ];
@@ -175,6 +223,16 @@ export function lerProposta(
   const data = typeof entrada.data === "string" && dataValida(entrada.data) ? entrada.data : hoje;
   const descricao = typeof entrada.descricao === "string" ? entrada.descricao.trim().slice(0, 80) : "";
 
+  // Parcelado só em gasto (entrada não parcela, igual ao formulário)
+  let parcelas: number | null = null;
+  if (entrada.parcelas !== undefined && entrada.parcelas !== null && Number(entrada.parcelas) > 1) {
+    parcelas = Number(entrada.parcelas);
+    if (tipo !== "gasto") return { ok: false, erro: "Entrada não pode ser parcelada." };
+    if (!Number.isInteger(parcelas) || parcelas > MAX_PARCELAS_ASSISTENTE) {
+      return { ok: false, erro: `Parcelas: de 2 a ${MAX_PARCELAS_ASSISTENTE}.` };
+    }
+  }
+
   return {
     ok: true,
     proposta: {
@@ -187,8 +245,10 @@ export function lerProposta(
       categoriaNome: categoria.nome,
       formaPagamentoId: forma?.id ?? null,
       formaNome: forma?.nome ?? null,
+      formaTipo: forma?.tipo ?? null,
       contaId: banco?.id ?? null,
       bancoNome: banco?.nome ?? null,
+      parcelas,
     },
   };
 }
@@ -202,12 +262,28 @@ export function lerPropostaLembrete(
   return r.ok ? { ok: true, lembrete: r.dados } : r;
 }
 
+// Valor de cada parcela, quantas e o total, como aparece no cartão e no contexto
+export function textoParcelas(p: Pick<Proposta, "valor" | "parcelas">) {
+  if (!p.parcelas) return formatarCentavos(p.valor);
+  return `${p.parcelas}x de ${formatarCentavos(p.valor)} (total ${formatarCentavos(p.valor * p.parcelas)})`;
+}
+
+// O que a IA precisa saber de um cartão que ela propôs: o que era e o que a pessoa fez com ele
+export function contextoDaProposta(p: Proposta, situacao?: "salvo" | "descartado") {
+  const quando = p.parcelas ? `1ª parcela ${diaCurto(p.data)}` : diaCurto(p.data);
+  const decisao = situacao === "salvo" ? "a pessoa salvou" : situacao === "descartado" ? "a pessoa descartou" : "ainda não salvou";
+  return `[Cartão: ${p.tipo} ${p.descricao}, ${textoParcelas(p)}, ${quando}, categoria ${p.categoriaNome}${p.formaNome ? `, ${p.formaNome}` : ""}; ${decisao}]`;
+}
+
 // Histórico que vai pra API: só as últimas mensagens, começando por uma sua, sem texto gigante
 export function historicoParaApi(mensagens: MensagemChat[]): MensagemIA[] {
   const ultimas: MensagemIA[] = mensagens
     .filter((m) => m.texto.trim())
     .slice(-MAX_HISTORICO)
-    .map((m) => ({ papel: m.papel === "voce" ? "usuario" : "assistente", texto: m.texto.slice(0, MAX_TEXTO * 4) }));
+    .map((m) => ({
+      papel: m.papel === "voce" ? "usuario" : "assistente",
+      texto: (m.contexto ? `${m.texto}\n${m.contexto}` : m.texto).slice(0, MAX_TEXTO * 4),
+    }));
   while (ultimas.length > 0 && ultimas[0].papel !== "usuario") ultimas.shift();
   return ultimas;
 }
