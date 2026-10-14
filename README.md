@@ -5,9 +5,9 @@
 <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=18&duration=3000&pause=1000&color=D9622B&center=true&vCenter=true&width=700&lines=Lan%C3%A7ar+um+gasto+em+menos+de+5+segundos;Quanto+d%C3%A1+pra+gastar+hoje%3F;O+app+calcula%2C+a+IA+s%C3%B3+explica" />
 
 
-<img src="public/icone-192.png" width="88" alt="Ícone do Bolso" />
+<img src="public/icone-192.png" width="88" alt="Ícone do ContaGasto" />
 
-# Bolso
+# ContaGasto
 
 **Controle de gastos pessoal, feito pra usar no celular todo dia.**
 
@@ -22,7 +22,7 @@ Lançar um gasto leva menos de 5 segundos. O app mostra quanto dá pra gastar at
 ![Vitest](https://img.shields.io/badge/419_testes-6E9F18?logo=vitest&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 
-<img src="docs/imagens/capa.webp" alt="Telas do Bolso: Início, Pagamentos, Gráficos e Objetivos" width="100%" />
+<img src="docs/imagens/capa.webp" alt="Telas do ContaGasto: Início, Pagamentos, Gráficos e Objetivos" width="100%" />
 
 </div>
 
@@ -46,7 +46,7 @@ Lançar um gasto leva menos de 5 segundos. O app mostra quanto dá pra gastar at
 
 Eu sempre desisti das planilhas de gasto. Elas dizem quanto eu tenho, mas não dizem **quanto eu posso gastar**. Ter R$ 2.000 na conta com aluguel, parcela do celular e fatura do cartão ainda pra cair não é ter R$ 2.000 livres.
 
-O Bolso nasceu pra responder isso de um jeito honesto: ele nunca infla o saldo. Empréstimo não vira renda, dinheiro guardado pra um objetivo sai do disponível, e compra no cartão entra no mês em que a fatura vence, que é quando o dinheiro sai de verdade.
+O ContaGasto nasceu pra responder isso de um jeito honesto: ele nunca infla o saldo. Empréstimo não vira renda, dinheiro guardado pra um objetivo sai do disponível, e compra no cartão entra no mês em que a fatura vence, que é quando o dinheiro sai de verdade.
 
 Uso ele todo dia desde a versão 1.0.
 
@@ -129,7 +129,7 @@ O painel do mês: contas pra pagar, dinheiro nos bancos, quanto dá pra gastar e
 
 ## Testar agora (modo demonstração)
 
-O Bolso tem um **modo demonstração** feito pra portfólio:
+O ContaGasto tem um **modo demonstração** feito pra portfólio:
 
 - abre sem login, já com 4 meses de dados inventados;
 - o banco vive só na memória do servidor, então **não existe dado real pra vazar**, nem se alguém configurar um banco de verdade por engano;

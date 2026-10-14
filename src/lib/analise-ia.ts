@@ -165,7 +165,7 @@ export const FORMATO_ANALISE = {
   additionalProperties: false,
 } as const;
 
-export const INSTRUCOES_ANALISE = `Você é o analista de gastos do Bolso, um app pessoal de controle de gastos. Quem lê é o dono do app, no celular.
+export const INSTRUCOES_ANALISE = `Você é o analista de gastos do ContaGasto, um app pessoal de controle de gastos. Quem lê é o dono do app, no celular.
 
 Você recebe os números de um mês já calculados pelo app, em JSON. Escreva uma análise curta que ajude a pessoa a entender o mês e gastar melhor.
 

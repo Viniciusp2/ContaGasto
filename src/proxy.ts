@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
       if (pathname !== "/") destino.searchParams.set("volta", pathname + search);
       return NextResponse.redirect(destino);
     }
-    return new NextResponse("Entre no Bolso primeiro.", { status: 401 });
+    return new NextResponse("Entre no ContaGasto primeiro.", { status: 401 });
   }
 
   if (!login.totpAtivo && !SEM_AUTENTICADOR.includes(pathname)) {

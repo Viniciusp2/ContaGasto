@@ -105,7 +105,7 @@ export function AtivarDoisFatores() {
       <div className="rounded-2xl bg-fundo px-4 py-3 text-sm">
         <p className="text-tinta-suave">Não dá pra ler o QR? No app, escolha &quot;digitar chave&quot; e use:</p>
         <p className="mt-1 font-mono text-base font-bold break-all select-all">{preparo.chave}</p>
-        <p className="mt-1 text-xs text-tinta-suave">Conta: Bolso · baseado em tempo</p>
+        <p className="mt-1 text-xs text-tinta-suave">Conta: ContaGasto · baseado em tempo</p>
       </div>
       <label className="text-sm font-semibold">
         Código de 6 dígitos que apareceu no app

@@ -95,7 +95,7 @@ Cadastre as mesmas variáveis em **Settings, Environment Variables** do projeto 
 ```mermaid
 sequenceDiagram
   participant V as Você
-  participant App as Bolso (servidor)
+  participant App as ContaGasto (servidor)
   participant IA as Provedor de IA
   V->>App: "quanto gastei de mercado?"
   App->>IA: pergunta + instruções + lista de ferramentas

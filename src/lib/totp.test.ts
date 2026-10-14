@@ -62,9 +62,9 @@ describe("TOTP", () => {
 
   it("link do QR e chave pra digitar", () => {
     const link = linkOtpauth("GEZDGNBVGY3TQOJQ", "Vinícius");
-    expect(link.startsWith("otpauth://totp/Bolso%3AVin%C3%ADcius?")).toBe(true);
+    expect(link.startsWith("otpauth://totp/ContaGasto%3AVin%C3%ADcius?")).toBe(true);
     expect(link).toContain("secret=GEZDGNBVGY3TQOJQ");
-    expect(link).toContain("issuer=Bolso");
+    expect(link).toContain("issuer=ContaGasto");
     expect(chaveLegivel("GEZDGNBVGY3TQOJQ")).toBe("GEZD GNBV GY3T QOJQ");
   });
 });

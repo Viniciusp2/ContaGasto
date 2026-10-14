@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 // Instalar no celular (PWA). Ícones gerados por scripts/gerar-icones.tsx.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Bolso",
-    short_name: "Bolso",
+    name: "ContaGasto",
+    short_name: "ContaGasto",
     description: "Seu controle de gastos, leve e rápido.",
     lang: "pt-BR",
     start_url: "/",

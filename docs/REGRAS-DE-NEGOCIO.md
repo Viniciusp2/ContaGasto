@@ -1,6 +1,6 @@
 # Regras de negócio
 
-Como o Bolso conta o dinheiro. Este documento é a referência das regras; o código cita as seções pelo número (ex.: "4.4" é o cartão de crédito).
+Como o ContaGasto conta o dinheiro. Este documento é a referência das regras; o código cita as seções pelo número (ex.: "4.4" é o cartão de crédito).
 
 Princípio que guia tudo: **o app nunca infla o saldo.** Empréstimo não vira renda, dinheiro guardado sai do disponível, e conta que ainda não foi paga continua pesando.
 

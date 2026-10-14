@@ -49,7 +49,7 @@ export default async function Relatorio({ searchParams }: PageProps<"/relatorio"
       </div>
 
       <header>
-        <p className="text-sm text-tinta-suave">Bolso · relatório do mês</p>
+        <p className="text-sm text-tinta-suave">ContaGasto · relatório do mês</p>
         <h1 className="text-2xl font-bold capitalize">{nomeDoMes(mes)}</h1>
         <p className="text-xs text-tinta-suave">Gerado em {diaCurto(hoje)}. Sem estimados, empréstimos e vale alimentação nos totais.</p>
       </header>

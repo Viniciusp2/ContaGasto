@@ -105,7 +105,7 @@ export function textoDiagnostico({
   erros: { em: string; origem: string; mensagem: string; detalhe?: unknown }[];
 }) {
   const linhas = [
-    "Diagnóstico do Bolso",
+    "Diagnóstico do ContaGasto",
     `${versao} | ambiente: ${ambiente} | banco: ${banco}`,
     "",
     "Variáveis (só se existem, sem valor):",

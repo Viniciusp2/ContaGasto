@@ -317,7 +317,7 @@ function Conversa({ ias, automatico }: PropsIA) {
           <span className="rounded-full bg-lavanda p-4">
             <Sparkles size={28} aria-hidden />
           </span>
-          <p className="font-semibold">Oi! Sou o assistente do Bolso.</p>
+          <p className="font-semibold">Oi! Sou o assistente do ContaGasto.</p>
           <p className="text-sm text-tinta-suave">
             Me conta um gasto (&ldquo;gastei 32 no iFood&rdquo;) que eu lanço pra você, ou pergunta qualquer coisa sobre o seu mês.
           </p>

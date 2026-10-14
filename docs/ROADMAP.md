@@ -1,6 +1,6 @@
 # Roadmap
 
-A 1.x é pra uma pessoa só. A **2.0** vai abrir o Bolso pra outras pessoas, e com dado financeiro dos outros a prioridade passa a ser privacidade.
+A 1.x é pra uma pessoa só. A **2.0** vai abrir o ContaGasto pra outras pessoas, e com dado financeiro dos outros a prioridade passa a ser privacidade.
 
 Regra que guia tudo daqui pra frente: **o dado da pessoa fica no aparelho dela.** O servidor e a IA recebem o mínimo possível.
 
@@ -10,7 +10,7 @@ Regra que guia tudo daqui pra frente: **o dado da pessoa fica no aparelho dela.*
 2. **Criptografia de ponta a ponta:** chave derivada da senha (Argon2id e AES-256-GCM). Nem o servidor nem quem administra o app conseguem ler os dados de alguém.
 3. **IA com acesso mínimo:** a IA nunca recebe extrato nem lançamento cru. Ela pede o que precisa por ferramentas que devolvem só agregados.
 4. **A IA sugere, o app decide:** nada que a IA devolve é gravado sem passar por filtro do app e pelo toque da pessoa.
-5. **Transparência:** a pessoa sempre vê o que foi enviado pra fora e o que o Bolso guarda sobre ela.
+5. **Transparência:** a pessoa sempre vê o que foi enviado pra fora e o que o ContaGasto guarda sobre ela.
 6. **IA opcional:** o app funciona inteiro sem ela.
 
 ---
@@ -58,7 +58,7 @@ A IA não guarda nada; quem guarda é o app, no aparelho, criptografado.
 - [ ] Nunca entram na ficha: valores exatos, nomes de pessoas, número de conta, dívidas ou saúde sem a pessoa pedir
 - [ ] A IA sugere o que lembrar; o app filtra e só então grava
 - [ ] Vai pra IA só a parte da ficha que importa pra pergunta
-- [ ] Tela "O que o Bolso sabe de mim", pra ver, editar e apagar
+- [ ] Tela "O que o ContaGasto sabe de mim", pra ver, editar e apagar
 - [ ] Proteção contra injeção: texto vindo de extrato nunca vira memória
 
 ## Etapa 5: imagem

@@ -24,7 +24,7 @@ export function lerImportacao(texto: string): { ok: true; linhas: LinhaImportaca
   }
   const arquivo = json as { app?: unknown; tipo?: unknown; lancamentos?: unknown };
   if (arquivo?.app !== "bolso" || arquivo.tipo !== "importacao") {
-    return { ok: false, erro: "Esse arquivo não é uma importação do Bolso. (Backup completo é em Restaurar.)" };
+    return { ok: false, erro: "Esse arquivo não é uma importação do ContaGasto. (Backup completo é em Restaurar.)" };
   }
   if (!Array.isArray(arquivo.lancamentos) || arquivo.lancamentos.length === 0) return { ok: false, erro: "Arquivo sem lançamentos." };
   if (arquivo.lancamentos.length > LIMITE_IMPORTACAO) return { ok: false, erro: "Arquivo grande demais." };

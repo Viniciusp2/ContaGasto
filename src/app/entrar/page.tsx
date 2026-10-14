@@ -12,7 +12,7 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
     <section className="mx-auto flex max-w-sm flex-col gap-5 pt-10">
       <div className="flex flex-col items-center gap-3 text-center">
         <Image src="/icone-192.png" alt="" width={72} height={72} className="rounded-2xl" priority />
-        <h1 className="text-2xl font-bold">Bolso</h1>
+        <h1 className="text-2xl font-bold">ContaGasto</h1>
         <p className="text-tinta-suave">
           Seu dinheiro é só seu. {totpAtivo ? "Digite a senha e o código do app autenticador." : "Digite a senha pra entrar."}
         </p>

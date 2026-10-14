@@ -83,8 +83,8 @@ export function verificarTotp(
   return { ok: false };
 }
 
-// Link que o QR code carrega: os apps leem e já cadastram "Bolso (Vinícius)"
-export function linkOtpauth(segredoBase32: string, conta: string, emissor = "Bolso") {
+// Link que o QR code carrega: os apps leem e já cadastram "ContaGasto (Vinícius)"
+export function linkOtpauth(segredoBase32: string, conta: string, emissor = "ContaGasto") {
   const rotulo = encodeURIComponent(`${emissor}:${conta}`);
   const params = new URLSearchParams({ secret: segredoBase32, issuer: emissor, algorithm: "SHA1", digits: String(DIGITOS), period: String(PASSO_SEGUNDOS) });
   return `otpauth://totp/${rotulo}?${params.toString()}`;

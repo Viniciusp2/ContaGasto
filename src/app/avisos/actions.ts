@@ -69,7 +69,7 @@ export async function desinscreverAparelho(filtro: { id?: string; endpoint?: str
 export async function mandarTeste() {
   if (MODO_DEMO) return { enviados: 0, falharam: 0 };
   const r = await enviarParaAparelhos({
-    titulo: "Bolso",
+    titulo: "ContaGasto",
     corpo: "Pronto: as notificações estão ligadas. Os avisos chegam de manhã e à noite.",
     url: "/avisos",
     tag: "teste",

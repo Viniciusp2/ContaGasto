@@ -1,4 +1,4 @@
-// Service worker do Bolso: offline básico (Sprint 4.2).
+// Service worker do ContaGasto: offline básico (Sprint 4.2).
 // - Arquivos do build (/_next/static) são imutáveis: cache primeiro.
 // - Páginas: rede primeiro; sem internet, mostra a última versão vista ou a página "Sem internet".
 // - Nada que grava (POST, server actions) passa pelo cache.
@@ -73,7 +73,7 @@ self.addEventListener("push", (evento) => {
     dados = { corpo: evento.data ? evento.data.text() : "" };
   }
   evento.waitUntil(
-    self.registration.showNotification(dados.titulo || "Bolso", {
+    self.registration.showNotification(dados.titulo || "ContaGasto", {
       body: dados.corpo || "",
       icon: "/icone-192.png",
       badge: "/icone-aviso.png",

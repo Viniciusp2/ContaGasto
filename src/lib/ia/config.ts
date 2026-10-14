@@ -13,7 +13,7 @@
 import { modoDemo } from "@/lib/demo";
 
 // Na demonstração a IA fica sempre desligada (sem custo e sem abuso); docs/IA.md ensina a ligar com a sua chave
-export const IA_DESLIGADA_NA_DEMO = "Na demonstração a IA fica desligada. Pra usar, rode a sua cópia do Bolso com a sua própria chave (passo a passo em docs/IA.md).";
+export const IA_DESLIGADA_NA_DEMO = "Na demonstração a IA fica desligada. Pra usar, rode a sua cópia do ContaGasto com a sua própria chave (passo a passo em docs/IA.md).";
 
 export type Formato = "anthropic" | "openai";
 

@@ -1,4 +1,4 @@
-// Assistente do Bolso (Sprint 6.7): um chat só pra analisar o mês, lançar falando e tirar dúvida.
+// Assistente do ContaGasto (Sprint 6.7): um chat só pra analisar o mês, lançar falando e tirar dúvida.
 // Aqui fica o que é puro (instruções, ferramentas, conferir o que a IA propõe). A conversa com a IA mora
 // em app/assistente/actions.ts, qual IA usar em lib/ia e os dados em db/assistente.ts.
 // Regra: o código calcula, a IA só comenta.
@@ -44,7 +44,7 @@ export type MensagemChat = { papel: "voce" | "bolso"; texto: string; contexto?: 
 export function instrucoesAssistente(hoje: string, opcoes: OpcoesLancamento) {
   const nomes = (tipo: "gasto" | "entrada") =>
     opcoes.categorias.filter((c) => c.tipo === tipo).map((c) => c.nome).join(", ");
-  return `Você é o assistente do Bolso, um app pessoal de controle de gastos. Quem conversa é o dono do app, pelo celular. Hoje é ${hoje}.
+  return `Você é o assistente do ContaGasto, um app pessoal de controle de gastos. Quem conversa é o dono do app, pelo celular. Hoje é ${hoje}.
 
 # O que você faz
 1. Lançar gasto ou entrada quando a pessoa conta o que gastou ou recebeu ("gastei 32 no ifood", "caiu o salário"). Use propor_lancamento: ele não salva nada, a pessoa confere o cartão e toca em Salvar.

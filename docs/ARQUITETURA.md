@@ -1,6 +1,6 @@
 # Arquitetura
 
-Como o Bolso é organizado por dentro e por que foi feito assim.
+Como o ContaGasto é organizado por dentro e por que foi feito assim.
 
 ## Sumário
 

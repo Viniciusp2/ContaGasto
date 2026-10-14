@@ -28,7 +28,7 @@ function estilizarCabecalho(aba: ExcelJS.Worksheet) {
 
 export async function montarPlanilha(ano: number, linhas: LinhaPlanilha[], mesAtual?: number): Promise<Buffer> {
   const livro = new ExcelJS.Workbook();
-  livro.creator = "Bolso";
+  livro.creator = "ContaGasto";
 
   const aba = livro.addWorksheet("Lançamentos");
   aba.columns = [

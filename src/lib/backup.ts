@@ -32,7 +32,7 @@ export const LIMITE_LINHAS = 200_000;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Confere o arquivo antes de tocar no banco. Só aceita backup do Bolso, da versão conhecida.
+// Confere o arquivo antes de tocar no banco. Só aceita backup do ContaGasto, da versão conhecida.
 export function lerBackup(texto: string): { ok: true; backup: Backup; linhas: number } | { ok: false; erro: string } {
   let json: unknown;
   try {
@@ -41,7 +41,7 @@ export function lerBackup(texto: string): { ok: true; backup: Backup; linhas: nu
     return { ok: false, erro: "Esse arquivo não é um backup (JSON inválido)." };
   }
   const b = json as Partial<Backup>;
-  if (!b || b.app !== "bolso") return { ok: false, erro: "Esse arquivo não é um backup do Bolso." };
+  if (!b || b.app !== "bolso") return { ok: false, erro: "Esse arquivo não é um backup do ContaGasto." };
   // Arquivo de importação colocado no lugar errado: diz onde usar (e nada muda)
   if ((b as { tipo?: unknown }).tipo === "importacao") {
     return { ok: false, erro: "Esse arquivo é de importação de lançamentos: use Importar lançamentos, logo acima. Nada foi mudado." };

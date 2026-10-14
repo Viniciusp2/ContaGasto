@@ -17,11 +17,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: MODO_DEMO ? "Bolso (demonstração)" : "Bolso",
+  title: MODO_DEMO ? "ContaGasto (demonstração)" : "ContaGasto",
   description: "Seu controle de gastos, leve e rápido.",
-  applicationName: "Bolso",
+  applicationName: "ContaGasto",
   // iPhone: abre em tela cheia quando instalado pela tela de início
-  appleWebApp: { capable: true, title: "Bolso", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "ContaGasto", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

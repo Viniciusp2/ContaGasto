@@ -1,6 +1,6 @@
 # Segurança
 
-Um app de finanças guarda dado sensível. Este documento explica o que protege o Bolso hoje, o que a demonstração bloqueia e quais limites ainda existem.
+Um app de finanças guarda dado sensível. Este documento explica o que protege o ContaGasto hoje, o que a demonstração bloqueia e quais limites ainda existem.
 
 ## Sumário
 
@@ -88,7 +88,7 @@ Os bloqueios estão no servidor (nas Server Actions e no `proxy.ts`), não só e
 
 ## Limites conhecidos
 
-O Bolso 1.x foi feito pra **uma pessoa só**. Antes de abrir pra outras pessoas (versão 2.0), estes pontos precisam mudar:
+O ContaGasto 1.x foi feito pra **uma pessoa só**. Antes de abrir pra outras pessoas (versão 2.0), estes pontos precisam mudar:
 
 - **Usuário único:** existe um usuário fixo no código. Multiusuário precisa de cadastro e de Row Level Security no Postgres, além do filtro por `user_id` que já existe.
 - **Sessão sem revogação individual:** o cookie vale 90 dias. "Sair" apaga o cookie daquele aparelho; pra derrubar todos, é preciso trocar a senha. O ideal é guardar as sessões no banco.

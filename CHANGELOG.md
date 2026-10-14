@@ -1,4 +1,4 @@
-# Histórico de versões do Bolso
+# Histórico de versões do ContaGasto
 
 Versão no formato `MAIOR.MENOR.CORREÇÃO` (versionamento semântico):
 
@@ -54,7 +54,7 @@ A versão que está no ar aparece no fim da tela **Mais**, com o código da publ
 - **Assistente lança parcelado:** "parcelei no AliExpress, 3x de 51,08 a partir de 20/10" monta o cartão com as parcelas, o total e a data da 1ª. Ao salvar, vai pra Fixos e parcelas, e cada parcela vira conta a pagar no mês dela (no cartão de crédito, segue a fatura).
 - **Simula juros:** "comprei 124,58 em 3x com 23% ao mês, quanto fica?" mostra parcela, total e juros nas duas formas mais comuns de cobrar (Tabela Price e taxa aplicada uma vez) e quanto a taxa dá ao ano. A conta é do app, não da IA.
 - **Lembra do que propôs:** o assistente sabe se você salvou ou descartou o cartão. Se pedir pra mudar algo já salvo, ele avisa pra editar ou apagar o antigo, pra não contar duas vezes.
-- **Conhece o app e finanças:** como o Bolso conta (fatura do cartão, a pagar, estimado, VA, empréstimo, disponível, metas e objetivos) e explica juros, rotativo, parcelamento e reserva de emergência, sem empurrar produto.
+- **Conhece o app e finanças:** como o ContaGasto conta (fatura do cartão, a pagar, estimado, VA, empréstimo, disponível, metas e objetivos) e explica juros, rotativo, parcelamento e reserva de emergência, sem empurrar produto.
 
 ## 1.7.3 (08/10/2026)
 
@@ -62,7 +62,7 @@ A versão que está no ar aparece no fim da tela **Mais**, com o código da publ
   - **Agora:** conta atrasada ou vencendo, dia de receber, lembretes, empréstimo pra devolver ou cobrar, meta chegando no limite ou estourada, quando o dinheiro não deve dar até o fim do mês, melhor dia de compra no cartão, assinatura que renova amanhã, hora de guardar nos objetivos e o resumo do mês que passou.
   - **Quanto falta:** quantos dias faltam pro salário, pro VA e pra cada conta dos próximos 30 dias.
 - **Lembretes:** "pagar o IPVA dia 15", uma vez ou repetindo (toda semana, todo mês, todo ano). Feito com um toque.
-- **Notificação no celular:** ligue em Avisos. Chega de manhã (por volta das 8h) e à noite (por volta das 20h, "lançou os gastos de hoje?"). Escolha o que receber. No iPhone, precisa instalar o Bolso na tela de início.
+- **Notificação no celular:** ligue em Avisos. Chega de manhã (por volta das 8h) e à noite (por volta das 20h, "lançou os gastos de hoje?"). Escolha o que receber. No iPhone, precisa instalar o ContaGasto na tela de início.
 - **Assistente:** "me lembra de pagar o IPVA dia 15" vira um lembrete (você confere e salva) e "quando cai o salário?" ou "o que vence essa semana?" ele responde com os dias contados.
 - Lembretes entram no backup.
 

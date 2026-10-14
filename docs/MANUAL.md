@@ -1,6 +1,6 @@
 # Manual de uso
 
-Guia de cada tela do Bolso. As imagens são do modo demonstração, com dados inventados.
+Guia de cada tela do ContaGasto. As imagens são do modo demonstração, com dados inventados.
 
 ## Sumário
 
@@ -27,7 +27,7 @@ Guia de cada tela do Bolso. As imagens são do modo demonstração, com dados in
 
 ## 1. Primeiros passos
 
-Pra o Bolso calcular bem, vale fazer isto uma vez:
+Pra o ContaGasto calcular bem, vale fazer isto uma vez:
 
 1. **Bancos:** em **Mais, Categorias, formas e bancos**, cadastre seus bancos e informe o saldo de hoje de cada um. Daí pra frente o app soma os lançamentos.
 2. **Cartão:** em **Mais, Cartões**, informe o dia de fechamento e o de vencimento da fatura.
@@ -303,7 +303,7 @@ Detalhes técnicos em [SEGURANCA.md](SEGURANCA.md).
 
 ## 18. Instalar no celular
 
-O Bolso é um PWA: dá pra instalar como app, sem loja.
+O ContaGasto é um PWA: dá pra instalar como app, sem loja.
 
 - **Android (Chrome):** menu de três pontos, **Instalar app** ou **Adicionar à tela inicial**.
 - **iPhone (Safari):** botão de compartilhar, **Adicionar à Tela de Início**.

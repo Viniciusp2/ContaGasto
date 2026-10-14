@@ -1,4 +1,4 @@
-// Dados que todo Bolso começa tendo: categorias (com ícone e cor) e formas de pagamento.
+// Dados que todo ContaGasto começa tendo: categorias (com ícone e cor) e formas de pagamento.
 // Usado pelo script de seed (npm run db:seed) e pelo modo demonstração.
 import { categorias, formasPagamento, usuarios } from "./schema";
 import type { Banco } from ".";

@@ -223,9 +223,9 @@ export function NotificacoesCelular({ chavePublica, temAparelho }: { chavePublic
   const textos: Partial<Record<Situacao, string>> = {
     "sem-suporte": "Este navegador não recebe notificação. No Android, use o Chrome; no iPhone, o app instalado.",
     "instalar-iphone":
-      "No iPhone, a notificação só funciona com o Bolso na tela de início: toque em Compartilhar, depois em Adicionar à Tela de Início, e abra o Bolso por lá.",
+      "No iPhone, a notificação só funciona com o ContaGasto na tela de início: toque em Compartilhar, depois em Adicionar à Tela de Início, e abra o ContaGasto por lá.",
     "so-no-site": "A notificação só liga no site publicado (no computador, em modo de desenvolvimento, ela fica desligada).",
-    negado: "As notificações do Bolso estão bloqueadas neste aparelho. Libere nas configurações do navegador (ou do celular) e volte aqui.",
+    negado: "As notificações do ContaGasto estão bloqueadas neste aparelho. Libere nas configurações do navegador (ou do celular) e volte aqui.",
   };
 
   return (
