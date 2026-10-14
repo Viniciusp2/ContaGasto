@@ -1,0 +1,63 @@
+import Link from "next/link";
+import { IconeCategoria } from "@/components/icone-categoria";
+import { SeloConta } from "@/components/selo-conta";
+import type { ItemLancamento } from "@/db/consultas";
+import { diaCurto } from "@/lib/datas";
+import { formatarCentavos } from "@/lib/dinheiro";
+
+export function ItemLancamentoLinha({ item, comparacao, mostrarData = false }: { item: ItemLancamento; comparacao?: string; mostrarData?: boolean }) {
+  const estimado = item.status === "estimado";
+  const aPagar = item.status === "a_pagar";
+  const entrada = item.tipo === "entrada";
+
+  const detalhes = [
+    // Na lista por valor não tem cabeçalho de dia: o dia vai na linha
+    mostrarData ? diaCurto(item.data) : null,
+    item.categoriaNome,
+    item.formaNome,
+    item.parcela && item.totalParcelas ? `parcela ${item.parcela}/${item.totalParcelas}` : null,
+    // No crédito, a data da lista é o vencimento: mostra quando foi a compra
+    item.dataCompra && item.dataCompra !== item.data ? `compra ${diaCurto(item.dataCompra)}` : null,
+    comparacao ?? null,
+  ].filter(Boolean);
+
+  return (
+    <li>
+      <Link
+        href={`/lancamentos/${item.id}/editar`}
+        className={`flex min-h-16 items-center gap-3 rounded-card bg-cartao px-3 py-2 shadow-suave transition-transform active:scale-[0.98] ${
+          estimado || aPagar ? "opacity-70" : ""
+        }`}
+      >
+        <span
+          className="sobre-pastel flex size-11 shrink-0 items-center justify-center rounded-full"
+          style={{ backgroundColor: item.categoriaCor }}
+          aria-hidden
+        >
+          <IconeCategoria nome={item.categoriaIcone} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            {item.contaNome && item.contaSigla && (
+              <SeloConta nome={item.contaNome} sigla={item.contaSigla} cor={item.contaCor!} corTexto={item.contaCorTexto!} />
+            )}
+            <span className="truncate font-semibold">{item.descricao}</span>
+            {estimado && (
+              <span className="shrink-0 rounded-full bg-limao px-2 text-xs font-semibold">estimado</span>
+            )}
+            {aPagar && (
+              <span className="shrink-0 rounded-full bg-limao px-2 text-xs font-semibold">a pagar</span>
+            )}
+          </span>
+          <span className="block truncate text-sm text-tinta-suave">{detalhes.join(" · ")}</span>
+        </span>
+        <span
+          className={`shrink-0 font-bold tabular-nums ${entrada ? "rounded-full bg-menta px-2.5 py-0.5" : ""}`}
+        >
+          {entrada ? "+ " : "- "}
+          {formatarCentavos(item.valor)}
+        </span>
+      </Link>
+    </li>
+  );
+}

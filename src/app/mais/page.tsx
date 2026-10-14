@@ -1,0 +1,60 @@
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { SeletorTema } from "@/components/seletor-tema";
+import { BotaoSair } from "@/components/botao-sair";
+import { FormSenha } from "@/components/form-senha";
+import { obterAcesso } from "@/db/acesso";
+import { MODO_DEMO } from "@/lib/demo";
+import { COOKIE_TEMA, lerTema } from "@/lib/tema";
+import { textoVersao, VERSAO_ATUAL } from "@/lib/versao";
+import { Bell, Tags, CalendarRange, Download, ChartColumn, ChevronRight, CreditCard, HandCoins, PiggyBank, Repeat, SearchCheck, Sparkles, ShieldCheck, SquareTerminal } from "lucide-react";
+
+const itens = [
+  { href: "/assistente", rotulo: "Assistente", texto: "Lança falando, analisa o mês e tira dúvida", Icone: Sparkles, cor: "bg-menta" },
+  { href: "/avisos", rotulo: "Avisos e lembretes", texto: "Notificações no celular, lembretes e quanto falta", Icone: Bell, cor: "bg-coral" },
+  { href: "/fixos", rotulo: "Fixos e parcelas", texto: "O que repete todo mês", Icone: Repeat, cor: "bg-lavanda" },
+  { href: "/cartoes", rotulo: "Cartões", texto: "Fechamento e vencimento da fatura", Icone: CreditCard, cor: "bg-coral" },
+  { href: "/objetivos", rotulo: "Objetivos", texto: "Caixinhas pra juntar dinheiro", Icone: PiggyBank, cor: "bg-limao" },
+  { href: "/graficos", rotulo: "Gráficos", texto: "Fluxo, vilões, forma de pagamento e dia da semana", Icone: ChartColumn, cor: "bg-menta" },
+  { href: "/resumo", rotulo: "Resumo do ano", texto: "Mês, trimestre, semestre e ano", Icone: CalendarRange, cor: "bg-lavanda" },
+  { href: "/exportar", rotulo: "Exportar e backup", texto: "Excel, relatório em PDF e backup", Icone: Download, cor: "bg-limao" },
+  { href: "/conferir", rotulo: "Conferir", texto: "Achar erros, repetidos e por que não bate com o banco", Icone: SearchCheck, cor: "bg-limao" },
+  { href: "/seguranca", rotulo: "Segurança", texto: "Autenticador em dois fatores pra entrar", Icone: ShieldCheck, cor: "bg-menta" },
+  { href: "/dev", rotulo: "Dev", texto: "Diagnóstico, logs e dados (só o dono)", Icone: SquareTerminal, cor: "bg-lavanda" },
+  { href: "/configuracoes", rotulo: "Categorias, formas e bancos", texto: "Criar, editar e desativar", Icone: Tags, cor: "bg-lavanda" },
+  { href: "/emprestimos", rotulo: "Empréstimos", texto: "Quem te deve e a quem você deve", Icone: HandCoins, cor: "bg-menta" },
+];
+
+export const dynamic = "force-dynamic";
+
+export default async function Mais() {
+  const tema = lerTema((await cookies()).get(COOKIE_TEMA)?.value);
+  const acesso = await obterAcesso(false);
+  return (
+    <section className="flex flex-col gap-3">
+      <h1 className="mb-1 text-2xl font-bold">Mais</h1>
+      {itens
+        .filter((i) => !MODO_DEMO || (i.href !== "/seguranca" && i.href !== "/dev"))
+        .map(({ href, rotulo, texto, Icone, cor }) => (
+        <Link
+          key={href}
+          href={href}
+          className="flex min-h-16 items-center gap-4 rounded-card bg-cartao p-4 shadow-suave active:scale-[0.98]"
+        >
+          <span className={`rounded-full p-3 ${cor}`}>
+            <Icone size={22} aria-hidden />
+          </span>
+          <span className="flex-1">
+            <span className="block font-semibold">{rotulo}</span>
+            <span className="block text-sm text-tinta-suave">{texto}</span>
+          </span>
+          <ChevronRight size={20} className="text-tinta-suave" aria-hidden />
+        </Link>
+      ))}
+      <SeletorTema atual={tema} />
+      {!MODO_DEMO && <FormSenha usandoSenhaInicial={acesso.usandoSenhaInicial} pedirCodigo={acesso.totpAtivo} />}
+      {acesso.ligado && <BotaoSair />}
+      <p className="mt-4 text-center text-xs text-tinta-suave tabular-nums">{textoVersao(VERSAO_ATUAL)}</p>
+    </section>
+  );
+}

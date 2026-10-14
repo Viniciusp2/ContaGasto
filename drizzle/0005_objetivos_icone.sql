@@ -1,0 +1,1 @@
+ALTER TABLE "objetivos" ADD COLUMN "icone" text DEFAULT 'PiggyBank' NOT NULL;

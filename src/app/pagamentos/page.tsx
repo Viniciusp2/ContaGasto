@@ -1,0 +1,148 @@
+import Link from "next/link";
+import { Plus, Receipt } from "lucide-react";
+import { BarraProgresso } from "@/components/barra-progresso";
+import { ContaPagamento } from "@/components/conta-pagamento";
+import { SeletorMes } from "@/components/seletor-mes";
+import { gerarRecorrencias } from "@/db/gerar-recorrencias";
+import { contasDoMes } from "@/db/pagamentos";
+import { saldosHoje, ultimaContaUsada } from "@/db/saldos";
+import { ordenarPorUrgencia, ORDEM_URGENCIA, resumoPagamentos, ROTULO_URGENCIA, urgenciaConta } from "@/lib/contas";
+import { hojeISO, intervaloDoMes, lerMes } from "@/lib/datas";
+import { formatarCentavos } from "@/lib/dinheiro";
+
+export const dynamic = "force-dynamic";
+
+export default async function Pagamentos({ searchParams }: PageProps<"/pagamentos">) {
+  await gerarRecorrencias();
+  const params = await searchParams;
+  const mes = lerMes(typeof params.mes === "string" ? params.mes : undefined);
+  const hoje = hojeISO();
+  const [contas, saldos, bancoPadrao] = await Promise.all([contasDoMes(mes, hoje), saldosHoje(hoje), ultimaContaUsada()]);
+  // Bancos pro "Paguei" (o do VA fica de fora: conta não se paga com o VA)
+  const bancos = saldos.linhas.filter((b) => !b.va).map((b) => ({ id: b.id, nome: b.nome, sigla: b.sigla, cor: b.cor, corTexto: b.corTexto }));
+  const resumo = resumoPagamentos(contas);
+  const { inicio } = intervaloDoMes(mes);
+
+  // A pagar em ordem de urgência (1.10.3): urgente, logo, com calma e, por último, as em negociação.
+  // Débito automático sai sozinho: fica no fim, sem urgência.
+  const atrasadas = contas.filter((c) => !c.paga && !c.automatico && c.vencimento < hoje && c.negociacao !== "negociando");
+  const pendentes = ordenarPorUrgencia(
+    contas.filter((c) => !c.paga && !c.automatico).map((c) => ({ ...c, urgencia: urgenciaConta(c, hoje)! })),
+  );
+  const grupos = ORDEM_URGENCIA.map((nivel) => ({ nivel, contas: pendentes.filter((c) => c.urgencia.nivel === nivel) })).filter((g) => g.contas.length > 0);
+  const automaticas = contas.filter((c) => !c.paga && c.automatico);
+  const pagas = contas.filter((c) => c.paga);
+  const deMesesAntes = atrasadas.filter((c) => c.vencimento < inicio);
+  const dicaGrupo = {
+    urgente: "Atrasadas ou vencendo hoje e amanhã. Primeiro as que custam mais caro se atrasar.",
+    logo: "Vencem nos próximos 7 dias.",
+    calma: "Vencem depois disso.",
+    negociando: "Em negociação: combine a data e o valor e marque o acordo.",
+  } as const;
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div>
+        <h1 className="text-2xl font-bold">Pagamentos do mês</h1>
+        <p className="text-sm text-tinta-suave">
+          O que você tem que pagar. Só sai do saldo quando você marca Paguei.
+        </p>
+      </div>
+
+      <SeletorMes mes={mes} href={(m) => `/pagamentos?mes=${m}`} />
+
+      {contas.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-card bg-cartao p-4 shadow-suave">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p className="text-xs text-tinta-suave">Total</p>
+              <p className="font-bold tabular-nums">{formatarCentavos(resumo.total)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-tinta-suave">Já paguei</p>
+              <p className="font-bold tabular-nums">{formatarCentavos(resumo.pago)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-tinta-suave">Falta</p>
+              <p className="font-bold tabular-nums">{formatarCentavos(resumo.falta)}</p>
+            </div>
+          </div>
+          <BarraProgresso
+            fracao={resumo.total > 0 ? resumo.pago / resumo.total : 0}
+            estado={atrasadas.length > 0 ? "atencao" : "ok"}
+            rotulo={`${resumo.pagas} de ${resumo.quantas} contas pagas`}
+          />
+          <p className="text-center text-sm text-tinta-suave">
+            {resumo.pagas} de {resumo.quantas} contas pagas
+            {atrasadas.length > 0 ? `, ${atrasadas.length} atrasada${atrasadas.length > 1 ? "s" : ""}` : ""}
+          </p>
+        </div>
+      )}
+
+      {contas.length === 0 && (
+        <div className="flex flex-col items-center gap-3 rounded-card bg-cartao p-8 text-center shadow-suave">
+          <span className="rounded-full bg-lavanda p-4">
+            <Receipt size={28} aria-hidden />
+          </span>
+          <p className="text-tinta-suave">
+            Nenhuma conta nesse mês. Cadastre aluguel, luz, internet e o que mais você paga todo mês.
+          </p>
+        </div>
+      )}
+
+      {deMesesAntes.length > 0 && (
+        <p className="rounded-2xl bg-coral px-3 py-2 text-sm">
+          Tem {deMesesAntes.length} conta{deMesesAntes.length > 1 ? "s" : ""} de meses anteriores sem pagar. Elas continuam aqui até você pagar.
+        </p>
+      )}
+
+      {grupos.map((g) => (
+        <section key={g.nivel} className="flex flex-col gap-2" aria-labelledby={`grupo-${g.nivel}`}>
+          <div>
+            <h2 id={`grupo-${g.nivel}`} className="font-semibold">
+              {ROTULO_URGENCIA[g.nivel]} ({g.contas.length})
+            </h2>
+            <p className="text-xs text-tinta-suave">{dicaGrupo[g.nivel]}</p>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {g.contas.map((c) => (
+              <ContaPagamento key={c.chave} conta={c} hoje={hoje} bancos={bancos} bancoPadrao={bancoPadrao} urgencia={c.urgencia} />
+            ))}
+          </ul>
+        </section>
+      ))}
+
+      {automaticas.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-semibold">Débito automático</h2>
+          <ul className="flex flex-col gap-2">
+            {automaticas.map((c) => (
+              <ContaPagamento key={c.chave} conta={c} hoje={hoje} bancos={bancos} bancoPadrao={bancoPadrao} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {pagas.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-semibold">Pagas</h2>
+          <ul className="flex flex-col gap-2">
+            {pagas.map((c) => (
+              <ContaPagamento key={c.chave} conta={c} hoje={hoje} bancos={bancos} bancoPadrao={bancoPadrao} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <Link
+        href="/lancamentos/novo?conta=1"
+        className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-lavanda font-semibold"
+      >
+        <Plus size={18} aria-hidden /> Nova conta
+      </Link>
+      <p className="text-center text-xs text-tinta-suave">
+        Conta do cartão de crédito entra sozinha na fatura. Pra mudar ou encerrar uma conta, vá em Mais, Fixos e parcelas.
+      </p>
+    </section>
+  );
+}
